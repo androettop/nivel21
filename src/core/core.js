@@ -21,13 +21,16 @@
        Funciones de utilidad
     ======================= */
 	// overrides a global function
-	// hookFn must return the new arguments array
+	// hookFn can return: newArgs array to call original with modified args, or false to skip original
 	function hookGlobalFn(fnName, hookFn) {
 		const originalFn = window[fnName];
 		if (typeof originalFn !== 'function') return;
 
 		window[fnName] = (...args) => {
-			const newArgs = hookFn(...args);
+			const result = hookFn(...args);
+			// If hookFn returns false, skip calling original function
+			if (result === false) return;
+			const newArgs = Array.isArray(result) ? result : args;
 			return originalFn(...newArgs);
 		};
 	}

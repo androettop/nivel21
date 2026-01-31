@@ -24,6 +24,7 @@
 		// 2. Load features (order matters if features depend on each other)
 		setTimeout(() => {
 			injectScript('src/features/advantage-disadvantage.js');
+			injectScript('src/features/send-to-chat.js');
 			// Add more features here in the future
 		}, 50);
 	});

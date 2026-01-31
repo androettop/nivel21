@@ -5,3 +5,6 @@
 .n21-disadvantage {
 	filter: sepia(1) hue-rotate(300deg) saturate(1.6) contrast(1.2) drop-shadow(0 0 4px red);
 }
+.n21-send-to-chat {
+	filter: sepia(1) hue-rotate(180deg) saturate(1.6) contrast(1.2) drop-shadow(0 0 4px #4a90e2);
+}

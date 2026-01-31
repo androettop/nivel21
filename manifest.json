@@ -22,7 +22,8 @@
       "resources": [
         "src/injected/jquery-checker.js",
         "src/core/core.js",
-        "src/features/advantage-disadvantage.js"
+        "src/features/advantage-disadvantage.js",
+        "src/features/send-to-chat.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }
