@@ -19,7 +19,11 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["src/injected/script.js", "src/injected/jquery-checker.js"],
+      "resources": [
+        "src/injected/jquery-checker.js",
+        "src/core/core.js",
+        "src/features/advantage-disadvantage.js"
+      ],
       "matches": ["https://nivel20.com/*"]
     }
   ],

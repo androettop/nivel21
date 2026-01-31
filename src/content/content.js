@@ -1,4 +1,4 @@
-// Content script loader - injects script.js into page context
+// Content script loader - injects scripts into page context
 (function() {
 	// Function to inject script into page context
 	function injectScript(file) {
@@ -16,8 +16,15 @@
 		injectScript('src/injected/jquery-checker.js');
 	}
 
-	// Wait for jQuery, then inject the main script
+	// Wait for jQuery, then inject core and features in order
 	waitForJQuery(() => {
-		injectScript('src/injected/script.js');
+		// 1. Load core (state, events, utilities)
+		injectScript('src/core/core.js');
+		
+		// 2. Load features (order matters if features depend on each other)
+		setTimeout(() => {
+			injectScript('src/features/advantage-disadvantage.js');
+			// Add more features here in the future
+		}, 50);
 	});
 })();

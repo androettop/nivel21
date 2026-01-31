@@ -1,0 +1,61 @@
+(() => {
+	/* =======================
+       Global state & events
+    ======================= */
+	const n21State = {
+		shift: false,
+		alt: false,
+		hoverEl: null,
+	};
+
+	// simple internal event bus
+	const n21Events = $({});
+
+	// expose for debugging and for features to access
+	window._n21_ = {
+		state: n21State,
+		events: n21Events,
+	};
+
+	/* =======================
+       Funciones de utilidad
+    ======================= */
+	// overrides a global function
+	// hookFn must return the new arguments array
+	function hookGlobalFn(fnName, hookFn) {
+		const originalFn = window[fnName];
+		if (typeof originalFn !== 'function') return;
+
+		window[fnName] = (...args) => {
+			const newArgs = hookFn(...args);
+			return originalFn(...newArgs);
+		};
+	}
+
+	// expose utility for features
+	window._n21_.hookGlobalFn = hookGlobalFn;
+
+	/* =======================
+       General input handling
+    ======================= */
+	$(document).on('keydown keyup', (e) => {
+		const pressed = e.type === 'keydown';
+		let changed = false;
+
+		/* --- Modifier keys --- */
+		if (e.key === 'Shift' && n21State.shift !== pressed) {
+			n21State.shift = pressed;
+			changed = true;
+		}
+
+		if (e.key === 'Alt' && n21State.alt !== pressed) {
+			n21State.alt = pressed;
+			changed = true;
+		}
+
+		if (changed) {
+			e.preventDefault();
+			n21Events.trigger('modifiers:change', [{ ...n21State }]);
+		}
+	});
+})();
