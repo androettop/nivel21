@@ -1,10 +1,184 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>N21</title>
+    <meta charset="utf-8">
+    <title>Nivel21</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 400px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #222222;
+            color: #e0e0e0;
+        }
+
+        .header {
+            height: 60px;
+            background: linear-gradient(to right, #D32F2F, #111);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid #D32F2F;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .feature {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444444;
+        }
+
+        .feature:last-child {
+            border-bottom: none;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #D32F2F;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-title::before {
+            content: "✓";
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        .feature-description {
+            font-size: 13px;
+            color: #b0b0b0;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .hotkey {
+            background-color: #333333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid #D32F2F;
+        }
+
+        .hotkey-key {
+            background-color: #444444;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 8px;
+            font-weight: bold;
+            color: #ffffff;
+            min-width: 35px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .hotkey-description {
+            color: #a0a0a0;
+            flex: 1;
+        }
+
+        .footer {
+            padding: 15px 20px;
+            border-top: 1px solid #444444;
+            font-size: 11px;
+            color: #666666;
+            text-align: center;
+        }
+
+        .version {
+            color: #888888;
+        }
+    </style>
 </head>
 <body>
-    <h1>N21</h1>
-    <p>Extension is active!</p>
+    <div class="header">
+        <h1>Nivel21</h1>
+    </div>
+
+    <div class="content">
+        <!-- Feature 1: Ventaja/Desventaja -->
+        <div class="feature">
+            <div class="feature-title">Tiradas con Ventaja/Desventaja</div>
+            <div class="feature-description">
+                Modifica automáticamente tus tiradas de dados manteniendo presionadas las teclas especiales mientras haces clic en un botón de tirada.
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">Shift</span>
+                <span class="hotkey-description">Tirada con Ventaja (máximo de dos tiradas)</span>
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">Alt</span>
+                <span class="hotkey-description">Tirada con Desventaja (mínimo de dos tiradas)</span>
+            </div>
+        </div>
+
+        <!-- Feature 2: Enviar al Chat -->
+        <div class="feature">
+            <div class="feature-title">Compartir Contenido al Chat</div>
+            <div class="feature-description">
+                Comparte rápidamente conjuros, items, reglas y otros contenidos con tu DM y compañeros. Los elementos se resaltan en azul cuando están listos para compartir.
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">Shift + Click</span>
+                <span class="hotkey-description">Comparte el elemento al chat</span>
+            </div>
+        </div>
+
+        <!-- Feature 3: Enlaces en el Chat -->
+        <div class="feature">
+            <div class="feature-title">Enlaces en Mensajes del Chat</div>
+            <div class="feature-description">
+                Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detectan automáticamente en el chat y se abren en ventanas internas.
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">Auto</span>
+                <span class="hotkey-description">Los enlaces se convierten automáticamente al escribirlos</span>
+            </div>
+        </div>
+
+        <!-- Feature 4: Atajos de Token -->
+        <div class="feature">
+            <div class="feature-title">Atajos para Tokens</div>
+            <div class="feature-description">
+                Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selecciona un token primero.
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">H</span>
+                <span class="hotkey-description">Alternar visibilidad del token</span>
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">B</span>
+                <span class="hotkey-description">Bloquear/desbloquear el token</span>
+            </div>
+            <div class="hotkey">
+                <span class="hotkey-key">Delete</span>
+                <span class="hotkey-description">Eliminar el token seleccionado</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="version">Nivel21 v1.0</div>
+        <div style="margin-top: 8px; color: #555555;">Hecho para mejorar tu experiencia en Nivel20</div>
+    </div>
 </body>
 </html>

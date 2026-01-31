@@ -5,6 +5,29 @@
 
 	const selectedTokenWrapper = '.selected-token-wrapper';
 
+	// Add hotkey labels to buttons if they don't exist
+	function addHotKeyLabels() {
+		const buttons = [
+			{ selector: '.btn-toggle-token-visibility', label: 'H' },
+			{ selector: '.btn-toggle-token-lock', label: 'B' },
+			{ selector: '.btn-remove-selected-token', label: 'Supr.' }
+		];
+
+		buttons.forEach(({ selector, label }) => {
+			const button = document.querySelector(selector);
+			if (button) {
+				// Check if label already exists
+				const existingLabel = button.querySelector('.n21-hotkey-label');
+				if (!existingLabel) {
+					const span = document.createElement('span');
+					span.className = 'n21-hotkey-label';
+					span.textContent = `(${label})`;
+					button.appendChild(span);
+				}
+			}
+		});
+	}
+
 	// Check if selected token wrapper is visible
 	function isTokenWrapperActive() {
 		const wrapper = document.querySelector(selectedTokenWrapper);
@@ -37,4 +60,7 @@
 			targetButton.click();
 		}
 	});
+
+	// Initialize hotkey labels on page load
+	addHotKeyLabels();
 })();
