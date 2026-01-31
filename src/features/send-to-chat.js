@@ -33,6 +33,19 @@
 		$(el).removeClass('n21-send-to-chat');
 	}
 
+	// Helper function to get sender info from hovered element or its parents
+	function getSenderInfoFromElement(element) {
+		if (!element) return null;
+		
+		// Search up the DOM tree for an element with data-sender-info (includes element itself)
+		const $elementWithSenderInfo = $(element).closest('[data-sender-info]');
+		if ($elementWithSenderInfo.length > 0) {
+			return $elementWithSenderInfo.attr('data-sender-info');
+		}
+		
+		return null;
+	}
+
 	// Track hovered floating element
 	$(document)
 		.on('mouseenter', floatingElementsSelector, function () {
@@ -53,8 +66,14 @@
 	hookGlobalFn('loadInFloatingPanel', (url, title, icon, color) => {
 		// If shift is pressed, send message to chat instead
 		if (state.shift) {
-			const senderInfoElement = document.getElementById('room_message_sender_info');
-			const senderInfo = senderInfoElement?.value;
+			// Try to get sender info from hovered element first
+			let senderInfo = getSenderInfoFromElement(hoverEl);
+			
+			// Fallback to the room message sender info if not found in element
+			if (!senderInfo) {
+				const senderInfoElement = document.getElementById('room_message_sender_info');
+				senderInfo = senderInfoElement?.value;
+			}
 
 			if (title) {
 				// Format message as markdown link
