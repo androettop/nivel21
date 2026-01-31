@@ -10,7 +10,9 @@
 		const buttons = [
 			{ selector: '.btn-toggle-token-visibility', label: 'H' },
 			{ selector: '.btn-toggle-token-lock', label: 'B' },
-			{ selector: '.btn-remove-selected-token', label: 'Supr.' }
+			{ selector: '.btn-remove-selected-token', label: 'Supr.' },
+			{ selector: '.btn-edit-selected-token', label: 'E' },
+			{ selector: '.btn-duplicate-selected-token', label: 'D' }
 		];
 
 		buttons.forEach(({ selector, label }) => {
@@ -53,6 +55,12 @@
 		} else if (e.key === 'Delete') {
 			// Delete - Remove selected token
 			targetButton = document.querySelector('.btn-remove-selected-token');
+		} else if (e.key === 'e' || e.key === 'E') {
+			// E - Edit selected token
+			targetButton = document.querySelector('.btn-edit-selected-token');
+		} else if (e.key === 'd' || e.key === 'D') {
+			// D - Duplicate selected token
+			targetButton = document.querySelector('.btn-duplicate-selected-token');
 		}
 
 		if (targetButton) {
