@@ -10,7 +10,7 @@
 	const messageTextSelector = '[data-role="message-text"], .message-text';
 
 	// Selector for chat container
-	const chatContainerSelector = '.room-messages-chat';
+	const chatContainerSelector = '#room-chat-wrapper';
 
 	// Check if URL is from nivel20.com
 	function isNivel20Url(url) {

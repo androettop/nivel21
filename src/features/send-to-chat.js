@@ -8,6 +8,12 @@
 	const floatingElementsSelector = '[data-floating]';
 	let hoverEl = null;
 
+	// Helper function to get icon URL from floating element
+	function getIconUrlFromElement(element) {
+		const img = element.querySelector('img');
+		return img ? img.src : null;
+	}
+
 	// Helper function to update visual feedback
 	function updateChatFilter(el, isShiftPressed) {
 		if (!el) return;
@@ -53,7 +59,19 @@
 			if (title) {
 				// Format message as markdown link
 				const messageText = `[${title}](${url})`;
-				sendChatMessageDebounced(messageText, senderInfo ? { sender_info: senderInfo } : {});
+
+				// Prepare options for the message
+				const messageOptions = senderInfo ? { sender_info: senderInfo } : {};
+
+				// Try to get icon from the hovered element
+				if (hoverEl) {
+					const iconUrl = getIconUrlFromElement(hoverEl);
+					if (iconUrl) {
+						messageOptions.icon = iconUrl;
+					}
+				}
+
+				sendChatMessageDebounced(messageText, messageOptions);
 			}
 
 			// Return false to prevent calling original function
