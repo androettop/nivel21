@@ -7,6 +7,7 @@
 		alt: false,
 		ctrl: false,
 		hoverEl: null,
+		persistentMeasurements: true,
 	};
 
 	// simple internal event bus

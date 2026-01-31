@@ -11,7 +11,13 @@ Modifica automáticamente tus tiradas de dados manteniendo presionadas las tecla
 - **Shift** - Tirada con Ventaja
 - **Alt** - Tirada con Desventaja
 
-### 💬 Compartir Contenido al Chat
+### � Mediciones Persistentes
+
+Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.
+
+- **Botón Toggle** - Activa/desactiva la persistencia de mediciones
+
+### �💬 Compartir Contenido al Chat
 
 Comparte rápidamente conjuros, items, reglas y otros contenidos con tu DM y compañeros. Los elementos se resaltan en azul cuando están listos para compartir.
 
