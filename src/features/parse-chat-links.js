@@ -6,6 +6,20 @@
 	// Regex to find markdown links: [text](url)
 	const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
+	// Selector for message text elements (both data-role and class variants)
+	const messageTextSelector = '[data-role="message-text"], .message-text';
+
+	// Check if URL is from nivel20.com
+	function isNivel20Url(url) {
+		try {
+			const parsedUrl = new URL(url, window.location.origin);
+			return parsedUrl.hostname === 'nivel20.com';
+		} catch (e) {
+			// If it's a relative URL, assume it's from nivel20.com
+			return url.startsWith('/');
+		}
+	}
+
 	// Function to parse markdown links in text node and replace with anchor elements
 	function parseMarkdownLinks(node) {
 		if (node.nodeType === Node.TEXT_NODE) {
@@ -28,14 +42,23 @@
 						);
 					}
 
-					// Create anchor element with data attributes
-					const anchor = document.createElement('a');
-					anchor.textContent = match[1]; // [text]
-					anchor.href = match[2]; // (url)
-					anchor.setAttribute('data-floating', 'true');
-					anchor.setAttribute('data-floating-title', match[1]);
+					// Only create anchor if URL is from nivel20.com
+					if (isNivel20Url(match[2])) {
+						// Create anchor element with data attributes
+						const anchor = document.createElement('a');
+						anchor.textContent = match[1]; // [text]
+						anchor.href = match[2]; // (url)
+						anchor.setAttribute('data-floating', 'true');
+						anchor.setAttribute('data-floating-title', match[1]);
 
-					fragment.appendChild(anchor);
+						fragment.appendChild(anchor);
+					} else {
+						// If not a nivel20.com link, keep as plain text
+						fragment.appendChild(
+							document.createTextNode(match[0])
+						);
+					}
+
 					lastIndex = markdownLinkRegex.lastIndex;
 				}
 
@@ -63,7 +86,7 @@
 
 	// Function to process all message-text elements
 	function processMessageTexts() {
-		const messageElements = document.querySelectorAll('[data-role="message-text"]');
+		const messageElements = document.querySelectorAll(messageTextSelector);
 		messageElements.forEach((element) => {
 			parseMarkdownLinks(element);
 		});
@@ -85,8 +108,10 @@
 					// Check if added node is a message-text element or contains one
 					if (node.hasAttribute && node.hasAttribute('data-role') && node.getAttribute('data-role') === 'message-text') {
 						parseMarkdownLinks(node);
+					} else if (node.classList && node.classList.contains('message-text')) {
+						parseMarkdownLinks(node);
 					} else if (node.querySelectorAll) {
-						const messageTexts = node.querySelectorAll('[data-role="message-text"]');
+						const messageTexts = node.querySelectorAll(messageTextSelector);
 						messageTexts.forEach((element) => {
 							parseMarkdownLinks(element);
 						});
