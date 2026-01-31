@@ -25,6 +25,7 @@
 		setTimeout(() => {
 			injectScript('src/features/advantage-disadvantage.js');
 			injectScript('src/features/send-to-chat.js');
+			injectScript('src/features/parse-chat-links.js');
 			// Add more features here in the future
 		}, 50);
 	});
