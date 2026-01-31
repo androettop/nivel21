@@ -24,7 +24,8 @@
         "src/core/core.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
-        "src/features/parse-chat-links.js"
+        "src/features/parse-chat-links.js",
+        "src/features/token-hotkeys.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }
