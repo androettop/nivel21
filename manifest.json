@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "N21",
+  "version": "1.0",
+  "description": "Automatiza y mejora la experiencia en Nivel20.",
+  "permissions": [
+    "scripting",
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://nivel20.com/tabletop/*"],
+      "js": ["script.js"],
+      "css": ["style.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
