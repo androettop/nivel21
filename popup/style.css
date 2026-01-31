@@ -1,0 +1,112 @@
+* {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 400px;
+        font-family: "Montserrat", sans-serif;
+        background-color: #222222;
+        color: #e0e0e0;
+      }
+
+      .header {
+        height: 60px;
+        background: linear-gradient(to right, #d32f2f, #111);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 20px;
+        border-bottom: 2px solid #d32f2f;
+      }
+
+      .header h1 {
+        font-size: 28px;
+        font-weight: bold;
+        color: #ffffff;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .feature {
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #444444;
+      }
+
+      .feature:last-child {
+        border-bottom: none;
+      }
+
+      .feature-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: #ffffff;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+      }
+
+      .feature-title::before {
+        content: "✓";
+        margin-right: 8px;
+        font-weight: bold;
+      }
+
+      .feature-description {
+        font-size: 13px;
+        color: #b0b0b0;
+        line-height: 1.5;
+        margin-bottom: 10px;
+      }
+
+      .hotkey {
+        background-color: #333333;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        border-left: 3px solid #d32f2f;
+      }
+
+      .hotkey-key {
+        background-color: #444444;
+        padding: 2px 6px;
+        border-radius: 3px;
+        margin-right: 8px;
+        font-weight: bold;
+        color: #ffffff;
+        min-width: 35px;
+        text-align: center;
+        font-size: 11px;
+      }
+
+      .hotkey-description {
+        color: #a0a0a0;
+        flex: 1;
+      }
+
+      .footer {
+        padding: 15px 20px;
+        border-top: 1px solid #444444;
+        font-size: 11px;
+        color: #666666;
+        text-align: center;
+      }
+
+      .version {
+        color: #888888;
+      }
+
+      .feature-screenshot {
+        margin: 12px auto 0 auto;
+        border-radius: 4px;
+        max-width: 100%;
+        border: 1px solid #444444;
+        display: block;
+      }
