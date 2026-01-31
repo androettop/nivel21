@@ -9,6 +9,9 @@
 	// Selector for message text elements (both data-role and class variants)
 	const messageTextSelector = '[data-role="message-text"], .message-text';
 
+	// Selector for chat container
+	const chatContainerSelector = '.room-messages-chat';
+
 	// Check if URL is from nivel20.com
 	function isNivel20Url(url) {
 		try {
@@ -86,7 +89,10 @@
 
 	// Function to process all message-text elements
 	function processMessageTexts() {
-		const messageElements = document.querySelectorAll(messageTextSelector);
+		const chatContainer = document.querySelector(chatContainerSelector);
+		if (!chatContainer) return;
+
+		const messageElements = chatContainer.querySelectorAll(messageTextSelector);
 		messageElements.forEach((element) => {
 			parseMarkdownLinks(element);
 		});
@@ -101,34 +107,37 @@
 	processMessageTexts();
 
 	// Also observe for new messages added dynamically
-	const observer = new MutationObserver((mutations) => {
-		mutations.forEach((mutation) => {
-			mutation.addedNodes.forEach((node) => {
-				if (node.nodeType === Node.ELEMENT_NODE) {
-					// Check if added node is a message-text element or contains one
-					if (node.hasAttribute && node.hasAttribute('data-role') && node.getAttribute('data-role') === 'message-text') {
-						parseMarkdownLinks(node);
-					} else if (node.classList && node.classList.contains('message-text')) {
-						parseMarkdownLinks(node);
-					} else if (node.querySelectorAll) {
-						const messageTexts = node.querySelectorAll(messageTextSelector);
-						messageTexts.forEach((element) => {
-							parseMarkdownLinks(element);
-						});
+	const chatContainer = document.querySelector(chatContainerSelector);
+	if (chatContainer) {
+		const observer = new MutationObserver((mutations) => {
+			mutations.forEach((mutation) => {
+				mutation.addedNodes.forEach((node) => {
+					if (node.nodeType === Node.ELEMENT_NODE) {
+						// Check if added node is a message-text element or contains one
+						if (node.hasAttribute && node.hasAttribute('data-role') && node.getAttribute('data-role') === 'message-text') {
+							parseMarkdownLinks(node);
+						} else if (node.classList && node.classList.contains('message-text')) {
+							parseMarkdownLinks(node);
+						} else if (node.querySelectorAll) {
+							const messageTexts = node.querySelectorAll(messageTextSelector);
+							messageTexts.forEach((element) => {
+								parseMarkdownLinks(element);
+							});
+						}
 					}
-				}
+				});
 			});
+
+			// Update events for newly created links
+			if (window.bindFloatingLinks) {
+				window.bindFloatingLinks();
+			}
 		});
 
-		// Update events for newly created links
-		if (window.bindFloatingLinks) {
-			window.bindFloatingLinks();
-		}
-	});
-
-	// Start observing the document for changes
-	observer.observe(document.body, {
-		childList: true,
-		subtree: true,
-	});
+		// Start observing the chat container for changes
+		observer.observe(chatContainer, {
+			childList: true,
+			subtree: true,
+		});
+	}
 })();
