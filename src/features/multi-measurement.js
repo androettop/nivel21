@@ -36,8 +36,10 @@
 		// Crear el botón
 		const button = document.createElement('button');
 		button.className = 'btn btn-sm btn-mode-persist tooltipstered';
-		button.setAttribute('data-toggle', 'tooltip');
 		button.setAttribute('title', 'Persistir mediciones');
+        button.setAttribute('data-toggle', 'tooltip');
+
+        processTooltip(button);
 		
 		// Agregar la clase inicial según el estado
 		if (n21State.persistentMeasurements) {
