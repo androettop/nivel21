@@ -12,9 +12,9 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://nivel20.com/tabletop/*"],
+      "matches": ["https://nivel20.com/*"],
       "js": ["src/content/content.js"],
-      "css": ["styles/style.css"]
+      "css": ["src/styles/style.css"]
     }
   ],
   "web_accessible_resources": [

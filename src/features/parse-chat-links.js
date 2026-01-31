@@ -10,7 +10,7 @@
 	const messageTextSelector = '[data-role="message-text"], .message-text';
 
 	// Selector for chat container
-	const chatContainerSelector = '#room-chat-wrapper';
+	const chatContainerSelector = '.room-messages-chat';
 
 	// Check if URL is from nivel20.com
 	function isNivel20Url(url) {
@@ -87,14 +87,16 @@
 		}
 	}
 
-	// Function to process all message-text elements
+	// Function to process all message-text elements across all chat containers
 	function processMessageTexts() {
-		const chatContainer = document.querySelector(chatContainerSelector);
-		if (!chatContainer) return;
+		const chatContainers = document.querySelectorAll(chatContainerSelector);
+		if (!chatContainers.length) return;
 
-		const messageElements = chatContainer.querySelectorAll(messageTextSelector);
-		messageElements.forEach((element) => {
-			parseMarkdownLinks(element);
+		chatContainers.forEach((container) => {
+			const messageElements = container.querySelectorAll(messageTextSelector);
+			messageElements.forEach((element) => {
+				parseMarkdownLinks(element);
+			});
 		});
 
 		// Update events for newly created links
@@ -106,9 +108,9 @@
 	// Initial parse on page load
 	processMessageTexts();
 
-	// Also observe for new messages added dynamically
-	const chatContainer = document.querySelector(chatContainerSelector);
-	if (chatContainer) {
+	// Also observe for new messages added dynamically in all chat containers
+	const chatContainers = document.querySelectorAll(chatContainerSelector);
+	if (chatContainers.length) {
 		const observer = new MutationObserver((mutations) => {
 			mutations.forEach((mutation) => {
 				mutation.addedNodes.forEach((node) => {
@@ -134,10 +136,12 @@
 			}
 		});
 
-		// Start observing the chat container for changes
-		observer.observe(chatContainer, {
-			childList: true,
-			subtree: true,
+		// Start observing each chat container for changes
+		chatContainers.forEach((container) => {
+			observer.observe(container, {
+				childList: true,
+				subtree: true,
+			});
 		});
 	}
 })();
