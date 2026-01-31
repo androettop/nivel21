@@ -3,7 +3,7 @@
        Feature: Send to Chat
     ======================= */
 
-	const { state, events, hookGlobalFn } = window._n21_;
+	const { state, events, hookGlobalFn, sendChatMessageDebounced } = window._n21_;
 
 	const floatingElementsSelector = '[data-floating]';
 	let hoverEl = null;
@@ -53,7 +53,7 @@
 			if (title) {
 				// Format message as markdown link
 				const messageText = `[${title}](${url})`;
-				sendChatMessage(messageText, senderInfo ? { sender_info: senderInfo } : {});
+				sendChatMessageDebounced(messageText, senderInfo ? { sender_info: senderInfo } : {});
 			}
 
 			// Return false to prevent calling original function

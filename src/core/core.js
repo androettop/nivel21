@@ -39,6 +39,46 @@
 	window._n21_.hookGlobalFn = hookGlobalFn;
 
 	/* =======================
+       Chat utilities
+    ======================= */
+	// Debounced chat message sender to avoid duplicate messages
+	// Returns a function that sends messages with 200ms debounce for identical messages from same sender
+	function createDebouncedChatSender(debounceMs = 200) {
+		let lastMessage = '';
+		let lastSender = '';
+		let debounceTimer = null;
+
+		return function sendChatMessageDebounced(messageText, options = {}) {
+			const senderInfo = options.sender_info || '';
+			const messageKey = `${messageText}|${senderInfo}`;
+			const lastKey = `${lastMessage}|${lastSender}`;
+
+			// Clear previous timer if it exists
+			if (debounceTimer) {
+				clearTimeout(debounceTimer);
+			}
+
+			// If same message from same sender, debounce it
+			if (messageKey === lastKey) {
+				debounceTimer = setTimeout(() => {
+					sendChatMessage(messageText, options);
+					lastMessage = messageText;
+					lastSender = senderInfo;
+				}, debounceMs);
+			} else {
+				// Different message or sender, send immediately
+				sendChatMessage(messageText, options);
+				lastMessage = messageText;
+				lastSender = senderInfo;
+			}
+		};
+	}
+
+	// Create and expose the debounced chat sender
+	window._n21_.sendChatMessageDebounced = createDebouncedChatSender();
+
+
+	/* =======================
        General input handling
     ======================= */
 	$(document).on('keydown keyup', (e) => {
