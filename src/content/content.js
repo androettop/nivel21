@@ -13,11 +13,11 @@
 	// Wait for jQuery to be available in page context
 	function waitForJQuery(callback) {
 		document.addEventListener('jQueryReady', callback, { once: true });
-		injectScript('jquery-checker.js');
+		injectScript('src/injected/jquery-checker.js');
 	}
 
 	// Wait for jQuery, then inject the main script
 	waitForJQuery(() => {
-		injectScript('script.js');
+		injectScript('src/injected/script.js');
 	});
 })();

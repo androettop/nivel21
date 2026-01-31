@@ -8,32 +8,32 @@
     "activeTab"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://nivel20.com/tabletop/*"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "js": ["src/content/content.js"],
+      "css": ["styles/style.css"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["script.js", "jquery-checker.js"],
+      "resources": ["src/injected/script.js", "src/injected/jquery-checker.js"],
       "matches": ["https://nivel20.com/*"]
     }
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup/popup.html",
     "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }
