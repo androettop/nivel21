@@ -29,8 +29,9 @@ Modifica automáticamente tus tiradas de dados manteniendo presionadas las tecla
 
 - **Shift** - Tirada con Ventaja
 - **Alt** - Tirada con Desventaja
-
-![Tiradas con Ventaja/Desventaja](popup/img/advantage-disadvantage.png)
+<a id="advantage-disadvantage">
+ <img src="popup/img/advantage-disadvantage.png" alt="Tiradas con Ventaja/Desventaja" />
+</a>
 
 ---
 
@@ -40,7 +41,9 @@ Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje
 
 - **Botón Toggle** - Activa/desactiva la persistencia de mediciones
 
-![Mediciones Persistentes](popup/img/multi-measurement.png)
+<a id="multi-measurement">
+ <img src="popup/img/multi-measurement.png" alt="Mediciones Persistentes" />
+</a>
 
 ---
 
@@ -50,7 +53,9 @@ Comparte rápidamente conjuros, items, reglas y otros contenidos con tu DM y com
 
 - **Shift + Click** - Comparte el elemento al chat
 
-![Compartir Contenido al Chat](popup/img/send-to-chat.png)
+<a id="send-to-chat">
+ <img src="popup/img/send-to-chat.png" alt="Compartir Contenido al Chat" />
+</a>
 
 ---
 
@@ -60,7 +65,9 @@ Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detect
 
 - **Auto** - Los enlaces se convierten automáticamente al escribirlos
 
-![Enlaces en Mensajes del Chat](popup/img/parse-chat-links.png)
+<a id="parse-chat-links">
+ <img src="popup/img/parse-chat-links.png" alt="Enlaces en Mensajes del Chat" />
+</a>
 
 ---
 
@@ -76,7 +83,9 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 | **D** | Duplicar el token seleccionado |
 | **Delete** | Eliminar el token seleccionado |
 
-![Atajos para Tokens](popup/img/token-hotkeys.png)
+<a id="token-hotkeys">
+ <img src="popup/img/token-hotkeys.png" alt="Atajos para Tokens" />
+</a>
 
 ---
 
