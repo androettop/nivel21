@@ -26,6 +26,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/core.js",
         "src/features/advantage-disadvantage.js",

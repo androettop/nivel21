@@ -18,6 +18,9 @@
 
 	// Wait for jQuery, then inject core and features in order
 	waitForJQuery(() => {
+		// 0. Load DOMPurify
+		injectScript('src/lib/purify.min.js');
+		
 		// 1. Load core (state, events, utilities)
 		injectScript('src/core/core.js');
 		
