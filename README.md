@@ -3,8 +3,6 @@
 <!-- Header SVG -->
 <img src="header.svg" alt="Nivel21" style="width: 100%; height: auto;" />
 
-<br/>
-
 ### Extensión para navegador que mejora tu experiencia en **Nivel20**
 
 Añade funcionalidades útiles para DMs y jugadores de D&D.
