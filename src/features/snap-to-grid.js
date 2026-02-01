@@ -77,16 +77,21 @@
         const token = tokenManager.entityManager.instances.get(networkId);
         if (!token?.localScale || !token?.position) return;
 
-        const gridStepX = (token.localScale.x || 1) / 2;
-        const gridStepZ = (token.localScale.z || 1) / 2;
+        const gridSize = 1;
+        const scaleX = token.localScale.x || 1;
+        const scaleZ = token.localScale.z || 1;
 
-        const snapToGrid = (value, gridStep) =>
-          typeof value === "number"
-            ? Math.round(value / gridStep) * gridStep
-            : value;
+        const snapToGrid = (value, scale) => {
+          if (typeof value !== "number") return value;
 
-        const snappedX = snapToGrid(token.position.x, gridStepX);
-        const snappedZ = snapToGrid(token.position.z, gridStepZ);
+          const clampedScale = typeof scale === "number" && scale > 0 ? scale : 1;
+          const offset = clampedScale <= 1 ? 0.5 : clampedScale / 2;
+
+          return Math.round((value - offset) / gridSize) * gridSize + offset;
+        };
+
+        const snappedX = snapToGrid(token.position.x, scaleX);
+        const snappedZ = snapToGrid(token.position.z, scaleZ);
 
         if (snappedX !== token.position.x || snappedZ !== token.position.z) {
           tokenManager.entityManager.requestUpdate({
