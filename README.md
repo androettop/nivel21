@@ -27,11 +27,9 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 2. **Chrome**: ve a `chrome://extensions/` y presiona el icono de **Actualizar** en la extensión. Si no aparece, elimínala y vuelve a cargarla.
 3. **Firefox**: ve a `about:debugging#/runtime/this-firefox` y presiona en el icono **Recargar** en la extensión. Si no aparece, elimínala y vuelve a cargar el `manifest.json`.
 
-
 ## Características
 
 > **Aviso:** Estas características dependen del funcionamiento interno de Nivel20 y pueden dejar de funcionar con futuras actualizaciones.
-
 
 ### Tiradas con Ventaja/Desventaja
 
@@ -39,9 +37,9 @@ Modifica automáticamente tus tiradas de dados manteniendo presionadas las tecla
 
 - **Shift** - Tirada con Ventaja
 - **Alt** - Tirada con Desventaja
-<a id="advantage-disadvantage">
- <img src="popup/img/advantage-disadvantage.png" alt="Tiradas con Ventaja/Desventaja" />
-</a>
+  <a id="advantage-disadvantage">
+  <img src="popup/img/advantage-disadvantage.png" alt="Tiradas con Ventaja/Desventaja" />
+  </a>
 
 ---
 
@@ -85,13 +83,13 @@ Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detect
 
 Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selecciona un token primero para activar estos atajos:
 
-| Tecla | Acción |
-|-------|--------|
+| Tecla        | Acción                         |
+| ------------ | ------------------------------ |
 | **Ctrl + H** | Alternar visibilidad del token |
-| **Ctrl + B** | Bloquear/desbloquear el token |
-| **Ctrl + E** | Editar el token seleccionado |
+| **Ctrl + B** | Bloquear/desbloquear el token  |
+| **Ctrl + E** | Editar el token seleccionado   |
 | **Ctrl + D** | Duplicar el token seleccionado |
-| **Delete** | Eliminar el token seleccionado |
+| **Delete**   | Eliminar el token seleccionado |
 
 <a id="token-hotkeys">
  <img src="popup/img/token-hotkeys.png" alt="Atajos para Tokens" />
@@ -103,9 +101,9 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 
 Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos encima o debajo de otros.
 
-| Tecla | Acción |
-|-------|--------|
-| **Page Up** | Subir altura del token (+1) |
+| Tecla         | Acción                      |
+| ------------- | --------------------------- |
+| **Page Up**   | Subir altura del token (+1) |
 | **Page Down** | Bajar altura del token (-1) |
 
 <a id="token-height-order">
@@ -118,17 +116,24 @@ Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos e
 
 Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrícula automáticamente.
 
-| Tecla | Acción |
-|-------|--------|
+| Tecla                 | Acción                        |
+| --------------------- | ----------------------------- |
 | **Shift + Arrastrar** | Ajustar token a la cuadrícula |
 
 <a id="snap-to-grid">
  <img src="popup/img/snap-to-grid.png" alt="Ajustar a la Cuadrícula" />
 </a>
 
-
 ---
 
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia de mejora, siéntete libre de abrir un issue o enviar un pull request.
+
+## Apoya el Proyecto
+
+Si te ha sido útil esta extensión, considera apoyar el proyecto:
+
+<a href="https://ko-fi.com/androettop" target="_blank">
+    <img src="popup/img/kofi.png" alt="Apoya el proyecto en Ko-fi" height="48" />
+</a>
