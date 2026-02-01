@@ -106,6 +106,21 @@ Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos e
 
 ---
 
+### Ajustar a la Cuadrícula
+
+Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrícula automáticamente.
+
+| Tecla | Acción |
+|-------|--------|
+| **Shift + Arrastrar** | Ajustar token a la cuadrícula |
+
+<a id="snap-to-grid">
+ <img src="popup/img/snap-to-grid.png" alt="Ajustar a la Cuadrícula" />
+</a>
+
+
+---
+
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia de mejora, siéntete libre de abrir un issue o enviar un pull request.

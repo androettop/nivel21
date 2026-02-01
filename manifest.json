@@ -33,6 +33,7 @@
         "src/features/parse-chat-links.js",
         "src/features/token-hotkeys.js",
         "src/features/token-height-order.js",
+        "src/features/snap-to-grid.js",
         "src/features/multi-measurement.js"
       ],
       "matches": ["https://nivel20.com/*"]
