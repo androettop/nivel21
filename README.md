@@ -1,35 +1,53 @@
-# Nivel21
+<div align="center">
 
-Una extensión para navegador que mejora significativamente tu experiencia en **Nivel20**, añadiendo funcionalidades útiles para DMs y jugadores de D&D.
+<!-- Header SVG -->
+<svg width="100%" height="120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d32f2f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111111;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="120" fill="url(#headerGradient)" rx="10"/>
+  <text x="50%" y="75" font-family="Montserrat, Arial, sans-serif" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle">Nivel21</text>
+</svg>
+
+<br/>
+
+### Extensión para navegador que mejora tu experiencia en **Nivel20**
+
+Añade funcionalidades útiles para DMs y jugadores de D&D.
+
+</div>
 
 ## Características
 
-### 🎲 Tiradas con Ventaja/Desventaja
+### Tiradas con Ventaja/Desventaja
 
 Modifica automáticamente tus tiradas de dados manteniendo presionadas las teclas especiales mientras haces clic en un botón de tirada.
 
 - **Shift** - Tirada con Ventaja
 - **Alt** - Tirada con Desventaja
 
-### � Mediciones Persistentes
+### Mediciones Persistentes
 
 Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.
 
 - **Botón Toggle** - Activa/desactiva la persistencia de mediciones
 
-### �💬 Compartir Contenido al Chat
+### Compartir Contenido al Chat
 
 Comparte rápidamente conjuros, items, reglas y otros contenidos con tu DM y compañeros. Los elementos se resaltan en azul cuando están listos para compartir.
 
 - **Shift + Click** - Comparte el elemento al chat
 
-### 🔗 Enlaces en Mensajes del Chat
+### Enlaces en Mensajes del Chat
 
 Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detectan automáticamente en el chat y se abren en ventanas internas.
 
 - **Auto** - Los enlaces se convierten automáticamente al escribirlos
 
-### ⌨️ Atajos para Tokens
+### Atajos para Tokens
 
 Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selecciona un token primero para activar estos atajos:
 
@@ -45,8 +63,8 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 
 1. Clona este repositorio o descárgalo como ZIP
 2. Abre tu navegador y ve a `chrome://extensions/` (Chrome) o `about:debugging#/runtime/this-firefox` (Firefox)
-3. Activa el "Modo de desarrollador"
-4. Haz clic en "Cargar extensión sin empaquetar" y selecciona la carpeta de la extensión
+3. Activa el "Modo de desarrollador" (Chrome)
+4. En chrome, haz clic en "Cargar extensión sin empaquetar" y selecciona la carpeta de la extensión, o en Firefox haz clic en "Cargar complemento temporal" y selecciona el archivo `manifest.json`
 5. ¡Listo! La extensión está activa en Nivel20
 
 ## Contribuciones

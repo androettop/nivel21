@@ -1,26 +1,30 @@
 (() => {
-	// Constante interna para acceder al prototipo del entity manager
-	const entityManagerProto = fogOfWar.wallsManager.entityManager.__proto__;
+	// Estado global de n21
+	const n21State = window._n21_.state;
 
-    // Estado global de n21
-    const n21State = window._n21_.state;
+	// Esperar a que fogOfWar exista antes de inicializar
+	window._n21_.waitForVariable('fogOfWar.wallsManager.entityManager').then(() => {
+		// Constante interna para acceder al prototipo del entity manager
+		const entityManagerProto = fogOfWar.wallsManager.entityManager.__proto__;
 
+		// Guardar el método original
+		const originalRequestDestroy = entityManagerProto.requestDestroy;
 
-	// Guardar el método original
-	const originalRequestDestroy = entityManagerProto.requestDestroy;
+		// Hookear requestDestroy
+		entityManagerProto.requestDestroy = function(...args) {
+			const firstParam = args[0];
 
-	// Hookear requestDestroy
-	entityManagerProto.requestDestroy = function(...args) {
-		const firstParam = args[0];
+			// Mantener mediciones si persistentMeasurements está activado
+			if (firstParam && typeof firstParam === 'string' && firstParam.includes('MEASUREMENT') && n21State.persistentMeasurements) {
+				return false;
+			}
 
-		// Mantener mediciones si persistentMeasurements está activado
-		if (firstParam && typeof firstParam === 'string' && firstParam.includes('MEASUREMENT') && n21State.persistentMeasurements) {
-			return false;
-		}
-
-		// Si no, devolver los parámetros tal cual (llamar función original)
-		return originalRequestDestroy.apply(this, args);
-	};
+			// Si no, devolver los parámetros tal cual (llamar función original)
+			return originalRequestDestroy.apply(this, args);
+		};
+	}).catch(error => {
+		console.error('N21: Error esperando fogOfWar:', error);
+	});
 
 	// Crear y agregar botón de persistencia en el UI
 	function setupPersistenceButton() {
