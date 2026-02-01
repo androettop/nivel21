@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- Header SVG -->
-<a href="#">
+<a id="logo">
  <img src="header.svg" alt="Nivel21" style="width: 100%; height: auto;" />
 </a>
 
