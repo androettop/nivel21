@@ -19,6 +19,12 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 4. En chrome, haz clic en "Cargar extensión sin empaquetar" y selecciona la carpeta de la extensión, o en Firefox haz clic en "Cargar complemento temporal" y selecciona el archivo `manifest.json`
 5. ¡Listo! La extensión está activa en Nivel20
 
+## Actualización
+
+1. Descarga el nuevo ZIP de la extensión (o actualiza tu copia local).
+2. **Chrome**: ve a `chrome://extensions/` y presiona el icono de **Actualizar** en la extensión. Si no aparece, elimínala y vuelve a cargarla.
+3. **Firefox**: ve a `about:debugging#/runtime/this-firefox` y presiona en el icono **Recargar** en la extensión. Si no aparece, elimínala y vuelve a cargar el `manifest.json`.
+
 
 ## Características
 
