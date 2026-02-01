@@ -11,6 +11,8 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 
 </div>
 
+> **Aviso:** Esta extensión no es oficial ni está afiliada a Nivel20. Es un proyecto independiente de la comunidad.
+
 ## Instalación
 
 1. Clona este repositorio o descárgalo como ZIP
