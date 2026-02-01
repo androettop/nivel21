@@ -50,10 +50,34 @@
             if (isNivel20Url(match[2])) {
               // Create anchor element with data attributes
               const anchor = document.createElement("a");
-              anchor.textContent = match[1]; // [text]
+
+              // Parse HTML content safely with DOMPurify
+              if (window.DOMPurify) {
+                anchor.innerHTML = window.DOMPurify.sanitize(match[1]);
+
+                // If there are tooltip titles, initialize tooltips
+                if (typeof processTooltip === "function") {
+                  const tooltipElements = anchor.querySelectorAll("[title]");
+                  tooltipElements.forEach((element) => {
+                    processTooltip(element);
+                  });
+                }
+              } else {
+                anchor.textContent = match[1]; // Fallback if DOMPurify is not available
+              }
+
               anchor.href = match[2]; // (url)
               anchor.setAttribute("data-floating", "true");
-              anchor.setAttribute("data-floating-title", match[1]);
+
+              let floatingTitle = match[1];
+              if (window.DOMPurify) {
+                const sanitizedTitle = window.DOMPurify.sanitize(match[1]);
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = sanitizedTitle;
+                floatingTitle = tempDiv.textContent || "";
+              }
+
+              anchor.setAttribute("data-floating-title", floatingTitle);
 
               fragment.appendChild(anchor);
             } else {
