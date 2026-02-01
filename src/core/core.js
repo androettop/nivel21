@@ -140,4 +140,13 @@
 			n21Events.trigger('modifiers:change', [{ ...n21State }]);
 		}
 	});
+
+	$(window).on('blur', () => {
+		if (!n21State.shift && !n21State.alt && !n21State.ctrl) return;
+
+		n21State.shift = false;
+		n21State.alt = false;
+		n21State.ctrl = false;
+		n21Events.trigger('modifiers:change', [{ ...n21State }]);
+	});
 })();
