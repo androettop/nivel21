@@ -1,7 +1,9 @@
 <div align="center">
 
 <!-- Header SVG -->
-<img src="header.svg" alt="Nivel21" style="width: 100%; height: auto;" />
+<a href="#">
+ <img src="header.svg" alt="Nivel21" style="width: 100%; height: auto;" />
+</a>
 
 ### Extensión para navegador que mejora tu experiencia en **Nivel20**
 
