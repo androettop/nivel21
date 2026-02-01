@@ -4,16 +4,45 @@
 	       Feature: Send to Chat
 	    ======================= */
 
-    const { state, events, hookGlobalFn, sendChatMessageDebounced } =
-      window._n21_;
+    const {
+      state,
+      events,
+      hookGlobalFn,
+      sendChatMessageDebounced,
+      encodeN21Payload,
+      isLikelyUrl,
+      normalizeTitleHtml,
+      toPlainText,
+      getSenderInfoFromElement,
+    } = window._n21_;
 
-    const floatingElementsSelector = "[data-floating]";
+    const N21_WARNING_TEXT =
+      "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
+
+    const floatingElementsSelector = "[data-floating], [data-static-floating]";
     let hoverEl = null;
 
     // Helper function to get icon URL from floating element
     function getIconUrlFromElement(element) {
       const img = element.querySelector("img");
       return img ? img.src : null;
+    }
+
+    function encodePayload(payload) {
+      return encodeN21Payload(N21_WARNING_TEXT, payload);
+    }
+
+    function getFloatingDataFromElement(element) {
+      if (!element) return null;
+      return {
+        title: normalizeTitleHtml(
+          element.getAttribute("data-floating-title") || "",
+        ),
+        icon: element.getAttribute("data-floating-icon") || "",
+        color: element.getAttribute("data-floating-color") || "",
+        content: element.getAttribute("data-floating-content") || "",
+        url: element.getAttribute("data-floating-url") || "",
+      };
     }
 
     // Helper function to update visual feedback
@@ -35,17 +64,42 @@
       $(el).removeClass("n21-send-to-chat");
     }
 
-    // Helper function to get sender info from hovered element or its parents
-    function getSenderInfoFromElement(element) {
-      if (!element) return null;
+    // Helper function to get sender info with fallback
+    function getSenderInfo() {
+      let senderInfo = getSenderInfoFromElement(hoverEl);
 
-      // Search up the DOM tree for an element with data-sender-info (includes element itself)
-      const $elementWithSenderInfo = $(element).closest("[data-sender-info]");
-      if ($elementWithSenderInfo.length > 0) {
-        return $elementWithSenderInfo.attr("data-sender-info");
+      if (!senderInfo) {
+        const senderInfoElement = document.getElementById(
+          "room_message_sender_info",
+        );
+        senderInfo = senderInfoElement?.value;
       }
 
-      return null;
+      return senderInfo;
+    }
+
+    // Helper function to send encoded payload to chat
+    function sendPayloadToChat(payload, fallbackIcon) {
+      const messageText = encodePayload(payload);
+      if (!messageText) return;
+
+      const senderInfo = getSenderInfo();
+      const messageOptions = senderInfo ? { sender_info: senderInfo } : {};
+
+      // Try to get icon from the hovered element
+      if (hoverEl) {
+        const iconUrl = getIconUrlFromElement(hoverEl);
+        if (iconUrl) {
+          messageOptions.icon = iconUrl;
+        }
+      }
+
+      // Use fallback icon if no icon set yet
+      if (!messageOptions.icon && isLikelyUrl(fallbackIcon)) {
+        messageOptions.icon = fallbackIcon;
+      }
+
+      sendChatMessageDebounced(messageText, messageOptions);
     }
 
     // Track hovered floating element
@@ -65,44 +119,68 @@
     });
 
     // Hook loadInFloatingPanel to intercept and send to chat if shift is pressed
-    hookGlobalFn("loadInFloatingPanel", (url, title, icon, color) => {
-      // If shift is pressed, send message to chat instead
+    hookGlobalFn("loadInFloatingPanel", (url, title, icon, color, ...args) => {
       if (state.shift) {
-        // Try to get sender info from hovered element first
-        let senderInfo = getSenderInfoFromElement(hoverEl);
-
-        // Fallback to the room message sender info if not found in element
-        if (!senderInfo) {
-          const senderInfoElement = document.getElementById(
-            "room_message_sender_info",
-          );
-          senderInfo = senderInfoElement?.value;
-        }
-
         if (title) {
-          // Format message as markdown link
-          const messageText = `[${title}](${url})`;
-
-          // Prepare options for the message
-          const messageOptions = senderInfo ? { sender_info: senderInfo } : {};
-
-          // Try to get icon from the hovered element
-          if (hoverEl) {
-            const iconUrl = getIconUrlFromElement(hoverEl);
-            if (iconUrl) {
-              messageOptions.icon = iconUrl;
-            }
-          }
-
-          sendChatMessageDebounced(messageText, messageOptions);
+          sendPayloadToChat(
+            {
+              type: "floating",
+              title: normalizeTitleHtml(title),
+              url,
+              icon,
+            },
+            icon,
+          );
         }
-
-        // Return false to prevent calling original function
         return false;
       }
 
-      // Return arguments array to call original function with same args
-      return [url, title, icon, color];
+      return [url, title, icon, color, ...args];
+    });
+
+    // Hook openInFloatingPanel to intercept static floating panels
+    hookGlobalFn("openInFloatingPanel", (arg1, arg2, arg3, arg4, ...args) => {
+      if (state.shift) {
+        let data = null;
+
+        if (arg1 instanceof HTMLElement) {
+          data = getFloatingDataFromElement(arg1);
+        } else if (arg1 && typeof arg1 === "object") {
+          data = {
+            title: normalizeTitleHtml(arg1.title || arg1.name || ""),
+            icon: arg1.icon || "",
+            color: arg1.color || "",
+            content: arg1.content || arg1.body || arg1.text || "",
+            url: arg1.url || "",
+          };
+        } else {
+          data = {
+            title: normalizeTitleHtml(typeof arg1 === "string" ? arg1 : ""),
+            icon: typeof arg2 === "string" ? arg2 : "",
+            color: typeof arg3 === "string" ? arg3 : "",
+            content: typeof arg4 === "string" ? arg4 : "",
+            url: "",
+          };
+        }
+
+        const plainTitle = toPlainText(data?.title || "");
+        const plainContent = toPlainText(data?.content || "");
+        sendPayloadToChat(
+          {
+            type: "static",
+            title: plainTitle,
+            url: data?.url || "",
+            icon: data?.icon || "",
+            color: data?.color || "",
+            content: plainContent,
+          },
+          data?.icon,
+        );
+
+        return false;
+      }
+
+      return [arg1, arg2, arg3, arg4, ...args];
     });
   } catch (error) {
     console.warn("N21: Error en feature Send to Chat:", error.message);
