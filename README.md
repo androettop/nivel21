@@ -101,7 +101,7 @@ Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos e
 | **Page Down** | Bajar altura del token (-1) |
 
 <a id="token-height-order">
- <img src="popup/img/token-height-order.png" alt="Orden de Altura de Tokens" />
+ <img src="popup/img/token-height-order.png" alt="Altura de Tokens" />
 </a>
 
 ---
