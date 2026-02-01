@@ -11,7 +11,7 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 
 </div>
 
-## 📦 Instalación
+## Instalación
 
 1. Clona este repositorio o descárgalo como ZIP
 2. Abre tu navegador y ve a `chrome://extensions/` (Chrome) o `about:debugging#/runtime/this-firefox` (Firefox)
