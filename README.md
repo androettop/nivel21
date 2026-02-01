@@ -37,9 +37,10 @@ Modifica automáticamente tus tiradas de dados manteniendo presionadas las tecla
 
 - **Shift** - Tirada con Ventaja
 - **Alt** - Tirada con Desventaja
-  <a id="advantage-disadvantage">
-  <img src="popup/img/advantage-disadvantage.png" alt="Tiradas con Ventaja/Desventaja" />
-  </a>
+
+<a id="advantage-disadvantage">
+<img src="popup/img/advantage-disadvantage.png" alt="Tiradas con Ventaja/Desventaja" />
+</a>
 
 ---
 
