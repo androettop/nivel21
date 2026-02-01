@@ -11,6 +11,7 @@
 }
 
 .n21-hotkey-label {
-	font-size: 0.75em;
+	display: block;
+	font-size: 10px;
 	opacity: 0.8;
 }

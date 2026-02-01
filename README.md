@@ -87,10 +87,10 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 
 | Tecla | Acción |
 |-------|--------|
-| **H** | Alternar visibilidad del token |
-| **B** | Bloquear/desbloquear el token |
-| **E** | Editar el token seleccionado |
-| **D** | Duplicar el token seleccionado |
+| **Ctrl + H** | Alternar visibilidad del token |
+| **Ctrl + B** | Bloquear/desbloquear el token |
+| **Ctrl + E** | Editar el token seleccionado |
+| **Ctrl + D** | Duplicar el token seleccionado |
 | **Delete** | Eliminar el token seleccionado |
 
 <a id="token-hotkeys">
