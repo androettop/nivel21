@@ -89,6 +89,21 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 
 ---
 
+### Altura de Tokens
+
+Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos encima o debajo de otros.
+
+| Tecla | Acción |
+|-------|--------|
+| **Page Up** | Subir altura del token (+1) |
+| **Page Down** | Bajar altura del token (-1) |
+
+<a id="token-height-order">
+ <img src="popup/img/token-height-order.png" alt="Orden de Altura de Tokens" />
+</a>
+
+---
+
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia de mejora, siéntete libre de abrir un issue o enviar un pull request.
