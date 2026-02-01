@@ -20,8 +20,10 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 5. ¡Listo! La extensión está activa en Nivel20
 
 
-
 ## Características
+
+> **Aviso:** Estas características dependen del funcionamiento interno de Nivel20 y pueden dejar de funcionar con futuras actualizaciones.
+
 
 ### Tiradas con Ventaja/Desventaja
 
