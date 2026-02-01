@@ -6,7 +6,8 @@
 	const { getManager } = window._n21_;
 
 	const MIN_HEIGHT = 0.001;
-	const STEP = 1;
+	const MAX_HEIGHT = 10;
+	const STEP = 0.5;
 
 	function isEditableTarget(target) {
 		return target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
@@ -30,7 +31,7 @@
 			if (!selectedSchema || !selectedSchema.networkId || !selectedSchema.position) return;
 
 			const currentY = typeof selectedSchema.position.y === 'number' ? selectedSchema.position.y : 0;
-			const nextY = Math.max(MIN_HEIGHT, currentY + delta);
+			const nextY = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, currentY + delta));
 
 			tokenManager?.entityManager?.requestUpdate?.({
 				networkId: selectedSchema.networkId,
