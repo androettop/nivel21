@@ -87,6 +87,18 @@ Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detect
 
 ---
 
+### Susurrar en el Chat
+
+Envía mensajes privados a otros jugadores escribiendo `/w nombre`. El modo se cambia automáticamente a privado y solo el destinatario verá el mensaje. Los susurros se destacan en verde en el chat.
+
+- **/w nombre mensaje** - Enviar susurro privado
+
+<a id="whisper-mode">
+ <img src="popup/img/whisper-mode.png" alt="Susurrar en el Chat" />
+</a>
+
+---
+
 ### Atajos para Tokens
 
 Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selecciona un token primero para activar estos atajos:
