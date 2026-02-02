@@ -15,13 +15,20 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 
 ## Instalación
 
+### Desde las tiendas oficiales (recomendado)
+
+- **Chrome Web Store**: [Instalar en Chrome](https://chromewebstore.google.com/detail/jadlpdmjlfghndcehdhjhgndfmigbdoe?utm_source=item-share-cb)
+- **Firefox Add-ons**: [Instalar en Firefox](https://addons.mozilla.org/es-AR/firefox/addon/nivel21/)
+
+### Instalación manual (ultimos cambios)
+
 1. Clona este repositorio o [descárgalo como ZIP](https://github.com/androettop/nivel21/archive/refs/heads/master.zip)
 2. Abre tu navegador y ve a `chrome://extensions/` (Chrome) o `about:debugging#/runtime/this-firefox` (Firefox)
 3. Activa el "Modo de desarrollador" (Chrome)
 4. En chrome, haz clic en "Cargar extensión sin empaquetar" y selecciona la carpeta de la extensión, o en Firefox haz clic en "Cargar complemento temporal" y selecciona el archivo `manifest.json`
 5. ¡Listo! La extensión está activa en Nivel20
 
-## Actualización
+### Actualización manual
 
 1. Descarga el nuevo ZIP de la extensión (o actualiza tu copia local).
 2. **Chrome**: ve a `chrome://extensions/` y presiona el icono de **Actualizar** en la extensión. Si no aparece, elimínala y vuelve a cargarla.
