@@ -289,12 +289,30 @@
     // ================== Handle Visibility ==================
 
     function initHandleWhisperVisibility() {
-      $(document).on("click", SELECTORS.submitButton, () => {
+      $(document).on("click", SELECTORS.submitButton, (event) => {
         // before sending, check if message is a whisper and if so, set visibility to private
         const inputField = document.querySelector(SELECTORS.textInput);
         if (inputField) {
           const message = inputField.value;
           if (startsWithWhisper(message)) {
+            const recipientName = extractRecipient(message);
+            const connectedUsers = getConnectedUsernames();
+            const messageContent = removeWhisperPrefix(message).trim();
+
+            // Cancel send if no recipient, recipient is not connected, or no message content
+            if (!recipientName || !connectedUsers.includes(recipientName) || !messageContent) {
+              event.preventDefault();
+              event.stopPropagation();
+              
+              // Shake the input field
+              inputField.classList.add('n21-shake');
+              setTimeout(() => {
+                inputField.classList.remove('n21-shake');
+              }, 500);
+              
+              return false;
+            }
+
             const visibilitySelect = document.querySelector(
               SELECTORS.visibilitySelect,
             );
