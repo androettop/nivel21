@@ -19,7 +19,6 @@
     };
 
     const TEXTS = {
-      whisperIndicator: ' (solo a ti):',
       whisperCommand: '/w'
     };
 
@@ -47,6 +46,16 @@
     // Check if message starts with /w
     function startsWithWhisper(message) {
       return message.trim().startsWith(TEXTS.whisperCommand);
+    }
+
+    // Extract recipient name from /w command
+    function extractRecipient(message) {
+      const trimmed = message.trim();
+      if (!startsWithWhisper(trimmed)) return null;
+      
+      // Match /w followed by username, capture the username
+      const match = trimmed.match(/^\/w\s+(\S+)/);
+      return match && match[1] ? match[1] : null;
     }
 
     // Remove /w and username from message, keeping the rest
@@ -113,10 +122,16 @@
         // Find the message box and add visual indicators
         const messageBox = messageElement.closest(SELECTORS.messageBox);
         if (messageBox) {
-          const userName = messageBox.querySelector(SELECTORS.userName);
-          if (userName && !userName.textContent.includes(TEXTS.whisperIndicator)) {
-            userName.classList.add('text-success');
-            userName.textContent = userName.textContent.replace(':', TEXTS.whisperIndicator);
+          const userNameElement = messageBox.querySelector(SELECTORS.userName);
+          if (userNameElement) {
+            const senderName = userNameElement.textContent.replace(':', '').trim();
+            const recipientName = extractRecipient(text);
+            
+            // Only update if not already formatted as a whisper
+            if (recipientName && !userNameElement.textContent.includes(' a ')) {
+              userNameElement.classList.add('text-success');
+              userNameElement.textContent = `${senderName} a ${recipientName}:`;
+            }
           }
         }
 
