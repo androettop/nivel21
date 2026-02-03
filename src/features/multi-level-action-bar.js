@@ -206,8 +206,8 @@
     // Si hay items, quitar la clase d-none del elemento
     if (normalizedItems && normalizedItems.length > 0) {
       $(element).removeClass('d-none');
-      if(!$(element).hasClass('d-flex')) {
-        $(element).addClass('d-flex');
+      if(!$(element).hasClass('n21-d-flex')) {
+        $(element).addClass('n21-d-flex');
       }
       if(!$(element).hasClass('flex-column-reverse')) {
         $(element).addClass('flex-column-reverse');
@@ -419,6 +419,17 @@
     div.textContent = text;
     return div.innerHTML;
   }
+
+  // Manejador para limpiar clases conflictivas al hacer toggle de action bar
+  $(document).on('click', '[data-toggle="action-bar"]', function() {
+    const $actionBar = $(this).closest('.action-bar-wrapper').find('.action-bar');
+    
+    setTimeout(() => {
+      if ($actionBar.hasClass('d-none') && $actionBar.hasClass('d-flex')) {
+        $actionBar.removeClass('d-flex');
+      }
+    }, 50);
+  });
 
   console.log('[N21 Plugin] Multi-level Action Bar loaded');
 })();
