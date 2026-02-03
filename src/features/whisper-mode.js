@@ -27,20 +27,32 @@
     }
 
     // Extract recipient name from /w command
+    // Supports: /w Username or /w [Username With Spaces]
     function extractRecipient(message) {
       const trimmed = message.trim();
       if (!startsWithWhisper(trimmed)) return null;
 
-      const match = trimmed.match(/^\/w\s+(\S+)/);
+      // Try to match [bracketed name] first
+      let match = trimmed.match(/^\/w\s+\[([^\]]+)\]/);
+      if (match && match[1]) return match[1];
+
+      // Otherwise match single word name
+      match = trimmed.match(/^\/w\s+(\S+)/);
       return match && match[1] ? match[1] : null;
     }
 
     // Remove /w and username from message, keeping the rest
+    // Supports: /w Username or /w [Username With Spaces]
     function removeWhisperPrefix(message) {
       const trimmed = message.trim();
       if (!startsWithWhisper(trimmed)) return message;
 
-      const match = trimmed.match(/^\/w(?:\s+\S+)?(?:\s+(.*))?$/);
+      // Try to remove /w [bracketed name] first
+      let match = trimmed.match(/^\/w\s+\[[^\]]+\](?:\s+(.*))?$/);
+      if (match) return match[1] ? match[1] : "";
+
+      // Otherwise remove /w and single word name
+      match = trimmed.match(/^\/w(?:\s+\S+)?(?:\s+(.*))?$/);
       return match && match[1] ? match[1] : "";
     }
 
@@ -161,10 +173,17 @@
             const currentUserName = window.getUserName?.();
             const currentUserId = window.getUserId?.();
 
-            const whisperMatch = message.match(/^\/w\s+(\S+)/);
-            if (whisperMatch && currentUserName && currentUserId) {
-              const targetUsername = whisperMatch[1];
+            // Try to match [bracketed name] first
+            let whisperMatch = message.match(/^\/w\s+\[([^\]]+)\]/);
+            let targetUsername = whisperMatch ? whisperMatch[1] : null;
 
+            // Otherwise try single word name
+            if (!targetUsername) {
+              whisperMatch = message.match(/^\/w\s+(\S+)/);
+              targetUsername = whisperMatch ? whisperMatch[1] : null;
+            }
+
+            if (targetUsername && currentUserName && currentUserId) {
               if (
                 targetUsername === currentUserName &&
                 a.sender_name !== currentUserName
