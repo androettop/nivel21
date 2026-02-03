@@ -13,16 +13,19 @@
   function normalizeActionItems(items) {
     const root = [];
 
-    // índice global de items `none` reutilizables
+    // índice global de items `none`/`folder` reutilizables
     const noneIndex = new Map();
+    
+    // IDs de items que fueron convertidos en folders y deben ser eliminados
+    const usedAsFolder = new Set();
 
     /**
-     * Indexa recursivamente items de tipo `none`
+     * Indexa recursivamente items de tipo `none` y `folder`
      * @param {Array<Object>} list
      */
     function indexNoneItems(list) {
       for (const item of list) {
-        if (item.action_type === "none") {
+        if (item.action_type === "none" || item.action_type === "folder") {
           noneIndex.set(item.name, item);
         }
         if (isFolder(item)) {
@@ -53,9 +56,14 @@
           if (reusable) {
             folder = {
               ...reusable,
+              id: uuid ? uuid() : Math.random().toString(36).slice(2),
+              name: segment,
+              tooltip_title: segment,
               action_type: "folder",
               elements: []
             };
+            // Marcar este item como usado para ser eliminado del árbol
+            usedAsFolder.add(reusable.id);
             noneIndex.delete(segment);
           } else {
             folder = createFolderFromItem(item, segment);
@@ -93,7 +101,8 @@
         const finalName = parts.pop();
         const clonedItem = {
           ...item,
-          name: finalName
+          name: finalName,
+          tooltip_title: finalName
         };
 
         insertIntoTree(root, parts, clonedItem);
@@ -124,7 +133,8 @@
         const finalName = parts.pop();
         const clonedItem = {
           ...item,
-          name: finalName
+          name: finalName,
+          tooltip_title: finalName
         };
 
         insertIntoTree(target, parts, clonedItem);
@@ -132,7 +142,26 @@
     }
 
     walk(items);
-    return root;
+    
+    // Filtrar items que fueron convertidos en folders
+    return filterUsedItems(root);
+    
+    /**
+     * Filtra recursivamente items que fueron usados como folders
+     * @param {Array<Object>} list
+     * @returns {Array<Object>}
+     */
+    function filterUsedItems(list) {
+      return list.filter(item => !usedAsFolder.has(item.id)).map(item => {
+        if (isFolder(item) && item.elements) {
+          return {
+            ...item,
+            elements: filterUsedItems(item.elements)
+          };
+        }
+        return item;
+      });
+    }
   }
 
   // Importar funciones de core
@@ -214,7 +243,7 @@
       // Renderizar items en el nuevo contenedor
       renderItems($childContainer, normalizedItems, $baseElement, depth);
     }
-
+    
     return $baseElement;
   };
 
@@ -235,7 +264,9 @@
       const $itemElement = createItemElement(item, $container);
       $container.append($itemElement);
 
-      // Si es un folder, agregar evento de click
+      const $button = $itemElement.find('.action-bar-button');
+      
+      // Agregar evento de click según el tipo
       if (isFolder(item)) {
         $itemElement.on('click', (e) => {
           e.preventDefault();
@@ -245,11 +276,47 @@
           $container.find('.action-bar-element .action-bar-button.selected').removeClass('selected');
           
           // Agregar clase selected al botón clickeado
-          $itemElement.find('.action-bar-button').addClass('selected');
+          $button.addClass('selected');
           
           // Llamar recursivamente a createBar con los elementos del folder
           // Incrementar la profundidad para el siguiente nivel
           window.createBar($baseElement, item.elements, item, depth + 1);
+        });
+      } else if (item.action_type === 'dice_roll') {
+        $itemElement.on('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          // Preparar opciones de lanzamiento
+          const diceExpression = item.dice_roll;
+          
+          if (!item.roll_options) {
+            item.roll_options = {};
+          }
+          
+          if (!item.roll_options.roll_name) {
+            item.roll_options.roll_name = item.name;
+          }
+          
+          if (!item.roll_options.sender_info) {
+            const $actionBar = $button.closest('.action-bar');
+            if ($actionBar.length) {
+              item.roll_options.sender_info = $actionBar.attr('data-sender-info');
+            }
+          }
+          
+          if (!item.roll_options.icon) {
+            item.roll_options.icon = item.icon;
+          }
+          
+          if (!item.roll_options.parent_icon) {
+            item.roll_options.parent_icon = item.parent_icon;
+          }
+          
+          // Llamar a la función global diceRoll
+          if (typeof window.diceRoll === 'function') {
+            window.diceRoll(diceExpression, item.roll_options);
+          }
         });
       }
     });
@@ -268,14 +335,34 @@
       .attr('data-item-id', item.id)
       .attr('data-action-type', item.action_type);
 
+    // Construir el HTML del tooltip
+    let tooltipHtml = `<h5>${item.tooltip_title || item.name}</h5>`;
+    
+    if (item.description) {
+      tooltipHtml += `<p>${item.description}</p>`;
+    }
+
     // Determinar clases de indicadores según el tipo
     const isItemFolder = isFolder(item);
-    const indicatorClasses = isItemFolder 
-      ? 'indicator-icon fa fa-chevron-down'
-      : 'indicator-icon d-none';
-    const selectedIndicatorClasses = isItemFolder
-      ? 'selected-indicator-icon fa fa-chevron-up'
-      : 'selected-indicator-icon d-none';
+    let indicatorClasses = isItemFolder 
+      ? 'fa fa-chevron-down'
+      : 'd-none';
+    let selectedIndicatorClasses = isItemFolder
+      ? 'fa fa-chevron-up'
+      : 'd-none';
+
+    // Procesar según el tipo de acción
+    if (item.action_type === 'dice_roll') {
+      if (item.dice_roll) {
+        tooltipHtml += `<p><strong>Lanzar ${item.dice_roll}</strong></p>`;
+      }
+    } else if (item.action_type === 'folder') {
+      if (item.elements && item.elements.length > 0) {
+        tooltipHtml += '<p><strong>Click para ver más opciones</strong></p>';
+        indicatorClasses = 'fa fa-chevron-down';
+        selectedIndicatorClasses = 'fa fa-chevron-up';
+      }
+    }
 
     // Crear estructura HTML del item
     const imageStyle = item.icon 
@@ -288,12 +375,12 @@
         <div class="action-bar-image" style="${imageStyle}"></div>
         <div class="action-bar-hover"></div>
         <div class="action-bar-text">
-          <span class="action-bar-short-name"></span>
-          <span class="action-bar-name">${escapeHtml(item.name)}</span>
+          <span class="action-bar-short-name">${item.text ? escapeHtml(item.text) : ''}</span>
+          <span class="action-bar-name">${!item.text ? escapeHtml(item.name) : ''}</span>
         </div>
         <div class="action-bar-indicator">
-          <i class="${indicatorClasses}"></i>
-          <i class="${selectedIndicatorClasses}"></i>
+          <i class="indicator-icon ${indicatorClasses}"></i>
+          <i class="selected-indicator-icon ${selectedIndicatorClasses}"></i>
         </div>
         <div class="action-bar-frame"></div>
       </div>
@@ -301,9 +388,11 @@
 
     $itemEl.html(html);
 
-    // Agregar tooltip si existe
-    if (item.tooltip_title) {
-      $itemEl.find('.action-bar-button').attr('title', item.tooltip_title);
+    // Procesar el tooltip
+    const $button = $itemEl.find('.action-bar-button');
+    $button.attr('title', tooltipHtml);
+    if (typeof window.processTooltip === 'function') {
+      window.processTooltip($button[0]);
     }
 
     // Si no es un folder y tiene acción, agregar el manejador original
