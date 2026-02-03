@@ -134,6 +134,21 @@ Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrí
 
 ---
 
+### Carpetas anidadas
+
+Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa. Organiza acciones en carpetas usando el separador " > " en el nombre. La barra se convierte en carpetas anidadas automáticamente.
+
+Ejemplo:
+
+- Crea un item llamado "Ataques > Espadas > Estocada"
+- Si quieres elegir un icono en la carpeta "Espadas", crea una acción "Carpeta" o "Sin acción" con nombre "Espadas" y selecciona el icono deseado.
+
+<a id="multi-level-action-bar">
+ <img src="popup/img/multi-level-action-bar.png" alt="Carpetas anidadas" />
+</a>
+
+---
+
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia de mejora, siéntete libre de abrir un issue o enviar un pull request.
