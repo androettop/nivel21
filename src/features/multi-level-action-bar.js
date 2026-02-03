@@ -218,6 +218,9 @@
     const $baseElement = $(element);
     
     if (parentItem === null) {
+      // Vaciar el elemento antes de renderizar desde el nivel raíz
+      $baseElement.empty();
+      
       // Nivel raíz: crear contenedor con clase folder-root
       const $rootContainer = $('<div>')
         .addClass('folder-root d-flex justify-content-center')
