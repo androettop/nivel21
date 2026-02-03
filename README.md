@@ -91,7 +91,21 @@ Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20 se detect
 
 Envía mensajes privados a otros jugadores escribiendo `/w nombre`. El modo se cambia automáticamente a privado y solo el destinatario verá el mensaje. Los susurros se destacan en verde en el chat.
 
+Los usuarios sin la extensión no podran recibir susurros.
+
 - **/w nombre mensaje** - Enviar susurro privado
+- **Tab** - Autocompletar nombre de usuario conectado (cicla entre coincidencias)
+
+Ejemplos:
+
+- **/w Lucius hola, ¿estás listo?**
+- **/w "Ana María" ¿puedes revisar la pista?**
+
+**Autocompletado con Tab:**
+- Escribe `/w` y presiona Tab para ciclar entre todos los usuarios conectados
+- Escribe `/w Lu` y presiona Tab para autocompletar usuarios que comienzan con "Lu"
+- Presiona Tab varias veces para ciclar entre todas las coincidencias
+- Las comillas se agregan automáticamente para nombres con espacios
 
 <a id="whisper-mode">
  <img src="popup/img/whisper-mode.png" alt="Susurrar en el Chat" />

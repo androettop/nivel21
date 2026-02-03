@@ -26,15 +26,89 @@
       return message.trim().startsWith(TEXTS.whisperCommand);
     }
 
+    function getConnectedUsernames() {
+      try {
+        const list = window.players?.list?.() || [];
+        return list
+          .filter((player) => player.connected && !player.isMe)
+          .map((player) => player.userName);
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function parseWhisperInput(input) {
+      const match = input.match(/^(\s*\/w)\s+(.*)$/);
+      if (!match) return null;
+
+      const prefix = `${match[1]} `;
+      const restAll = match[2];
+
+      if (!restAll) {
+        return {
+          prefix,
+          recipientFragment: "",
+          rest: "",
+          quoteChar: null,
+        };
+      }
+
+      const firstChar = restAll[0];
+      if (firstChar === '"' || firstChar === "'") {
+        const quoteChar = firstChar;
+        const closingIndex = restAll.indexOf(quoteChar, 1);
+        const recipientFragment =
+          closingIndex === -1
+            ? restAll.slice(1)
+            : restAll.slice(1, closingIndex);
+        const rest = closingIndex === -1 ? "" : restAll.slice(closingIndex + 1);
+        return { prefix, recipientFragment, rest, quoteChar };
+      }
+
+      const firstSpaceIndex = restAll.search(/\s/);
+      if (firstSpaceIndex === -1) {
+        return {
+          prefix,
+          recipientFragment: restAll,
+          rest: "",
+          quoteChar: null,
+        };
+      }
+
+      return {
+        prefix,
+        recipientFragment: restAll.slice(0, firstSpaceIndex),
+        rest: restAll.slice(firstSpaceIndex),
+        quoteChar: null,
+      };
+    }
+
+    function formatRecipient(username, quoteChar) {
+      if (username.includes(" ")) {
+        const wrapper = quoteChar || '"';
+        return `${wrapper}${username}${wrapper}`;
+      }
+
+      return username;
+    }
+
+    function listStartsWithFilter(usernames, fragment) {
+      if (!fragment) return usernames;
+      const lowerFragment = fragment.toLowerCase();
+      return usernames.filter((name) =>
+        name.toLowerCase().startsWith(lowerFragment),
+      );
+    }
+
     // Extract recipient name from /w command
-    // Supports: /w Username or /w [Username With Spaces]
+    // Supports: /w Username or /w "Username With Spaces" or /w 'Username With Spaces'
     function extractRecipient(message) {
       const trimmed = message.trim();
       if (!startsWithWhisper(trimmed)) return null;
 
-      // Try to match [bracketed name] first
-      let match = trimmed.match(/^\/w\s+\[([^\]]+)\]/);
-      if (match && match[1]) return match[1];
+      // Try to match quoted name first
+      let match = trimmed.match(/^\/w\s+(?:"([^"]+)"|'([^']+)')/);
+      if (match) return match[1] || match[2] || null;
 
       // Otherwise match single word name
       match = trimmed.match(/^\/w\s+(\S+)/);
@@ -42,18 +116,96 @@
     }
 
     // Remove /w and username from message, keeping the rest
-    // Supports: /w Username or /w [Username With Spaces]
+    // Supports: /w Username or /w "Username With Spaces" or /w 'Username With Spaces'
     function removeWhisperPrefix(message) {
       const trimmed = message.trim();
       if (!startsWithWhisper(trimmed)) return message;
 
-      // Try to remove /w [bracketed name] first
-      let match = trimmed.match(/^\/w\s+\[[^\]]+\](?:\s+(.*))?$/);
+      // Try to remove /w "quoted name" or /w 'quoted name' first
+      let match = trimmed.match(/^\/w\s+"[^"]+"(?:\s+(.*))?$/);
+      if (match) return match[1] ? match[1] : "";
+
+      match = trimmed.match(/^\/w\s+'[^']+'(?:\s+(.*))?$/);
       if (match) return match[1] ? match[1] : "";
 
       // Otherwise remove /w and single word name
       match = trimmed.match(/^\/w(?:\s+\S+)?(?:\s+(.*))?$/);
       return match && match[1] ? match[1] : "";
+    }
+
+    function initWhisperAutocomplete() {
+      const autocompleteState = {
+        baseInput: "",
+        candidates: [],
+        index: 0,
+        lastWasTab: false,
+        suppressInput: false,
+      };
+
+      const inputField = document.querySelector(SELECTORS.textInput);
+      if (!inputField) return;
+
+      inputField.addEventListener("input", () => {
+        if (autocompleteState.suppressInput) {
+          autocompleteState.suppressInput = false;
+          return;
+        }
+
+        autocompleteState.baseInput = inputField.value;
+        autocompleteState.candidates = [];
+        autocompleteState.index = 0;
+        autocompleteState.lastWasTab = false;
+      });
+
+      inputField.addEventListener("keydown", (event) => {
+        if (event.key !== "Tab") {
+          autocompleteState.lastWasTab = false;
+          return;
+        }
+
+        const currentValue = inputField.value;
+        if (!startsWithWhisper(currentValue)) return;
+
+        event.preventDefault();
+
+        if (!autocompleteState.lastWasTab) {
+          autocompleteState.baseInput = currentValue;
+        }
+
+        const parsed = parseWhisperInput(autocompleteState.baseInput);
+        if (!parsed) return;
+
+        const usernames = getConnectedUsernames();
+        const candidates = listStartsWithFilter(
+          usernames,
+          parsed.recipientFragment,
+        );
+
+        if (!candidates.length) return;
+
+        const sameCandidates =
+          autocompleteState.candidates.length === candidates.length &&
+          autocompleteState.candidates.every(
+            (name, idx) => name === candidates[idx],
+          );
+
+        if (!autocompleteState.lastWasTab || !sameCandidates) {
+          autocompleteState.candidates = candidates;
+          autocompleteState.index = 0;
+        } else {
+          autocompleteState.index =
+            (autocompleteState.index + 1) % candidates.length;
+        }
+
+        const selected = candidates[autocompleteState.index];
+        const formattedRecipient = formatRecipient(selected, parsed.quoteChar);
+        const newValue = `${parsed.prefix}${formattedRecipient}${parsed.rest}`;
+
+        autocompleteState.suppressInput = true;
+        autocompleteState.lastWasTab = true;
+        inputField.value = newValue;
+        inputField.setSelectionRange(newValue.length, newValue.length);
+      });
     }
 
     // Check if node is or contains a message element
@@ -173,9 +325,13 @@
             const currentUserName = window.getUserName?.();
             const currentUserId = window.getUserId?.();
 
-            // Try to match [bracketed name] first
-            let whisperMatch = message.match(/^\/w\s+\[([^\]]+)\]/);
-            let targetUsername = whisperMatch ? whisperMatch[1] : null;
+            // Try to match quoted name first
+            let whisperMatch = message.match(
+              /^\/w\s+(?:"([^"]+)"|'([^']+)')/,
+            );
+            let targetUsername = whisperMatch
+              ? whisperMatch[1] || whisperMatch[2] || null
+              : null;
 
             // Otherwise try single word name
             if (!targetUsername) {
@@ -207,6 +363,7 @@
     processWhisperMessages();
     observeWhisperMessages();
     initHandleWhisperVisibility();
+    initWhisperAutocomplete();
   } catch (error) {
     console.error("[Whisper Mode] Error:", error);
   }
