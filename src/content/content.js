@@ -34,6 +34,7 @@
 			injectScript('src/features/snap-to-grid.js');
 			injectScript('src/features/multi-measurement.js');
 			injectScript('src/features/whisper-mode.js');
+			injectScript('src/features/multi-level-action-bar.js');
 			// Add more features here in the future
 		}, 50);
 	});
