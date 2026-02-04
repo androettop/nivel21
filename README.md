@@ -9,6 +9,11 @@
 
 Añade funcionalidades útiles para DMs y jugadores de D&D.
 
+[![Chrome Web Store](https://img.shields.io/badge/Chrome-Instalar-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/jadlpdmjlfghndcehdhjhgndfmigbdoe?utm_source=item-share-cb)
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox-Instalar-FF7139?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/es-AR/firefox/addon/nivel21/)
+[![Discord](https://img.shields.io/badge/Discord-Únete-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/r4xznDhD9)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoyar-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/androettop)
+
 </div>
 
 > **Aviso:** Esta extensión no es oficial ni está afiliada a Nivel20. Es un proyecto independiente de la comunidad.
@@ -174,6 +179,12 @@ Ejemplo:
 </a>
 
 ---
+
+## Comunidad y Soporte
+
+¿Tienes sugerencias o encontraste un error? ¡Únete a nuestro servidor de Discord!
+
+Todas las sugerencias y reportes de errores son bienvenidos en nuestro canal de Discord: https://discord.gg/r4xznDhD9
 
 ## Contribuciones
 
