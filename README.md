@@ -175,6 +175,14 @@ Ejemplo:
 
 ---
 
+## Comunidad y Soporte
+
+¿Tienes sugerencias o encontraste un error? ¡Únete a nuestro servidor de Discord!
+
+[![Discord](https://img.shields.io/badge/Discord-Únete-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/r4xznDhD9)
+
+Todas las sugerencias y reportes de errores son bienvenidos en nuestro canal de Discord.
+
 ## Contribuciones
 
 Las contribuciones son bienvenidas. Si encuentras un bug o tienes una sugerencia de mejora, siéntete libre de abrir un issue o enviar un pull request.
