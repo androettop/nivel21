@@ -4,7 +4,9 @@
 	       Feature: Snap to Grid
 	    ======================= */
 
-    const { state, getManager } = window._n21_;
+    const { state } = window._n21_;
+
+    const { TokenManager } = window._n21_?.managers || {};
 
     let isDragging = false;
     let dragStarted = false;
@@ -70,11 +72,10 @@
     function snapSelectedTokens() {
       if (capturedNetworkIds.size === 0) return;
 
-      const tokenManager = getManager("tokenManager");
-      if (!tokenManager?.entityManager?.instances) return;
+      if (!TokenManager.isAvailable()) return;
 
       capturedNetworkIds.forEach((networkId) => {
-        const token = tokenManager.entityManager.instances.get(networkId);
+        const token = TokenManager.getToken(networkId);
         if (!token?.localScale || !token?.position) return;
 
         const gridSize = 1;
@@ -94,13 +95,10 @@
         const snappedZ = snapToGrid(token.position.z, scaleZ);
 
         if (snappedX !== token.position.x || snappedZ !== token.position.z) {
-          tokenManager.entityManager.requestUpdate({
-            networkId,
-            position: {
-              x: snappedX,
-              y: token.position.y,
-              z: snappedZ,
-            },
+          TokenManager.updatePosition(networkId, {
+            x: snappedX,
+            y: token.position.y,
+            z: snappedZ,
           });
         }
       });

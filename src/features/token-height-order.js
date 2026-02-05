@@ -4,7 +4,7 @@
 	       Feature: Token Height Order
 	    ======================= */
 
-    const { getManager } = window._n21_;
+    const { TokenManager } = window._n21_?.managers || {};
 
     const MIN_HEIGHT = 0.001;
     const MAX_HEIGHT = 10;
@@ -28,8 +28,6 @@
       const selectedSchemas = getSelectedSchemas();
       if (!selectedSchemas.length) return;
 
-      const tokenManager = getManager("tokenManager");
-
       selectedSchemas.forEach((selectedSchema) => {
         if (
           !selectedSchema ||
@@ -47,12 +45,9 @@
           Math.max(MIN_HEIGHT, currentY + delta),
         );
 
-        tokenManager?.entityManager?.requestUpdate?.({
-          networkId: selectedSchema.networkId,
-          position: {
-            ...selectedSchema.position,
-            y: nextY,
-          },
+        TokenManager.updatePosition(selectedSchema.networkId, {
+          ...selectedSchema.position,
+          y: nextY,
         });
       });
     }

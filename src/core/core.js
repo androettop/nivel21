@@ -79,23 +79,6 @@
   // expose utility for features
   window._n21_.waitForVariable = waitForVariable;
 
-  // Get a manager from Game Manager script by name
-  function getManager(managerName) {
-    if (!managerName) return null;
-
-    const root = window.app?.root;
-    if (!root || typeof root.find !== "function") return null;
-
-    const found = root.find((e) => e && e.name === "Game Manager");
-    const gameManager = Array.isArray(found) ? found[0] : found;
-    if (!gameManager || !gameManager.script) return null;
-
-    return gameManager.script[managerName] || null;
-  }
-
-  // expose utility for features
-  window._n21_.getManager = getManager;
-
   /* =======================
        Chat payload & HTML helpers
     ======================= */
