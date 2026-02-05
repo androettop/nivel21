@@ -6,7 +6,10 @@
   const { loadManagers } = window._n21_;
   const { uuid } = window._n21_?.utils || {};
 
-  const [ActionBarManager] = await loadManagers("ActionBarManager");
+  const [ActionBarManager, TooltipManager] = await loadManagers(
+    "ActionBarManager",
+    "TooltipManager",
+  );
 
   /**
    * Check if an item is a folder
@@ -380,9 +383,7 @@
     // Process tooltip
     const $button = $itemEl.find(".action-bar-button");
     $button.attr("title", tooltipHtml);
-    if (typeof window.processTooltip === "function") {
-      window.processTooltip($button[0]);
-    }
+    TooltipManager.process($button[0]);
 
     // Store item data for external use
     if (!isItemFolder) {

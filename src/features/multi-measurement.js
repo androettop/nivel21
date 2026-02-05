@@ -2,8 +2,11 @@
   try {
     const { loadManagers } = window._n21_;
 
-    // Esperar a que MeasurementManager esté listo
-    const [MeasurementManager] = await loadManagers("MeasurementManager");
+    // Esperar a que MeasurementManager y TooltipManager estén listos
+    const [MeasurementManager, TooltipManager] = await loadManagers(
+      "MeasurementManager",
+      "TooltipManager",
+    );
 
     // Estado local de persistencia de mediciones
     let persistentMeasurements = false;
@@ -54,7 +57,7 @@
       button.setAttribute("title", "Persistir mediciones");
       button.setAttribute("data-toggle", "tooltip");
 
-      processTooltip(button);
+      TooltipManager.process(button);
 
       // Agregar la clase inicial según el estado
       if (persistentMeasurements) {

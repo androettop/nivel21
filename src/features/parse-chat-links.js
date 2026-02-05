@@ -11,12 +11,15 @@
     const {
       sanitizeHtmlAllowlist,
       toPlainText,
-      applyTooltips,
       setAnchorContent,
       loadManagers,
     } = window._n21_;
 
-    const [ChatManager, ChatUIManager] = await loadManagers("ChatManager", "ChatUIManager");
+    const [ChatManager, ChatUIManager, TooltipManager] = await loadManagers(
+      "ChatManager",
+      "ChatUIManager",
+      "TooltipManager",
+    );
 
     // Check if URL is from nivel20.com
     function isNivel20Url(url) {
@@ -109,7 +112,7 @@
                 // Parse HTML content safely with DOMPurify
                 if (window.DOMPurify) {
                   anchor.innerHTML = sanitizeHtmlAllowlist(linkText);
-                  applyTooltips(anchor);
+                  TooltipManager.processAll(anchor);
                 } else {
                   anchor.textContent = linkText;
                 }

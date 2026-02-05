@@ -78,6 +78,5 @@
   window._n21_.normalizeTitleHtml = normalizeTitleHtml;
   window._n21_.isLikelyUrl = isLikelyUrl;
   window._n21_.getSenderInfoFromElement = getSenderInfoFromElement;
-  window._n21_.applyTooltips = applyTooltips;
   window._n21_.setAnchorContent = setAnchorContent;
 })();
