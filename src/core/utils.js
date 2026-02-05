@@ -74,9 +74,21 @@
     });
   }
 
+  /**
+   * Generate a unique identifier
+   * @returns {string} A unique identifier string
+   */
+  function uuid() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return Math.random().toString(36).slice(2);
+  }
+
   // Expose utility for manager abstractions
   window._n21_.utils = window._n21_.utils || {};
   window._n21_.utils.getNativeManager = getNativeManager;
+  window._n21_.utils.uuid = uuid;
 
   // Expose loadManagers globally for features
   window._n21_.loadManagers = loadManagers;

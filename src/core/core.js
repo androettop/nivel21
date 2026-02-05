@@ -191,6 +191,7 @@
     }
   }
 
+  // Legacy uuid function
   function uuid() {
     if (typeof crypto !== "undefined" && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -229,7 +230,6 @@
   window._n21_.getSenderInfoFromElement = getSenderInfoFromElement;
   window._n21_.applyTooltips = applyTooltips;
   window._n21_.setAnchorContent = setAnchorContent;
-  window._n21_.uuid = uuid;
   window._n21_.isFolder = isFolder;
   window._n21_.createFolderFromItem = createFolderFromItem;
   
