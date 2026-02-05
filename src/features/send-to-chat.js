@@ -8,13 +8,14 @@
       state,
       events,
       hookGlobalFn,
-      sendChatMessageDebounced,
       encodeN21Payload,
       isLikelyUrl,
       normalizeTitleHtml,
       toPlainText,
       getSenderInfoFromElement,
     } = window._n21_;
+
+    const { ChatHandler } = window;
 
     const N21_WARNING_TEXT =
       "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
@@ -84,7 +85,11 @@
       if (!messageText) return;
 
       const senderInfo = getSenderInfo();
-      const messageOptions = senderInfo ? { sender_info: senderInfo } : {};
+      const messageOptions = {};
+
+      if (senderInfo) {
+        messageOptions.sender_info = senderInfo;
+      }
 
       // Try to get icon from the hovered element
       if (hoverEl) {
@@ -99,7 +104,7 @@
         messageOptions.icon = fallbackIcon;
       }
 
-      sendChatMessageDebounced(messageText, messageOptions);
+      ChatHandler.sendDebounced(messageText, messageOptions);
     }
 
     // Track hovered floating element

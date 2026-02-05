@@ -330,54 +330,49 @@
 
     // ==================== Subscriptions ====================
 
-    // Hook into chat subscriptions to handle whisper visibility
-    function hookChatSubscriptions() {
-      try {
-        const subscription = App.cable.subscriptions.subscriptions[0];
-        if (!subscription) return;
-
-        const originalReceived = subscription.received.bind(subscription);
-        subscription.received = function (a) {
-          if (a.message_type === "chat" && a.data?.message) {
-            const message = a.data.message.trim();
-            const currentUserName = window.getUserName?.();
-            const currentUserId = window.getUserId?.();
-
-            // Try to match quoted name first
-            let whisperMatch = message.match(
-              /^\/w\s+(?:"([^"]+)"|'([^']+)')/,
-            );
-            let targetUsername = whisperMatch
-              ? whisperMatch[1] || whisperMatch[2] || null
-              : null;
-
-            // Otherwise try single word name
-            if (!targetUsername) {
-              whisperMatch = message.match(/^\/w\s+(\S+)/);
-              targetUsername = whisperMatch ? whisperMatch[1] : null;
-            }
-
-            if (targetUsername && currentUserName && currentUserId) {
-              if (
-                targetUsername === currentUserName &&
-                a.sender_name !== currentUserName
-              ) {
-                a.visible_for_users = a.visible_for_users || [];
-                a.visible_for_users.push(currentUserId);
-              }
-            }
-          }
-
-          originalReceived(a);
-        };
-      } catch (error) {
-        console.warn("[Whisper Mode] Could not hook chat subscriptions");
+    // Subscribe to chat messages via ChatHandler to handle whisper visibility
+    function subscribeToWhisperMessages() {
+      const { ChatHandler } = window;
+      if (!ChatHandler) {
+        console.warn("[Whisper Mode] ChatHandler not available");
+        return;
       }
+
+      ChatHandler.onMessage((messageData, rawData) => {
+        const message = messageData.message.trim();
+        const currentUserName = window.getUserName?.();
+        const currentUserId = window.getUserId?.();
+
+        // Try to match quoted name first
+        let whisperMatch = message.match(/^\/w\s+(?:"([^"]+)"|'([^']+)')/);
+        let targetUsername = whisperMatch
+          ? whisperMatch[1] || whisperMatch[2] || null
+          : null;
+
+        // Otherwise try single word name
+        if (!targetUsername) {
+          whisperMatch = message.match(/^\/w\s+(\S+)/);
+          targetUsername = whisperMatch ? whisperMatch[1] : null;
+        }
+
+        if (targetUsername && currentUserName && currentUserId) {
+          if (
+            targetUsername === currentUserName &&
+            messageData.senderName !== currentUserName
+          ) {
+            rawData.visible_for_users = rawData.visible_for_users || [];
+            rawData.visible_for_users.push(currentUserId);
+          }
+        }
+
+        // Continue processing (don't block)
+        return true;
+      });
     }
 
     // ==================== Initialization ====================
 
-    hookChatSubscriptions();
+    subscribeToWhisperMessages();
     processWhisperMessages();
     observeWhisperMessages();
     initHandleWhisperVisibility();
