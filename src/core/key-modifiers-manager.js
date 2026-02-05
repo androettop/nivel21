@@ -4,7 +4,6 @@
     ======================= */
 
   const { BaseManager } = window._n21_?.managers || {};
-  const { events: n21Events } = window._n21_;
 
   /**
    * KeyModifiersManager tracks the state of modifier keys (Shift, Alt, Ctrl)
@@ -17,6 +16,7 @@
       this._shift = false;
       this._alt = false;
       this._ctrl = false;
+      this._listeners = [];
     }
 
     /**
@@ -47,20 +47,55 @@
 
         if (changed) {
           e.preventDefault();
-          n21Events.trigger("modifiers:change", [this.getState()]);
+          this._notifyListeners();
         }
       });
 
       $(window).on("blur", () => {
+        console.log("[KeyModifiersManager] Window lost focus, resetting modifier keys");
         if (!this._shift && !this._alt && !this._ctrl) return;
 
         this._shift = false;
         this._alt = false;
         this._ctrl = false;
-        n21Events.trigger("modifiers:change", [this.getState()]);
+        this._notifyListeners();
       });
 
       this._initialized = true;
+    }
+
+    /**
+     * Notify all listeners of state change
+     */
+    _notifyListeners() {
+      const state = this.getState();
+      for (const listener of this._listeners) {
+        try {
+          listener(state);
+        } catch (error) {
+          console.warn("[KeyModifiersManager] Listener error:", error);
+        }
+      }
+    }
+
+    /**
+     * Subscribe to modifier key state changes
+     * Callback receives the current state { shift, alt, ctrl }
+     * @param {Function} callback - Function to call when modifiers change
+     * @returns {Function} Unsubscribe function
+     */
+    onChange(callback) {
+      if (typeof callback !== "function") return () => {};
+
+      this._listeners.push(callback);
+
+      // Return unsubscribe function
+      return () => {
+        const index = this._listeners.indexOf(callback);
+        if (index > -1) {
+          this._listeners.splice(index, 1);
+        }
+      };
     }
 
     /**

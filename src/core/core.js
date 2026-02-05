@@ -1,18 +1,10 @@
 (() => {
   /* =======================
-       DEPRECATED: This file now only contains utilities.
+       Core utilities and global namespace initialization
     ======================= */
-
-  /* =======================
-       Global events
-    ======================= */
-  // simple internal event bus
-  const n21Events = $({});
 
   // expose for debugging and for features to access
-  window._n21_ = {
-    events: n21Events,
-  };
+  window._n21_ = {};
 
   /* =======================
        Funciones de utilidad

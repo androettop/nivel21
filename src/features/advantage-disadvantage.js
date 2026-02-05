@@ -4,7 +4,7 @@
 	       Feature: Advantage / Disadvantage
 	    ======================= */
 
-    const { events, hookGlobalFn, loadManagers } = window._n21_;
+    const { hookGlobalFn, loadManagers } = window._n21_;
 
     const [KeyModifiersManager] = await loadManagers("KeyModifiersManager");
 
@@ -44,7 +44,7 @@
         hoverEl = null;
       });
 
-    events.on("modifiers:change", (_, modifiers) => {
+    KeyModifiersManager.onChange((modifiers) => {
       updateOutline(hoverEl, modifiers);
     });
 

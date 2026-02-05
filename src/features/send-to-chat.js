@@ -5,7 +5,6 @@
 	    ======================= */
 
     const {
-      events,
       hookGlobalFn,
       encodeN21Payload,
       isLikelyUrl,
@@ -119,8 +118,8 @@
       });
 
     // Update visual feedback when shift modifier changes
-    events.on("modifiers:change", (_, newState) => {
-      updateChatFilter(hoverEl, newState.shift);
+    KeyModifiersManager.onChange((modifiers) => {
+      updateChatFilter(hoverEl, modifiers.shift);
     });
 
     // Hook loadInFloatingPanel to intercept and send to chat if shift is pressed
