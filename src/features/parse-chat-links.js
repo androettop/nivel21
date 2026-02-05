@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   try {
     /* =======================
 	       Feature: Parse Chat Links
@@ -15,12 +15,14 @@
     const chatContainerSelector = ".room-messages-chat";
 
     const {
-      decodeN21Payload,
       sanitizeHtmlAllowlist,
       toPlainText,
       applyTooltips,
       setAnchorContent,
+      loadManagers,
     } = window._n21_;
+
+    const [ChatManager] = await loadManagers("ChatManager");
 
     // Check if URL is from nivel20.com
     function isNivel20Url(url) {
@@ -94,7 +96,7 @@
             }
 
             if (match[1]) {
-              const payload = decodeN21Payload(match[1]);
+              const payload = ChatManager.decodeJsonMessage(match[1]);
               if (payload) {
                 const anchor = createFloatingAnchorFromPayload(payload);
                 fragment.appendChild(anchor);

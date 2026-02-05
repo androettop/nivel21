@@ -5,7 +5,6 @@
 	    ======================= */
 
     const {
-      encodeN21Payload,
       isLikelyUrl,
       normalizeTitleHtml,
       toPlainText,
@@ -20,9 +19,6 @@
         "FloatingPanelManager",
       );
 
-    const N21_WARNING_TEXT =
-      "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
-
     const floatingElementsSelector = "[data-floating], [data-static-floating]";
     let hoverEl = null;
 
@@ -30,10 +26,6 @@
     function getIconUrlFromElement(element) {
       const img = element.querySelector("img");
       return img ? img.src : null;
-    }
-
-    function encodePayload(payload) {
-      return encodeN21Payload(N21_WARNING_TEXT, payload);
     }
 
     function getFloatingDataFromElement(element) {
@@ -84,9 +76,6 @@
 
     // Helper function to send encoded payload to chat
     function sendPayloadToChat(payload, fallbackIcon) {
-      const messageText = encodePayload(payload);
-      if (!messageText) return;
-
       const senderInfo = getSenderInfo();
       const messageOptions = {};
 
@@ -107,7 +96,7 @@
         messageOptions.icon = fallbackIcon;
       }
 
-      ChatManager.sendDebounced(messageText, messageOptions);
+      ChatManager.sendJsonMessage(payload, messageOptions);
     }
 
     // Track hovered floating element

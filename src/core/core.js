@@ -11,57 +11,12 @@
     ======================= */
 
   /* =======================
-       Chat payload & HTML helpers
+       HTML helpers
     ======================= */
   const DEFAULT_HTML_ALLOWLIST = {
     ALLOWED_TAGS: ["span", "b", "i", "em", "strong", "u", "br"],
     ALLOWED_ATTR: ["class", "data-toggle", "title"],
   };
-
-  function escapeN21PayloadValue(value) {
-    return String(value)
-      .replace(/\\/g, "\\\\")
-      .replace(/\|/g, "\\|")
-      .replace(/=/g, "\\=");
-  }
-
-  function encodeN21Payload(warningText, payload) {
-    try {
-      const pairs = [];
-      for (const [key, value] of Object.entries(payload || {})) {
-        if (value) {
-          pairs.push(`${key}=${escapeN21PayloadValue(value)}`);
-        }
-      }
-      const encoded = pairs.join("|");
-      return `[[n21: ${warningText} ||${encoded}]]`;
-    } catch (error) {
-      return "";
-    }
-  }
-
-  function decodeN21Payload(encoded) {
-    try {
-      const payload = {};
-      const pairs = encoded.split(/(?<!\\)\|/);
-
-      for (const pair of pairs) {
-        const matchResult = pair.match(/^([^=]+)=(.*)$/);
-        if (matchResult) {
-          const key = matchResult[1];
-          const value = matchResult[2]
-            .replace(/\\=/g, "=")
-            .replace(/\\\|/g, "|")
-            .replace(/\\\\/g, "\\");
-          payload[key] = value;
-        }
-      }
-
-      return payload;
-    } catch (error) {
-      return null;
-    }
-  }
 
   function sanitizeHtmlAllowlist(value, allowlist = DEFAULT_HTML_ALLOWLIST) {
     if (typeof value !== "string") return "";
@@ -151,9 +106,6 @@
     };
   }
 
-  window._n21_.escapeN21PayloadValue = escapeN21PayloadValue;
-  window._n21_.encodeN21Payload = encodeN21Payload;
-  window._n21_.decodeN21Payload = decodeN21Payload;
   window._n21_.sanitizeHtmlAllowlist = sanitizeHtmlAllowlist;
   window._n21_.toPlainText = toPlainText;
   window._n21_.normalizeTitleHtml = normalizeTitleHtml;

@@ -5,6 +5,67 @@
 
   const { BaseManager } = window._n21_?.managers || {};
 
+  const N21_WARNING_TEXT =
+    "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
+
+  /**
+   * Escape special characters in JSON message values
+   */
+  function escapeJsonValue(value) {
+    return String(value)
+      .replace(/\\/g, "\\\\")
+      .replace(/\|/g, "\\|")
+      .replace(/=/g, "\\=");
+  }
+
+  /**
+   * Encode an object payload into the JSON chat message format
+   * @param {Object} payload - Key-value pairs to encode
+   * @returns {string} Encoded message string
+   */
+  function encodeJsonMessage(payload) {
+    try {
+      const pairs = [];
+      for (const [key, value] of Object.entries(payload || {})) {
+        if (value) {
+          pairs.push(`${key}=${escapeJsonValue(value)}`);
+        }
+      }
+      const encoded = pairs.join("|");
+      return `[[n21: ${N21_WARNING_TEXT} ||${encoded}]]`;
+    } catch (error) {
+      return "";
+    }
+  }
+
+  /**
+   * Decode a JSON chat message string back to an object
+   * @param {string} encoded - The encoded payload string (content between ||...]])
+   * @returns {Object|null} Decoded payload object or null on error
+   */
+  function decodeJsonMessage(encoded) {
+    try {
+      const payload = {};
+      const pairs = encoded.split(/(?<!\\)\|/);
+
+      for (const pair of pairs) {
+        const matchResult = pair.match(/^([^=]+)=(.*)$/);
+        if (matchResult) {
+          const key = matchResult[1];
+          const value = matchResult[2]
+            .replace(/\\=/g, "=")
+            .replace(/\\\|/g, "|")
+            .replace(/\\\\/g, "\\");
+          payload[key] = value;
+        }
+      }
+
+      return payload;
+    } catch (error) {
+      return null;
+    }
+  }
+
   /**
    * Debounced chat message sender to avoid duplicate messages
    * Returns a function that sends messages with 200ms debounce for identical messages from same sender
@@ -145,6 +206,36 @@
     send(text, options = {}) {
       if (!text) return;
       window.sendChatMessage(text, options);
+    }
+
+    /**
+     * Encode a payload object into JSON chat message format
+     * @param {Object} payload - Key-value pairs to encode
+     * @returns {string} Encoded message string
+     */
+    encodeJsonMessage(payload) {
+      return encodeJsonMessage(payload);
+    }
+
+    /**
+     * Decode a JSON chat message string back to an object
+     * @param {string} encoded - The encoded payload string (content between ||...]])
+     * @returns {Object|null} Decoded payload object or null on error
+     */
+    decodeJsonMessage(encoded) {
+      return decodeJsonMessage(encoded);
+    }
+
+    /**
+     * Send a JSON chat message
+     * Automatically encodes the payload and sends with debouncing
+     * @param {Object} payload - Key-value pairs to encode and send
+     * @param {Object} options - Chat options { sender_info, icon, visibility }
+     */
+    sendJsonMessage(payload, options = {}) {
+      const messageText = encodeJsonMessage(payload);
+      if (!messageText) return;
+      this.sendDebounced(messageText, options);
     }
   }
 
