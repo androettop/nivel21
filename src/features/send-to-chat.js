@@ -5,7 +5,6 @@
 	    ======================= */
 
     const {
-      hookGlobalFn,
       encodeN21Payload,
       isLikelyUrl,
       normalizeTitleHtml,
@@ -14,7 +13,12 @@
       loadManagers,
     } = window._n21_;
 
-    const [ChatManager, KeyModifiersManager] = await loadManagers("ChatManager", "KeyModifiersManager");
+    const [ChatManager, KeyModifiersManager, FloatingPanelManager] =
+      await loadManagers(
+        "ChatManager",
+        "KeyModifiersManager",
+        "FloatingPanelManager",
+      );
 
     const N21_WARNING_TEXT =
       "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
@@ -122,70 +126,74 @@
       updateChatFilter(hoverEl, modifiers.shift);
     });
 
-    // Hook loadInFloatingPanel to intercept and send to chat if shift is pressed
-    hookGlobalFn("loadInFloatingPanel", (url, title, icon, color, ...args) => {
-      if (KeyModifiersManager.getState().shift) {
-        if (title) {
+    // Intercept loadInFloatingPanel to send to chat if shift is pressed
+    FloatingPanelManager.onLoad(
+      "send-to-chat",
+      (data) => {
+        if (KeyModifiersManager.getState().shift) {
+          if (data.title) {
+            sendPayloadToChat(
+              {
+                type: "floating",
+                title: normalizeTitleHtml(data.title),
+                url: data.url,
+                icon: data.icon,
+              },
+              data.icon,
+            );
+          }
+          return false;
+        }
+      },
+      { priority: 100 },
+    );
+
+    // Intercept openInFloatingPanel to send static floating panels to chat
+    FloatingPanelManager.onOpen(
+      "send-to-chat",
+      (arg1, arg2, arg3, arg4) => {
+        if (KeyModifiersManager.getState().shift) {
+          let data = null;
+
+          if (arg1 instanceof HTMLElement) {
+            data = getFloatingDataFromElement(arg1);
+          } else if (arg1 && typeof arg1 === "object") {
+            data = {
+              title: normalizeTitleHtml(arg1.title || arg1.name || ""),
+              icon: arg1.icon || "",
+              color: arg1.color || "",
+              content: arg1.content || arg1.body || arg1.text || "",
+              url: arg1.url || "",
+            };
+          } else {
+            data = {
+              title: normalizeTitleHtml(typeof arg1 === "string" ? arg1 : ""),
+              icon: typeof arg2 === "string" ? arg2 : "",
+              color: typeof arg3 === "string" ? arg3 : "",
+              content: typeof arg4 === "string" ? arg4 : "",
+              url: "",
+            };
+          }
+
+          const plainTitle = toPlainText(data?.title || "");
+          const plainContent = toPlainText(data?.content || "");
           sendPayloadToChat(
             {
-              type: "floating",
-              title: normalizeTitleHtml(title),
-              url,
-              icon,
+              type: "static",
+              title: plainTitle,
+              url: data?.url || "",
+              icon: data?.icon || "",
+              color: data?.color || "",
+              content: plainContent,
             },
-            icon,
+            data?.icon,
           );
+
+          return false;
         }
-        return false;
-      }
-
-      return [url, title, icon, color, ...args];
-    });
-
-    // Hook openInFloatingPanel to intercept static floating panels
-    hookGlobalFn("openInFloatingPanel", (arg1, arg2, arg3, arg4, ...args) => {
-      if (KeyModifiersManager.getState().shift) {
-        let data = null;
-
-        if (arg1 instanceof HTMLElement) {
-          data = getFloatingDataFromElement(arg1);
-        } else if (arg1 && typeof arg1 === "object") {
-          data = {
-            title: normalizeTitleHtml(arg1.title || arg1.name || ""),
-            icon: arg1.icon || "",
-            color: arg1.color || "",
-            content: arg1.content || arg1.body || arg1.text || "",
-            url: arg1.url || "",
-          };
-        } else {
-          data = {
-            title: normalizeTitleHtml(typeof arg1 === "string" ? arg1 : ""),
-            icon: typeof arg2 === "string" ? arg2 : "",
-            color: typeof arg3 === "string" ? arg3 : "",
-            content: typeof arg4 === "string" ? arg4 : "",
-            url: "",
-          };
-        }
-
-        const plainTitle = toPlainText(data?.title || "");
-        const plainContent = toPlainText(data?.content || "");
-        sendPayloadToChat(
-          {
-            type: "static",
-            title: plainTitle,
-            url: data?.url || "",
-            icon: data?.icon || "",
-            color: data?.color || "",
-            content: plainContent,
-          },
-          data?.icon,
-        );
-
-        return false;
-      }
-
-      return [arg1, arg2, arg3, arg4, ...args];
-    });
+      },
+      { priority: 100 },
+    );
   } catch (error) {
     console.warn("N21: Error en feature Send to Chat:", error.message);
   }

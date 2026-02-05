@@ -9,24 +9,6 @@
   /* =======================
        Funciones de utilidad
     ======================= */
-  // overrides a global function
-  // hookFn can return: newArgs array to call original with modified args, or false to skip original
-  function hookGlobalFn(fnName, hookFn) {
-    const originalFn = window[fnName];
-    if (typeof originalFn !== "function") return;
-
-    window[fnName] = (...args) => {
-      const result = hookFn(...args);
-      // If hookFn returns false, skip calling original function
-      if (result === false) return;
-      const newArgs = Array.isArray(result) ? result : args;
-      return originalFn(...newArgs);
-    };
-  }
-
-  // expose utility for features
-  window._n21_.hookGlobalFn = hookGlobalFn;
-
   // Wait for a global variable to exist
   // Returns a promise that resolves when the variable exists
   function waitForVariable(varPath, timeout = 10000) {

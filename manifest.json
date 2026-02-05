@@ -39,6 +39,7 @@
         "src/core/token-manager.js",
         "src/core/measurement-manager.js",
         "src/core/dice-manager.js",
+        "src/core/floating-panel-manager.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",
