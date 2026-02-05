@@ -9,37 +9,6 @@
   /* =======================
        Funciones de utilidad
     ======================= */
-  // Wait for a global variable to exist
-  // Returns a promise that resolves when the variable exists
-  function waitForVariable(varPath, timeout = 10000) {
-    return new Promise((resolve, reject) => {
-      const startTime = Date.now();
-      const checkInterval = setInterval(() => {
-        const parts = varPath.split(".");
-        let obj = window;
-
-        for (const part of parts) {
-          if (obj && obj[part] !== undefined) {
-            obj = obj[part];
-          } else {
-            obj = null;
-            break;
-          }
-        }
-
-        if (obj !== null) {
-          clearInterval(checkInterval);
-          resolve(obj);
-        } else if (Date.now() - startTime > timeout) {
-          clearInterval(checkInterval);
-          reject(new Error(`Timeout waiting for ${varPath}`));
-        }
-      }, 100);
-    });
-  }
-
-  // expose utility for features
-  window._n21_.waitForVariable = waitForVariable;
 
   /* =======================
        Chat payload & HTML helpers
