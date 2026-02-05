@@ -52,11 +52,18 @@
       this.sendDebounced = createDebouncedChatSender();
     }
 
-
     isReady() {
-      const websocketReady = !!window.App?.cable?.subscriptions?.subscriptions?.length;
+      const websocketReady = !!this._getSubscription();
       const sendChatMessageReady = typeof window.sendChatMessage === "function";
       return websocketReady && sendChatMessageReady;
+    }
+
+    _getSubscription() {
+      try {
+        return window.App?.cable?.subscriptions?.subscriptions?.[0] || null;
+      } catch (error) {
+        return null;
+      }
     }
 
     /**
@@ -67,8 +74,7 @@
       if (this._hooked) return;
 
       try {
-        const subscription =
-          window.App?.cable?.subscriptions?.subscriptions?.[0];
+        const subscription = this._getSubscription();
         if (!subscription) {
           console.warn("[ChatManager] Could not find chat subscription");
           return;
