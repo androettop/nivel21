@@ -1,40 +1,34 @@
-(() => {
+(async () => {
   try {
     // Estado global de n21
     const n21State = window._n21_.state;
+    const { loadManagers } = window._n21_;
 
-    // Esperar a que fogOfWar exista antes de inicializar
-    window._n21_
-      .waitForVariable("fogOfWar.wallsManager.entityManager")
-      .then(() => {
-        // Constante interna para acceder al prototipo del entity manager
-        const entityManagerProto =
-          fogOfWar.wallsManager.entityManager.__proto__;
+    // Esperar a que MeasurementManager esté listo
+    const [MeasurementManager] = await loadManagers("MeasurementManager");
 
-        // Guardar el método original
-        const originalRequestDestroy = entityManagerProto.requestDestroy;
+    // Obtener el entity manager y hookear requestDestroy
+    const entityManager = MeasurementManager.getEntityManager();
+    if (entityManager) {
+      const originalRequestDestroy = entityManager.requestDestroy.bind(entityManager);
 
-        // Hookear requestDestroy
-        entityManagerProto.requestDestroy = function (...args) {
-          const firstParam = args[0];
+      entityManager.requestDestroy = function (...args) {
+        const firstParam = args[0];
 
-          // Mantener mediciones si persistentMeasurements está activado
-          if (
-            firstParam &&
-            typeof firstParam === "string" &&
-            firstParam.includes("MEASUREMENT") &&
-            n21State.persistentMeasurements
-          ) {
-            return false;
-          }
+        // Mantener mediciones si persistentMeasurements está activado
+        if (
+          firstParam &&
+          typeof firstParam === "string" &&
+          firstParam.includes("MEASUREMENT") &&
+          n21State.persistentMeasurements
+        ) {
+          return false;
+        }
 
-          // Si no, devolver los parámetros tal cual (llamar función original)
-          return originalRequestDestroy.apply(this, args);
-        };
-      })
-      .catch((error) => {
-        console.error("N21: Error esperando fogOfWar:", error);
-      });
+        // Si no, devolver los parámetros tal cual (llamar función original)
+        return originalRequestDestroy(...args);
+      };
+    }
 
     // Crear y agregar botón de persistencia en el UI
     function setupPersistenceButton() {

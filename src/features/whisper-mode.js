@@ -331,12 +331,9 @@
     // ==================== Subscriptions ====================
 
     // Subscribe to chat messages via ChatManager to handle whisper visibility
-    function subscribeToWhisperMessages() {
-      const { ChatManager } = window._n21_.managers || {};
-      if (!ChatManager) {
-        console.warn("[Whisper Mode] ChatManager not available");
-        return;
-      }
+    async function subscribeToWhisperMessages() {
+      const { loadManagers } = window._n21_;
+      const [ChatManager] = await loadManagers("ChatManager");
 
       ChatManager.onMessage((messageData, rawData) => {
         const message = messageData.message.trim();

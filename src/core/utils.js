@@ -22,7 +22,62 @@
     return gameManager.script[managerName] || null;
   }
 
+  /**
+   * Load managers by name, waiting until they are ready
+   * @param {...string} managerNames - Names of managers to load (e.g., 'ChatManager', 'TokenManager')
+   * @param {Object} options - Optional configuration { timeout: number, checkInterval: number }
+   * @returns {Promise<Object[]>} Promise that resolves with array of manager instances
+   */
+  function loadManagers(...args) {
+    // Extract options if last argument is an object (not a string)
+    let options = { timeout: 10000, checkInterval: 50 };
+    let managerNames = args;
+
+    if (args.length > 0 && typeof args[args.length - 1] === "object") {
+      options = { ...options, ...args[args.length - 1] };
+      managerNames = args.slice(0, -1);
+    }
+
+    const { timeout, checkInterval } = options;
+
+    return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+
+      const checkManagers = () => {
+        const managers = window._n21_?.managers || {};
+        const results = [];
+        let allReady = true;
+
+        for (const name of managerNames) {
+          const manager = managers[name];
+          if (!manager || typeof manager.isReady !== "function" || !manager.isReady()) {
+            allReady = false;
+            break;
+          }
+          results.push(manager);
+        }
+
+        if (allReady && results.length === managerNames.length) {
+          resolve(results);
+        } else if (Date.now() - startTime > timeout) {
+          const missing = managerNames.filter((name) => {
+            const m = managers[name];
+            return !m || typeof m.isReady !== "function" || !m.isReady();
+          });
+          reject(new Error(`Timeout waiting for managers: ${missing.join(", ")}`));
+        } else {
+          setTimeout(checkManagers, checkInterval);
+        }
+      };
+
+      checkManagers();
+    });
+  }
+
   // Expose utility for manager abstractions
   window._n21_.utils = window._n21_.utils || {};
   window._n21_.utils.getNativeManager = getNativeManager;
+
+  // Expose loadManagers globally for features
+  window._n21_.loadManagers = loadManagers;
 })();

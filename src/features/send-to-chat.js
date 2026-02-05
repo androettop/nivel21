@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   try {
     /* =======================
 	       Feature: Send to Chat
@@ -13,9 +13,10 @@
       normalizeTitleHtml,
       toPlainText,
       getSenderInfoFromElement,
+      loadManagers,
     } = window._n21_;
 
-    const { ChatManager } = window._n21_.managers;
+    const [ChatManager] = await loadManagers("ChatManager");
 
     const N21_WARNING_TEXT =
       "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";

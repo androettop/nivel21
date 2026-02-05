@@ -52,6 +52,13 @@
       this.sendDebounced = createDebouncedChatSender();
     }
 
+
+    isReady() {
+      const websocketReady = !!window.App?.cable?.subscriptions?.subscriptions?.length;
+      const sendChatMessageReady = typeof window.sendChatMessage === "function";
+      return websocketReady && sendChatMessageReady;
+    }
+
     /**
      * Hook into App.cable.subscriptions to intercept incoming messages
      * This is called automatically when the first listener is added
