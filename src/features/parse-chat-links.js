@@ -8,17 +8,13 @@
     const combinedLinkRegex =
       /\[\[n21:[^\|]*\|\|([^\]]+)\]\]|\[([^\]]+)\]\(([^)]+)\)/g;
 
-    const {
-      sanitizeHtmlAllowlist,
-      toPlainText,
-      setAnchorContent,
-      loadManagers,
-    } = window._n21_;
+    const { loadManagers } = window._n21_;
 
-    const [ChatManager, ChatUIManager, TooltipManager] = await loadManagers(
+    const [ChatManager, ChatUIManager, TooltipManager, HtmlManager] = await loadManagers(
       "ChatManager",
       "ChatUIManager",
       "TooltipManager",
+      "HtmlManager",
     );
 
     // Check if URL is from nivel20.com
@@ -43,7 +39,7 @@
       const content = payload?.content || "";
 
       const displayHtml = title || content || "Detalle";
-      setAnchorContent(anchor, displayHtml, type !== "static");
+      HtmlManager.setAnchorContent(anchor, displayHtml, type !== "static");
 
       if (type === "static") {
         anchor.href = "#";
@@ -56,14 +52,14 @@
       if (title)
         anchor.setAttribute(
           "data-floating-title",
-          type === "static" ? toPlainText(title) : title,
+          type === "static" ? HtmlManager.toPlainText(title) : title,
         );
       if (icon) anchor.setAttribute("data-floating-icon", icon);
       if (color) anchor.setAttribute("data-floating-color", color);
       if (content)
         anchor.setAttribute(
           "data-floating-content",
-          type === "static" ? toPlainText(content) : content,
+          type === "static" ? HtmlManager.toPlainText(content) : content,
         );
       if (url) anchor.setAttribute("data-floating-url", url);
 
@@ -111,7 +107,7 @@
 
                 // Parse HTML content safely with DOMPurify
                 if (window.DOMPurify) {
-                  anchor.innerHTML = sanitizeHtmlAllowlist(linkText);
+                  anchor.innerHTML = HtmlManager.sanitize(linkText);
                   TooltipManager.processAll(anchor);
                 } else {
                   anchor.textContent = linkText;
@@ -123,7 +119,7 @@
                 let floatingTitle = linkText;
                 if (window.DOMPurify) {
                   const tempDiv = document.createElement("div");
-                  tempDiv.innerHTML = sanitizeHtmlAllowlist(linkText);
+                  tempDiv.innerHTML = HtmlManager.sanitize(linkText);
                   floatingTitle = tempDiv.textContent || "";
                 }
                 anchor.setAttribute("data-floating-title", floatingTitle);

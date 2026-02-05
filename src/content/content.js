@@ -39,6 +39,7 @@
     await injectScript("src/core/action-bar-manager.js");
     await injectScript("src/core/chat-ui-manager.js");
     await injectScript("src/core/tooltip-manager.js");
+    await injectScript("src/core/html-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([

@@ -43,6 +43,7 @@
         "src/core/action-bar-manager.js",
         "src/core/chat-ui-manager.js",
         "src/core/tooltip-manager.js",
+        "src/core/html-manager.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",

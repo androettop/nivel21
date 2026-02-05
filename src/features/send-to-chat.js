@@ -4,20 +4,46 @@
 	       Feature: Send to Chat
 	    ======================= */
 
-    const {
-      isLikelyUrl,
-      normalizeTitleHtml,
-      toPlainText,
-      getSenderInfoFromElement,
-      loadManagers,
-    } = window._n21_;
+    const { loadManagers } = window._n21_;
 
-    const [ChatManager, KeyModifiersManager, FloatingPanelManager] =
+    const [ChatManager, KeyModifiersManager, FloatingPanelManager, HtmlManager] =
       await loadManagers(
         "ChatManager",
         "KeyModifiersManager",
         "FloatingPanelManager",
+        "HtmlManager",
       );
+
+    // ==================== Local Helper Functions ====================
+
+    function normalizeTitleHtml(value) {
+      return typeof value === "string"
+        ? value.replace(/="([^"]*)"/g, "='$1'")
+        : "";
+    }
+
+    function isLikelyUrl(value) {
+      return (
+        typeof value === "string" &&
+        (value.startsWith("http://") ||
+          value.startsWith("https://") ||
+          value.startsWith("/") ||
+          value.startsWith("data:"))
+      );
+    }
+
+    function getSenderInfoFromElement(element) {
+      if (!element) return null;
+
+      const $elementWithSenderInfo = $(element).closest("[data-sender-info]");
+      if ($elementWithSenderInfo.length > 0) {
+        return $elementWithSenderInfo.attr("data-sender-info");
+      }
+
+      return null;
+    }
+
+    // ==================== Feature Code ====================
 
     const floatingElementsSelector = "[data-floating], [data-static-floating]";
     let hoverEl = null;
@@ -164,8 +190,8 @@
             };
           }
 
-          const plainTitle = toPlainText(data?.title || "");
-          const plainContent = toPlainText(data?.content || "");
+          const plainTitle = HtmlManager.toPlainText(data?.title || "");
+          const plainContent = HtmlManager.toPlainText(data?.content || "");
           sendPayloadToChat(
             {
               type: "static",
