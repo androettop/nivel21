@@ -85,10 +85,28 @@
     return Math.random().toString(36).slice(2);
   }
 
+  /**
+   * Register a manager class, instantiate it, call init(), and expose it globally
+   * @param {string} name - The name to register the manager under (e.g., 'ChatManager')
+   * @param {class} ManagerClass - The manager class to instantiate
+   * @returns {Object} The instantiated manager
+   */
+  function registerManager(name, ManagerClass) {
+    window._n21_ = window._n21_ || {};
+    window._n21_.managers = window._n21_.managers || {};
+
+    const manager = new ManagerClass();
+    manager.init();
+
+    window._n21_.managers[name] = manager;
+    return manager;
+  }
+
   // Expose utility for manager abstractions
   window._n21_.utils = window._n21_.utils || {};
   window._n21_.utils.getNativeManager = getNativeManager;
   window._n21_.utils.uuid = uuid;
+  window._n21_.utils.registerManager = registerManager;
 
   // Expose loadManagers globally for features
   window._n21_.loadManagers = loadManagers;

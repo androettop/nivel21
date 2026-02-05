@@ -228,11 +228,7 @@
     }
   }
 
-  // Create and initialize the manager
-  const manager = new FloatingPanelManager();
-  manager.init();
-
-  // Expose FloatingPanelManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.FloatingPanelManager = manager;
+  // Register FloatingPanelManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("FloatingPanelManager", FloatingPanelManager);
 })();

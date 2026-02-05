@@ -155,11 +155,7 @@
     }
   }
 
-  // Create and initialize the manager
-  const manager = new ActionBarManager();
-  manager.init();
-
-  // Expose ActionBarManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.ActionBarManager = manager;
+  // Register ActionBarManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("ActionBarManager", ActionBarManager);
 })();

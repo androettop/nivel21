@@ -149,11 +149,7 @@
     }
   }
 
-  // Create and initialize the manager
-  const manager = new DiceManager();
-  manager.init();
-
-  // Expose DiceManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.DiceManager = manager;
+  // Register DiceManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("DiceManager", DiceManager);
 })();

@@ -239,7 +239,7 @@
     }
   }
 
-  // Expose ChatManager through managers namespace
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.ChatManager = new ChatManager();
+  // Register ChatManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("ChatManager", ChatManager);
 })();

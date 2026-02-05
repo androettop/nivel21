@@ -36,7 +36,7 @@
     }
   }
 
-  // Expose MeasurementManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.MeasurementManager = new MeasurementManager();
+  // Register MeasurementManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("MeasurementManager", MeasurementManager);
 })();

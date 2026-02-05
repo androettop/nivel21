@@ -227,12 +227,7 @@
     }
   }
 
-  // Create and expose the manager instance
-  const chatUIManager = new ChatUIManager();
-  chatUIManager.init();
-
-  // Expose in n21 namespace
-  window._n21_ = window._n21_ || {};
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.ChatUIManager = chatUIManager;
+  // Register ChatUIManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("ChatUIManager", ChatUIManager);
 })();

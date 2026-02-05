@@ -103,12 +103,7 @@
     }
   }
 
-  // Create and expose the manager instance
-  const tooltipManager = new TooltipManager();
-  tooltipManager.init();
-
-  // Expose in n21 namespace
-  window._n21_ = window._n21_ || {};
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.TooltipManager = tooltipManager;
+  // Register TooltipManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("TooltipManager", TooltipManager);
 })();

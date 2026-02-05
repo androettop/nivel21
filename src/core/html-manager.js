@@ -125,12 +125,7 @@
     }
   }
 
-  // Create and expose the manager instance
-  const htmlManager = new HtmlManager();
-  htmlManager.init();
-
-  // Expose in n21 namespace
-  window._n21_ = window._n21_ || {};
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.HtmlManager = htmlManager;
+  // Register HtmlManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("HtmlManager", HtmlManager);
 })();

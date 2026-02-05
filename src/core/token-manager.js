@@ -62,7 +62,7 @@
     }
   }
 
-  // Expose TokenManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.TokenManager = new TokenManager();
+  // Register TokenManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("TokenManager", TokenManager);
 })();

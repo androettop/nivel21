@@ -119,11 +119,7 @@
     }
   }
 
-  // Create and initialize the manager
-  const manager = new KeyModifiersManager();
-  manager.init();
-
-  // Expose KeyModifiersManager globally
-  window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.KeyModifiersManager = manager;
+  // Register KeyModifiersManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("KeyModifiersManager", KeyModifiersManager);
 })();
