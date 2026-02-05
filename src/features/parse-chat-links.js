@@ -8,12 +8,6 @@
     const combinedLinkRegex =
       /\[\[n21:[^\|]*\|\|([^\]]+)\]\]|\[([^\]]+)\]\(([^)]+)\)/g;
 
-    // Selector for message text elements (both data-role and class variants)
-    const messageTextSelector = '[data-role="message-text"], .message-text';
-
-    // Selector for chat container
-    const chatContainerSelector = ".room-messages-chat";
-
     const {
       sanitizeHtmlAllowlist,
       toPlainText,
@@ -22,7 +16,7 @@
       loadManagers,
     } = window._n21_;
 
-    const [ChatManager] = await loadManagers("ChatManager");
+    const [ChatManager, ChatUIManager] = await loadManagers("ChatManager", "ChatUIManager");
 
     // Check if URL is from nivel20.com
     function isNivel20Url(url) {
@@ -163,70 +157,25 @@
       }
     }
 
-    // Function to process all message-text elements across all chat containers
-    function processMessageTexts() {
-      const chatContainers = document.querySelectorAll(chatContainerSelector);
-      if (!chatContainers.length) return;
+    // Register handler with ChatUIManager
+    ChatUIManager.onMessage(
+      "parse-chat-links",
+      (element) => {
+        parseMarkdownLinks(element);
+      },
+      {
+        priority: 100,
+        onComplete: () => {
+          // Update events for newly created links
+          if (window.bindFloatingLinks) {
+            window.bindFloatingLinks();
+          }
+        },
+      },
+    );
 
-      chatContainers.forEach((container) => {
-        const messageElements = container.querySelectorAll(messageTextSelector);
-        messageElements.forEach((element) => {
-          parseMarkdownLinks(element);
-        });
-      });
-
-      // Update events for newly created links
-      if (window.bindFloatingLinks) {
-        window.bindFloatingLinks();
-      }
-    }
-
-    // Initial parse on page load
-    processMessageTexts();
-
-    // Also observe for new messages added dynamically in all chat containers
-    const chatContainers = document.querySelectorAll(chatContainerSelector);
-    if (chatContainers.length) {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              // Check if added node is a message-text element or contains one
-              if (
-                node.hasAttribute &&
-                node.hasAttribute("data-role") &&
-                node.getAttribute("data-role") === "message-text"
-              ) {
-                parseMarkdownLinks(node);
-              } else if (
-                node.classList &&
-                node.classList.contains("message-text")
-              ) {
-                parseMarkdownLinks(node);
-              } else if (node.querySelectorAll) {
-                const messageTexts = node.querySelectorAll(messageTextSelector);
-                messageTexts.forEach((element) => {
-                  parseMarkdownLinks(element);
-                });
-              }
-            }
-          });
-        });
-
-        // Update events for newly created links
-        if (window.bindFloatingLinks) {
-          window.bindFloatingLinks();
-        }
-      });
-
-      // Start observing each chat container for changes
-      chatContainers.forEach((container) => {
-        observer.observe(container, {
-          childList: true,
-          subtree: true,
-        });
-      });
-    }
+    // Process existing messages on page load
+    ChatUIManager.processExistingMessages();
   } catch (error) {
     console.warn("N21: Error en feature Parse Chat Links:", error.message);
   }
