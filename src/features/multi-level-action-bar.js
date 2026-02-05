@@ -165,7 +165,7 @@
   }
 
   // Importar funciones de core
-  const { uuid } = window._n21_ || {};
+  const { uuid } = window._n21_?.utils || {};
 
   function isFolder(item) {
     return item.action_type === "folder";

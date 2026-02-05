@@ -3,7 +3,7 @@
        DMStateManager - Global state synchronization between DM and players
     ======================= */
 
-  const { uuid } = window._n21_;
+  const { uuid } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
 
   // DMStateManager provides a unified interface for synchronizing state between DM and players
