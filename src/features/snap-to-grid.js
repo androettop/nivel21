@@ -4,9 +4,9 @@
 	       Feature: Snap to Grid
 	    ======================= */
 
-    const { state, loadManagers } = window._n21_;
+    const { loadManagers } = window._n21_;
 
-    const [TokenManager] = await loadManagers("TokenManager");
+    const [TokenManager, KeyModifiersManager] = await loadManagers("TokenManager", "KeyModifiersManager");
 
     let isDragging = false;
     let dragStarted = false;
@@ -62,7 +62,7 @@
     });
 
     $(document).on("mouseup", () => {
-      if (isDragging && dragStarted && state.shift) {
+      if (isDragging && dragStarted && KeyModifiersManager.getState().shift) {
         setTimeout(snapSelectedTokens, 10);
       }
       isDragging = false;

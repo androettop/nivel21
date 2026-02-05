@@ -1,18 +1,12 @@
 (() => {
   /* =======================
        DEPRECATED: This file now only contains utilities and base state.
-       Managers have been moved to separate files:
-       - ChatManager: src/core/chat-manager.js
-       - DMStateManager: src/core/dm-state-manager.js
     ======================= */
 
   /* =======================
        Global state & events
     ======================= */
   const n21State = {
-    shift: false,
-    alt: false,
-    ctrl: false,
     hoverEl: null,
     persistentMeasurements: false,
   };
@@ -232,42 +226,4 @@
   window._n21_.setAnchorContent = setAnchorContent;
   window._n21_.isFolder = isFolder;
   window._n21_.createFolderFromItem = createFolderFromItem;
-  
-  /* =======================
-       General input handling
-    ======================= */
-  $(document).on("keydown keyup", (e) => {
-    const pressed = e.type === "keydown";
-    let changed = false;
-
-    /* --- Modifier keys --- */
-    if (e.key === "Shift" && n21State.shift !== pressed) {
-      n21State.shift = pressed;
-      changed = true;
-    }
-
-    if (e.key === "Alt" && n21State.alt !== pressed) {
-      n21State.alt = pressed;
-      changed = true;
-    }
-
-    if (e.key === "Control" && n21State.ctrl !== pressed) {
-      n21State.ctrl = pressed;
-      changed = true;
-    }
-
-    if (changed) {
-      e.preventDefault();
-      n21Events.trigger("modifiers:change", [{ ...n21State }]);
-    }
-  });
-
-  $(window).on("blur", () => {
-    if (!n21State.shift && !n21State.alt && !n21State.ctrl) return;
-
-    n21State.shift = false;
-    n21State.alt = false;
-    n21State.ctrl = false;
-    n21Events.trigger("modifiers:change", [{ ...n21State }]);
-  });
 })();

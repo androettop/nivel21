@@ -5,7 +5,6 @@
 	    ======================= */
 
     const {
-      state,
       events,
       hookGlobalFn,
       encodeN21Payload,
@@ -16,7 +15,7 @@
       loadManagers,
     } = window._n21_;
 
-    const [ChatManager] = await loadManagers("ChatManager");
+    const [ChatManager, KeyModifiersManager] = await loadManagers("ChatManager", "KeyModifiersManager");
 
     const N21_WARNING_TEXT =
       "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
@@ -112,7 +111,7 @@
     $(document)
       .on("mouseenter", floatingElementsSelector, function () {
         hoverEl = this;
-        updateChatFilter(this, state.shift);
+        updateChatFilter(this, KeyModifiersManager.getState().shift);
       })
       .on("mouseleave", floatingElementsSelector, function () {
         clearChatFilter(this);
@@ -126,7 +125,7 @@
 
     // Hook loadInFloatingPanel to intercept and send to chat if shift is pressed
     hookGlobalFn("loadInFloatingPanel", (url, title, icon, color, ...args) => {
-      if (state.shift) {
+      if (KeyModifiersManager.getState().shift) {
         if (title) {
           sendPayloadToChat(
             {
@@ -146,7 +145,7 @@
 
     // Hook openInFloatingPanel to intercept static floating panels
     hookGlobalFn("openInFloatingPanel", (arg1, arg2, arg3, arg4, ...args) => {
-      if (state.shift) {
+      if (KeyModifiersManager.getState().shift) {
         let data = null;
 
         if (arg1 instanceof HTMLElement) {

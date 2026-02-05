@@ -1,12 +1,14 @@
-(() => {
+(async () => {
   try {
     /* =======================
 	       Feature: Advantage / Disadvantage
 	    ======================= */
 
-    const { state, events, hookGlobalFn } = window._n21_;
+    const { state, events, hookGlobalFn, loadManagers } = window._n21_;
 
-    function updateOutline(el, state) {
+    const [KeyModifiersManager] = await loadManagers("KeyModifiersManager");
+
+    function updateOutline(el, modifiers) {
       if (!el) return;
 
       const $el = $(el);
@@ -14,11 +16,11 @@
       $el.removeClass("n21-advantage n21-disadvantage");
 
       /* --- cancel out if both pressed --- */
-      if (state.shift && state.alt) return;
+      if (modifiers.shift && modifiers.alt) return;
 
-      if (state.shift) {
+      if (modifiers.shift) {
         $el.addClass("n21-advantage");
-      } else if (state.alt) {
+      } else if (modifiers.alt) {
         $el.addClass("n21-disadvantage");
       }
     }
@@ -33,15 +35,15 @@
     $(document)
       .on("mouseenter", rollButtonsSelector, function () {
         state.hoverEl = this;
-        updateOutline(this, state);
+        updateOutline(this, KeyModifiersManager.getState());
       })
       .on("mouseleave", rollButtonsSelector, function () {
         clearOutline(this);
         state.hoverEl = null;
       });
 
-    events.on("modifiers:change", (_, state) => {
-      updateOutline(state.hoverEl, state);
+    events.on("modifiers:change", (_, modifiers) => {
+      updateOutline(state.hoverEl, modifiers);
     });
 
     hookGlobalFn("diceRoll", (notation, ...args) => {
@@ -54,8 +56,10 @@
         return [notation, ...args];
       }
 
+      const modifiers = KeyModifiersManager.getState();
+
       /* --- cancel out --- */
-      if (state.shift && state.alt) {
+      if (modifiers.shift && modifiers.alt) {
         return [notation, ...args];
       }
 
@@ -75,9 +79,9 @@
       }
 
       /* --- apply advantage / disadvantage --- */
-      if (state.shift) {
+      if (modifiers.shift) {
         dicePart = `max(${dicePart},${dicePart})`;
-      } else if (state.alt) {
+      } else if (modifiers.alt) {
         dicePart = `min(${dicePart},${dicePart})`;
       }
 

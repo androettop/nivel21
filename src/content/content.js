@@ -30,10 +30,10 @@
 
     // 2. Load managers
     await injectScript("src/core/base-manager.js");
+    await injectScript("src/core/key-modifiers-manager.js");
     await injectScript("src/core/chat-manager.js");
-    await injectScript("src/core/dm-state-manager.js");
     await injectScript("src/core/token-manager.js");
-	await injectScript("src/core/measurement-manager.js");
+    await injectScript("src/core/measurement-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([
