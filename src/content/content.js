@@ -24,7 +24,11 @@
 		// 1. Load core (state, events, utilities)
 		injectScript('src/core/core.js');
 		
-		// 2. Load features (order matters if features depend on each other)
+		// 2. Load core managers (depend on core.js)
+		injectScript('src/core/chat-manager.js');
+		injectScript('src/core/dm-state-manager.js');
+		
+		// 3. Load features (order matters if features depend on each other)
 		setTimeout(() => {
 			injectScript('src/features/advantage-disadvantage.js');
 			injectScript('src/features/send-to-chat.js');
@@ -36,6 +40,6 @@
 			injectScript('src/features/whisper-mode.js');
 			injectScript('src/features/multi-level-action-bar.js');
 			// Add more features here in the future
-		}, 50);
+		}, 200);
 	});
 })();

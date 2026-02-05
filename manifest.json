@@ -32,6 +32,8 @@
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/core.js",
+        "src/core/chat-manager.js",
+        "src/core/dm-state-manager.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",

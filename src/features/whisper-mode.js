@@ -330,15 +330,15 @@
 
     // ==================== Subscriptions ====================
 
-    // Subscribe to chat messages via ChatHandler to handle whisper visibility
+    // Subscribe to chat messages via ChatManager to handle whisper visibility
     function subscribeToWhisperMessages() {
-      const { ChatHandler } = window;
-      if (!ChatHandler) {
-        console.warn("[Whisper Mode] ChatHandler not available");
+      const { ChatManager } = window._n21_.managers || {};
+      if (!ChatManager) {
+        console.warn("[Whisper Mode] ChatManager not available");
         return;
       }
 
-      ChatHandler.onMessage((messageData, rawData) => {
+      ChatManager.onMessage((messageData, rawData) => {
         const message = messageData.message.trim();
         const currentUserName = window.getUserName?.();
         const currentUserId = window.getUserId?.();

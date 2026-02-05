@@ -15,7 +15,7 @@
       getSenderInfoFromElement,
     } = window._n21_;
 
-    const { ChatHandler } = window;
+    const { ChatManager } = window._n21_.managers;
 
     const N21_WARNING_TEXT =
       "Para ver estos mensajes correctamente instala la extensión Nivel21 desde https://github.com/androettop/nivel21";
@@ -104,7 +104,7 @@
         messageOptions.icon = fallbackIcon;
       }
 
-      ChatHandler.sendDebounced(messageText, messageOptions);
+      ChatManager.sendDebounced(messageText, messageOptions);
     }
 
     // Track hovered floating element
