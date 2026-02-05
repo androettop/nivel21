@@ -1,12 +1,12 @@
-(() => {
+(async () => {
   try {
     /* =======================
 	       Feature: Snap to Grid
 	    ======================= */
 
-    const { state } = window._n21_;
+    const { state, loadManagers } = window._n21_;
 
-    const { TokenManager } = window._n21_?.managers || {};
+    const [TokenManager] = await loadManagers("TokenManager");
 
     let isDragging = false;
     let dragStarted = false;
