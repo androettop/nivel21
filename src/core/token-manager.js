@@ -4,19 +4,20 @@
     ======================= */
 
   const { getNativeManager } = window._n21_?.utils || {};
+  const { BaseManager } = window._n21_?.managers || {};
 
   /**
    * TokenManager provides a unified interface for managing tokens
    * Abstracts the native tokenManager from nivel20
    */
-  const TokenManager = {
+  class TokenManager extends BaseManager {
     /**
      * Get the native tokenManager instance
      * @returns {Object|null} The native tokenManager or null if not available
      */
     _getNative() {
       return getNativeManager("tokenManager");
-    },
+    }
 
     /**
      * Get the entity manager from the native tokenManager
@@ -24,7 +25,7 @@
      */
     getEntityManager() {
       return this._getNative()?.entityManager || null;
-    },
+    }
 
     /**
      * Get all token instances
@@ -32,7 +33,7 @@
      */
     getInstances() {
       return this.getEntityManager()?.instances || null;
-    },
+    }
 
     /**
      * Get a specific token by its networkId
@@ -42,7 +43,7 @@
     getToken(networkId) {
       const instances = this.getInstances();
       return instances?.get?.(networkId) || null;
-    },
+    }
 
     /**
      * Request an update to a token's properties
@@ -55,7 +56,7 @@
 
       entityManager.requestUpdate(updateData);
       return true;
-    },
+    }
 
     /**
      * Update a token's position
@@ -70,7 +71,7 @@
         networkId,
         position,
       });
-    },
+    }
 
     /**
      * Check if the TokenManager is available
@@ -78,10 +79,10 @@
      */
     isAvailable() {
       return this._getNative() !== null;
-    },
-  };
+    }
+  }
 
   // Expose TokenManager globally
   window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.TokenManager = TokenManager;
+  window._n21_.managers.TokenManager = new TokenManager();
 })();

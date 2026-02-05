@@ -4,20 +4,24 @@
     ======================= */
 
   const { uuid } = window._n21_;
+  const { BaseManager } = window._n21_?.managers || {};
 
   // DMStateManager provides a unified interface for synchronizing state between DM and players
   // The DM owns the state and broadcasts changes to all players via hidden chat messages
   // Players receive updates and can subscribe to state changes
-  const DMStateManager = {
-    _state: {},
-    _listeners: [],
-    _initialized: false,
-    _isDM: false,
-    _playerListInterval: null,
-    _lastPlayerList: [],
-    _pendingUpdateIds: new Set(), // Track UUIDs of updates initiated by DM for optimistic updates
-    _localStorageKey: "n21_sync_state",
-    _stateMessagePrefix: "[[n21:state-sync||",
+  class DMStateManager extends BaseManager {
+    constructor() {
+      super();
+      this._state = {};
+      this._listeners = [];
+      this._initialized = false;
+      this._isDM = false;
+      this._playerListInterval = null;
+      this._lastPlayerList = [];
+      this._pendingUpdateIds = new Set(); // Track UUIDs of updates initiated by DM for optimistic updates
+      this._localStorageKey = "n21_sync_state";
+      this._stateMessagePrefix = "[[n21:state-sync||";
+    }
 
     // Check if current user is the DM (has ALL_TEAMS in their teams)
     _checkIsDM() {
@@ -31,7 +35,7 @@
       } catch (error) {
         return false;
       }
-    },
+    }
 
     // Get current connected player IDs (excluding self)
     _getConnectedPlayerIds() {
@@ -46,7 +50,7 @@
       } catch (error) {
         return "";
       }
-    },
+    }
 
     // Save state to localStorage (DM only)
     _saveToLocalStorage() {
@@ -62,7 +66,7 @@
           error,
         );
       }
-    },
+    }
 
     // Load state from localStorage (DM only)
     _loadFromLocalStorage() {
@@ -79,7 +83,7 @@
         );
         this._state = {};
       }
-    },
+    }
 
     // Broadcast current state to all players via hidden chat message
     _broadcastState(updateId) {
@@ -99,7 +103,7 @@
           visibility: "hidden",
         });
       }
-    },
+    }
 
     // Parse incoming message to extract state sync payload
     _parseStateMessage(message) {
@@ -115,7 +119,7 @@
       } catch (error) {
         return null;
       }
-    },
+    }
 
     // Notify all listeners of state change
     _notifyListeners(newState, oldState) {
@@ -126,7 +130,7 @@
           console.warn("[DMStateManager] Listener error:", error);
         }
       }
-    },
+    }
 
     // Start observing player list for changes (DM only)
     _startPlayerListObserver() {
@@ -142,7 +146,7 @@
           this._broadcastState();
         }
       }, 1000);
-    },
+    }
 
     // Stop player list observer
     _stopPlayerListObserver() {
@@ -150,7 +154,7 @@
         clearInterval(this._playerListInterval);
         this._playerListInterval = null;
       }
-    },
+    }
 
     // Hook into ChatManager to receive state sync messages
     _hookChatHandler() {
@@ -190,7 +194,7 @@
 
         return false; // Block message from chat UI
       });
-    },
+    }
 
     // Initialize the handler
     init() {
@@ -221,12 +225,12 @@
       };
 
       checkAndInit();
-    },
+    }
 
     // Get current state (read-only copy)
     get state() {
       return { ...this._state };
-    },
+    }
 
     // Set state (DM only)
     // Returns true if state was set, false if not DM
@@ -258,7 +262,7 @@
       this._broadcastState(updateId);
 
       return true;
-    },
+    }
 
     // Update state by merging with current state (DM only)
     // Returns true if state was updated, false if not DM
@@ -275,7 +279,7 @@
 
       const newState = { ...this._state, ...partialState };
       return this.set(newState);
-    },
+    }
 
     // Subscribe to state changes
     // Callback receives (newState, oldState)
@@ -292,12 +296,12 @@
           this._listeners.splice(index, 1);
         }
       };
-    },
+    }
 
     // Check if current user is the DM
     isDM() {
       return this._isDM;
-    },
+    }
 
     // Force re-broadcast current state (DM only)
     // Useful for manual sync
@@ -308,13 +312,14 @@
       }
       this._broadcastState();
       return true;
-    },
-  };
+    }
+  }
 
-  // Expose DMStateManager through managers namespace
+  // Create and expose DMStateManager instance through managers namespace
   window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.DMStateManager = DMStateManager;
+  const dmStateManager = new DMStateManager();
+  window._n21_.managers.DMStateManager = dmStateManager;
 
   // Initialize DMStateManager
-  DMStateManager.init();
+  dmStateManager.init();
 })();

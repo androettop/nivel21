@@ -3,6 +3,8 @@
        ChatManager - Global chat abstraction
     ======================= */
 
+  const { BaseManager } = window._n21_?.managers || {};
+
   /**
    * Debounced chat message sender to avoid duplicate messages
    * Returns a function that sends messages with 200ms debounce for identical messages from same sender
@@ -42,9 +44,13 @@
    * ChatManager provides a unified interface for sending and receiving chat messages
    * Features can subscribe to incoming messages and use a consistent API to send messages
    */
-  const ChatManager = {
-    _hooked: false,
-    _listeners: [],
+  class ChatManager extends BaseManager {
+    constructor() {
+      super();
+      this._hooked = false;
+      this._listeners = [];
+      this.sendDebounced = createDebouncedChatSender();
+    }
 
     /**
      * Hook into App.cable.subscriptions to intercept incoming messages
@@ -97,7 +103,7 @@
       } catch (error) {
         console.warn("[ChatManager] Could not hook subscriptions:", error);
       }
-    },
+    }
 
     /**
      * Subscribe to incoming chat messages
@@ -117,7 +123,7 @@
           this._listeners.splice(index, 1);
         }
       };
-    },
+    }
 
     /**
      * Send a chat message with options
@@ -126,15 +132,10 @@
     send(text, options = {}) {
       if (!text) return;
       window.sendChatMessage(text, options);
-    },
-
-    /**
-     * Debounced version of send to avoid duplicate messages
-     */
-    sendDebounced: createDebouncedChatSender(),
-  };
+    }
+  }
 
   // Expose ChatManager through managers namespace
   window._n21_.managers = window._n21_.managers || {};
-  window._n21_.managers.ChatManager = ChatManager;
+  window._n21_.managers.ChatManager = new ChatManager();
 })();
