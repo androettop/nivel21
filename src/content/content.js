@@ -34,6 +34,7 @@
     await injectScript("src/core/chat-manager.js");
     await injectScript("src/core/token-manager.js");
     await injectScript("src/core/measurement-manager.js");
+    await injectScript("src/core/dice-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([

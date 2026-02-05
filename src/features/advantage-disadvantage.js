@@ -4,9 +4,12 @@
 	       Feature: Advantage / Disadvantage
 	    ======================= */
 
-    const { hookGlobalFn, loadManagers } = window._n21_;
+    const { loadManagers } = window._n21_;
 
-    const [KeyModifiersManager] = await loadManagers("KeyModifiersManager");
+    const [KeyModifiersManager, DiceManager] = await loadManagers(
+      "KeyModifiersManager",
+      "DiceManager",
+    );
 
     let hoverEl = null;
 
@@ -48,49 +51,53 @@
       updateOutline(hoverEl, modifiers);
     });
 
-    hookGlobalFn("diceRoll", (notation, ...args) => {
-      // already modified → do nothing
-      if (
-        typeof notation === "string" &&
-        (notation.toLowerCase().includes("max") ||
-          notation.toLowerCase().includes("min"))
-      ) {
+    DiceManager.addModifier(
+      "advantage-disadvantage",
+      (notation, ...args) => {
+        // already modified → do nothing
+        if (
+          typeof notation === "string" &&
+          (notation.toLowerCase().includes("max") ||
+            notation.toLowerCase().includes("min"))
+        ) {
+          return [notation, ...args];
+        }
+
+        const modifiers = KeyModifiersManager.getState();
+
+        /* --- cancel out --- */
+        if (modifiers.shift && modifiers.alt) {
+          return [notation, ...args];
+        }
+
+        if (typeof notation !== "string") {
+          return [notation, ...args];
+        }
+
+        /* --- detect dice + modifier --- */
+        const match = notation.match(/^(\d+d\d+)\s*([+-])\s*(\d+)$/);
+
+        let dicePart = notation;
+        let modifierPart = "";
+
+        if (match) {
+          dicePart = match[1];
+          modifierPart = `${match[2]}${match[3]}`;
+        }
+
+        /* --- apply advantage / disadvantage --- */
+        if (modifiers.shift) {
+          dicePart = `max(${dicePart},${dicePart})`;
+        } else if (modifiers.alt) {
+          dicePart = `min(${dicePart},${dicePart})`;
+        }
+
+        notation = modifierPart ? `${dicePart}${modifierPart}` : dicePart;
+
         return [notation, ...args];
-      }
-
-      const modifiers = KeyModifiersManager.getState();
-
-      /* --- cancel out --- */
-      if (modifiers.shift && modifiers.alt) {
-        return [notation, ...args];
-      }
-
-      if (typeof notation !== "string") {
-        return [notation, ...args];
-      }
-
-      /* --- detect dice + modifier --- */
-      const match = notation.match(/^(\d+d\d+)\s*([+-])\s*(\d+)$/);
-
-      let dicePart = notation;
-      let modifierPart = "";
-
-      if (match) {
-        dicePart = match[1];
-        modifierPart = `${match[2]}${match[3]}`;
-      }
-
-      /* --- apply advantage / disadvantage --- */
-      if (modifiers.shift) {
-        dicePart = `max(${dicePart},${dicePart})`;
-      } else if (modifiers.alt) {
-        dicePart = `min(${dicePart},${dicePart})`;
-      }
-
-      notation = modifierPart ? `${dicePart}${modifierPart}` : dicePart;
-
-      return [notation, ...args];
-    });
+      },
+      { priority: 100 },
+    );
   } catch (error) {
     console.warn(
       "N21: Error en feature Advantage/Disadvantage:",
