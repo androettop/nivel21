@@ -1,19 +1,16 @@
 (() => {
   /* =======================
-       DEPRECATED: This file now only contains utilities and base state.
+       DEPRECATED: This file now only contains utilities.
     ======================= */
 
   /* =======================
-       Global state & events
+       Global events
     ======================= */
-  const n21State = {};
-
   // simple internal event bus
   const n21Events = $({});
 
   // expose for debugging and for features to access
   window._n21_ = {
-    state: n21State,
     events: n21Events,
   };
 
