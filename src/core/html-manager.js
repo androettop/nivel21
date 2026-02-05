@@ -12,20 +12,28 @@
 
   /**
    * HtmlManager provides HTML sanitization and text manipulation utilities
+   * Depends on: TooltipManager
    */
   class HtmlManager extends BaseManager {
     constructor() {
       super();
       this._initialized = false;
+      this._tooltipManager = null;
     }
 
     /**
-     * Initialize the manager - waits for DOMPurify to be available
+     * Initialize the manager - waits for DOMPurify and TooltipManager
      */
     async init() {
       if (this._initialized) return;
 
       await this._waitForDOMPurify();
+
+      // Load TooltipManager dependency
+      const { loadManagers } = window._n21_;
+      const [TooltipManager] = await loadManagers("TooltipManager");
+      this._tooltipManager = TooltipManager;
+
       this._initialized = true;
     }
 
@@ -98,10 +106,9 @@
 
       if (window.DOMPurify) {
         anchor.innerHTML = this.sanitize(html);
-        // Use TooltipManager if available
-        const tooltipManager = window._n21_?.managers?.TooltipManager;
-        if (tooltipManager) {
-          tooltipManager.processAll(anchor);
+        // Use TooltipManager to process tooltips
+        if (this._tooltipManager) {
+          this._tooltipManager.processAll(anchor);
         }
       } else {
         anchor.textContent = html;
@@ -120,6 +127,7 @@
 
   // Create and expose the manager instance
   const htmlManager = new HtmlManager();
+  htmlManager.init();
 
   // Expose in n21 namespace
   window._n21_ = window._n21_ || {};

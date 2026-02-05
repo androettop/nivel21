@@ -105,6 +105,7 @@
 
   // Create and expose the manager instance
   const tooltipManager = new TooltipManager();
+  tooltipManager.init();
 
   // Expose in n21 namespace
   window._n21_ = window._n21_ || {};
