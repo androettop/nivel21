@@ -36,6 +36,7 @@
     await injectScript("src/core/measurement-manager.js");
     await injectScript("src/core/dice-manager.js");
     await injectScript("src/core/floating-panel-manager.js");
+    await injectScript("src/core/action-bar-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([
