@@ -4,9 +4,11 @@
 	       Feature: Advantage / Disadvantage
 	    ======================= */
 
-    const { state, events, hookGlobalFn, loadManagers } = window._n21_;
+    const { events, hookGlobalFn, loadManagers } = window._n21_;
 
     const [KeyModifiersManager] = await loadManagers("KeyModifiersManager");
+
+    let hoverEl = null;
 
     function updateOutline(el, modifiers) {
       if (!el) return;
@@ -34,16 +36,16 @@
 
     $(document)
       .on("mouseenter", rollButtonsSelector, function () {
-        state.hoverEl = this;
+        hoverEl = this;
         updateOutline(this, KeyModifiersManager.getState());
       })
       .on("mouseleave", rollButtonsSelector, function () {
         clearOutline(this);
-        state.hoverEl = null;
+        hoverEl = null;
       });
 
     events.on("modifiers:change", (_, modifiers) => {
-      updateOutline(state.hoverEl, modifiers);
+      updateOutline(hoverEl, modifiers);
     });
 
     hookGlobalFn("diceRoll", (notation, ...args) => {

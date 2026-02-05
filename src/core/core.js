@@ -7,7 +7,6 @@
        Global state & events
     ======================= */
   const n21State = {
-    hoverEl: null,
     persistentMeasurements: false,
   };
 
