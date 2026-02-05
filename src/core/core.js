@@ -6,9 +6,7 @@
   /* =======================
        Global state & events
     ======================= */
-  const n21State = {
-    persistentMeasurements: false,
-  };
+  const n21State = {};
 
   // simple internal event bus
   const n21Events = $({});

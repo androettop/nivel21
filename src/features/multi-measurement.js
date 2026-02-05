@@ -1,11 +1,12 @@
 (async () => {
   try {
-    // Estado global de n21
-    const n21State = window._n21_.state;
     const { loadManagers } = window._n21_;
 
     // Esperar a que MeasurementManager esté listo
     const [MeasurementManager] = await loadManagers("MeasurementManager");
+
+    // Estado local de persistencia de mediciones
+    let persistentMeasurements = false;
 
     // Obtener el entity manager y hookear requestDestroy
     const entityManager = MeasurementManager.getEntityManager();
@@ -20,7 +21,7 @@
           firstParam &&
           typeof firstParam === "string" &&
           firstParam.includes("MEASUREMENT") &&
-          n21State.persistentMeasurements
+          persistentMeasurements
         ) {
           return false;
         }
@@ -56,7 +57,7 @@
       processTooltip(button);
 
       // Agregar la clase inicial según el estado
-      if (n21State.persistentMeasurements) {
+      if (persistentMeasurements) {
         button.classList.add("btn-primary");
       } else {
         button.classList.add("btn-dice");
@@ -70,10 +71,10 @@
       // Event listener para cambiar el estado
       button.addEventListener("click", (e) => {
         e.preventDefault();
-        n21State.persistentMeasurements = !n21State.persistentMeasurements;
+        persistentMeasurements = !persistentMeasurements;
 
         // Actualizar clases del botón
-        if (n21State.persistentMeasurements) {
+        if (persistentMeasurements) {
           button.classList.remove("btn-dice");
           button.classList.add("btn-primary");
         } else {
