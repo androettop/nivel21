@@ -1,13 +1,14 @@
-(() => {
+(async () => {
   try {
     /* =======================
        Feature: Whisper Mode
     ======================= */
 
+    const { loadManagers } = window._n21_;
+    const [ChatUIManager] = await loadManagers("ChatUIManager");
+
     // ==================== Constants ====================
     const SELECTORS = {
-      messageText: '[data-role="message-text"], .message-text',
-      chatContainer: ".room-messages-chat",
       messageBox: ".room-message",
       userName: ".user-name",
       submitButton: '.chat-input[type="submit"]',
@@ -208,18 +209,6 @@
       });
     }
 
-    // Check if node is or contains a message element
-    function isMessageElement(node) {
-      if (!node.nodeType || node.nodeType !== Node.ELEMENT_NODE) return false;
-
-      const hasDataRole =
-        node.hasAttribute?.("data-role") &&
-        node.getAttribute("data-role") === "message-text";
-      const hasClass = node.classList?.contains("message-text");
-
-      return hasDataRole || hasClass;
-    }
-
     // ==================== Message Processing ====================
 
     // Process a single whisper message
@@ -247,43 +236,6 @@
 
         messageElement.textContent = removeWhisperPrefix(text);
       }
-    }
-
-    // Process all whisper messages in chat
-    function processWhisperMessages() {
-      const chatContainers = document.querySelectorAll(SELECTORS.chatContainer);
-      chatContainers.forEach((container) => {
-        const messageElements = container.querySelectorAll(
-          SELECTORS.messageText,
-        );
-        messageElements.forEach(processWhisperMessage);
-      });
-    }
-
-    // Observe for new messages added dynamically
-    function observeWhisperMessages() {
-      const chatContainers = document.querySelectorAll(SELECTORS.chatContainer);
-      if (!chatContainers.length) return;
-
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (isMessageElement(node)) {
-              processWhisperMessage(node);
-            } else if (node.querySelectorAll) {
-              const messageTexts = node.querySelectorAll(SELECTORS.messageText);
-              messageTexts.forEach(processWhisperMessage);
-            }
-          });
-        });
-      });
-
-      chatContainers.forEach((container) => {
-        observer.observe(container, {
-          childList: true,
-          subtree: true,
-        });
-      });
     }
 
     // ================== Handle Visibility ==================
@@ -332,7 +284,6 @@
 
     // Subscribe to chat messages via ChatManager to handle whisper visibility
     async function subscribeToWhisperMessages() {
-      const { loadManagers } = window._n21_;
       const [ChatManager] = await loadManagers("ChatManager");
 
       ChatManager.onMessage((messageData, rawData) => {
@@ -369,9 +320,15 @@
 
     // ==================== Initialization ====================
 
+    // Register handler with ChatUIManager for processing whisper messages
+    ChatUIManager.onMessage("whisper-mode", (element) => {
+      processWhisperMessage(element);
+    });
+
+    // Process existing messages on page load
+    ChatUIManager.processExistingMessages();
+
     subscribeToWhisperMessages();
-    processWhisperMessages();
-    observeWhisperMessages();
     initHandleWhisperVisibility();
     initWhisperAutocomplete();
   } catch (error) {
