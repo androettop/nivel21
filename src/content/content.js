@@ -24,8 +24,7 @@
     // 0. Load DOMPurify
     await injectScript("src/lib/purify.min.js");
 
-    // 1. Load core (state, events, utilities)
-    await injectScript("src/core/core.js");
+    // 1. Load core utilities
     await injectScript("src/core/utils.js");
 
     // 2. Load managers

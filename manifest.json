@@ -31,7 +31,6 @@
       "resources": [
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
-        "src/core/core.js",
         "src/core/utils.js",
         "src/core/base-manager.js",
         "src/core/key-modifiers-manager.js",

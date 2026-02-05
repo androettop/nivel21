@@ -3,6 +3,12 @@
        Core Utilities
     ======================= */
 
+  // Initialize global namespace
+  window._n21_ = {
+    managers: {},
+    utils: {},
+  };
+
   /**
    * Get a manager from Game Manager script by name
    * Used internally by manager abstractions (TokenManager, etc.)
@@ -50,7 +56,11 @@
 
         for (const name of managerNames) {
           const manager = managers[name];
-          if (!manager || typeof manager.isReady !== "function" || !manager.isReady()) {
+          if (
+            !manager ||
+            typeof manager.isReady !== "function" ||
+            !manager.isReady()
+          ) {
             allReady = false;
             break;
           }
@@ -64,7 +74,9 @@
             const m = managers[name];
             return !m || typeof m.isReady !== "function" || !m.isReady();
           });
-          reject(new Error(`Timeout waiting for managers: ${missing.join(", ")}`));
+          reject(
+            new Error(`Timeout waiting for managers: ${missing.join(", ")}`),
+          );
         } else {
           setTimeout(checkManagers, checkInterval);
         }
@@ -92,9 +104,6 @@
    * @returns {Object} The instantiated manager
    */
   function registerManager(name, ManagerClass) {
-    window._n21_ = window._n21_ || {};
-    window._n21_.managers = window._n21_.managers || {};
-
     const manager = new ManagerClass();
     manager.init();
 
@@ -103,7 +112,7 @@
   }
 
   // Expose utility for manager abstractions
-  window._n21_.utils = window._n21_.utils || {};
+
   window._n21_.utils.getNativeManager = getNativeManager;
   window._n21_.utils.uuid = uuid;
   window._n21_.utils.registerManager = registerManager;
