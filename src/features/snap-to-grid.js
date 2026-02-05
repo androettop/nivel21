@@ -72,8 +72,6 @@
     function snapSelectedTokens() {
       if (capturedNetworkIds.size === 0) return;
 
-      if (!TokenManager.isAvailable()) return;
-
       capturedNetworkIds.forEach((networkId) => {
         const token = TokenManager.getToken(networkId);
         if (!token?.localScale || !token?.position) return;

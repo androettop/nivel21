@@ -23,16 +23,8 @@
      * Get the entity manager from the native tokenManager
      * @returns {Object|null} The entityManager or null if not available
      */
-    getEntityManager() {
+    _getEntityManager() {
       return this._getNative()?.entityManager || null;
-    }
-
-    /**
-     * Get all token instances
-     * @returns {Map|null} Map of token instances by networkId
-     */
-    getInstances() {
-      return this.getEntityManager()?.instances || null;
     }
 
     /**
@@ -41,21 +33,8 @@
      * @returns {Object|null} The token instance or null if not found
      */
     getToken(networkId) {
-      const instances = this.getInstances();
+      const instances = this._getEntityManager()?.instances;
       return instances?.get?.(networkId) || null;
-    }
-
-    /**
-     * Request an update to a token's properties
-     * @param {Object} updateData - The update data including networkId and properties to update
-     * @returns {boolean} True if the update was requested, false otherwise
-     */
-    requestUpdate(updateData) {
-      const entityManager = this.getEntityManager();
-      if (!entityManager?.requestUpdate) return false;
-
-      entityManager.requestUpdate(updateData);
-      return true;
     }
 
     /**
@@ -67,17 +46,18 @@
     updatePosition(networkId, position) {
       if (!networkId || !position) return false;
 
-      return this.requestUpdate({
-        networkId,
-        position,
-      });
+      const entityManager = this._getEntityManager();
+      if (!entityManager?.requestUpdate) return false;
+
+      entityManager.requestUpdate({ networkId, position });
+      return true;
     }
 
     /**
-     * Check if the TokenManager is available
-     * @returns {boolean} True if the native tokenManager is available
+     * Check if the TokenManager is ready for use
+     * @returns {boolean} True if the manager is ready
      */
-    isAvailable() {
+    isReady() {
       return this._getNative() !== null;
     }
   }
