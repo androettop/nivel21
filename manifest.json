@@ -53,7 +53,8 @@
         "src/features/snap-to-grid.js",
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
-        "src/features/multi-level-action-bar.js"
+        "src/features/multi-level-action-bar.js",
+        "src/features/session-state-demo.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

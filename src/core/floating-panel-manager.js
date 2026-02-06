@@ -141,6 +141,76 @@
     }
 
     /**
+     * Open a static floating panel with custom HTML content
+     * @param {string} title - Panel title
+     * @param {string} icon - Icon class (e.g. "fas fa-info-circle")
+     * @param {string} color - Header background color
+     * @param {string} html - HTML content to render inside the panel
+     * @param {string} className - Optional extra classes for the panel
+     * @param {string} style - Optional inline styles for the panel container
+     */
+    openStaticPanelWithHtml(
+      title,
+      icon,
+      color,
+      html,
+      className = "",
+      style = "",
+    ) {
+      if (typeof window.$ !== "function") {
+        console.warn("[FloatingPanelManager] jQuery not available");
+        return;
+      }
+
+      const $existing = $(
+        `.floating-panel[data-title="${String(title || "")}"]`,
+      );
+      if ($existing.length) {
+        return $existing;
+      }
+
+      const $panel = $(
+        this._createStaticPanelHtml(title, icon, color, html, className, style),
+      );
+      const $container = $(".floating-panels");
+      $container.append($panel);
+
+      if (typeof window.bindFloatingPanels === "function") {
+        window.bindFloatingPanels();
+      }
+
+      return $panel;
+    }
+
+    /**
+     * Build the HTML string for a static floating panel
+     * @private
+     */
+    _createStaticPanelHtml(title, icon, color, html, className, style) {
+      return (
+        "<div class='card floating-panel static-panel resizable-row " +
+        (className || "") +
+        "' data-state='unpinned' data-title='" +
+        (title || "") +
+        "' style='" +
+        (style || "") +
+        "'> " +
+        "<div class='card-header text-white w-100' style='background-color: " +
+        (color || "") +
+        "'> " +
+        "<div class='card-header-icon'><i class='" +
+        (icon || "") +
+        "'></i></div> " +
+        "<div class='card-title wo-url'>" +
+        (title || "") +
+        "</div> </div> " +
+        "<div class='card-body p-0'> <div class='floating-block'>" +
+        (html || "") +
+        "</div> </div> </div> </div>"
+      );
+    }
+
+    /**
      * Internal method to add an interceptor to a list
      */
     _addInterceptor(list, name, callback, options = {}) {

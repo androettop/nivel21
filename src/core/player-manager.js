@@ -24,8 +24,7 @@
      * @returns {boolean} True if playerService is available, false otherwise
      */
     isReady() {
-      const playerService = this._getNative();
-      return !!playerService;
+      return !!this._getNative();
     }
 
     /**
@@ -53,7 +52,7 @@
      * @returns {boolean} True if the user is GM, false otherwise
      */
     isUserGameMaster(userId) {
-      return playerService.isGameMaster(`${userId}`);
+      return this._getNative()?.isGameMaster(`${userId}`) || false;
     }
 
     /**
@@ -62,6 +61,41 @@
      */
     getPlayerList() {
       return this._getNative()?.playerList?.() || [];
+    }
+
+    /**
+     * Determine if the current GM has the smallest sessionId among connected GMs
+     * @returns {boolean} True if current GM has the lowest sessionId
+     */
+    isLeadGameMaster() {
+      const me = this._getNative()?.me?.();
+      const myUserId = me?.userId;
+      const mySessionId = me?.sessionId ? String(me.sessionId) : "";
+      if (!myUserId || !mySessionId) return false;
+
+      const players = this.getPlayerList();
+      if (!players?.length) return false;
+
+      let lowestSessionId = null;
+
+      for (const player of players) {
+        if (!player?.connected) continue;
+        if (!this.isUserGameMaster(player.userId)) continue;
+
+        const sessionId = player.sessionId ? String(player.sessionId) : "";
+        if (!sessionId) continue;
+
+        if (
+          lowestSessionId === null ||
+          sessionId.localeCompare(lowestSessionId, undefined, { numeric: true }) < 0
+        ) {
+          lowestSessionId = sessionId;
+        }
+      }
+
+      if (lowestSessionId === null) return false;
+
+      return mySessionId === lowestSessionId;
     }
   }
 
