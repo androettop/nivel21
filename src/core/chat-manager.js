@@ -34,7 +34,7 @@
       }
       
       for (const [name, value] of Object.entries(payload || {})) {
-        if (value) {
+        if (value !== undefined && value !== null) {
           pairs.push(`${name}=${escapeJsonValue(value)}`);
         }
       }

@@ -36,6 +36,15 @@
     }
 
     /**
+     * Get the current player's session ID
+     * @returns {string|null} The session ID or null if not available
+     */
+    getMySessionId() {
+      const sessionId = this._getNative()?.me?.()?.sessionId;
+      return sessionId ? String(sessionId) : null;
+    }
+
+    /**
      * Check if the current player is the Game Master
      * @returns {boolean} True if player is GM, false otherwise
      */
