@@ -5,7 +5,10 @@
     ======================= */
 
     const { loadManagers } = window._n21_;
-    const [ChatUIManager] = await loadManagers("ChatUIManager");
+    const [ChatUIManager, PlayerManager] = await loadManagers(
+      "ChatUIManager",
+      "PlayerManager",
+    );
 
     // ==================== Constants ====================
     const SELECTORS = {
@@ -29,7 +32,7 @@
 
     function getConnectedUsernames() {
       try {
-        const list = window.players?.list?.() || [];
+        const list = PlayerManager?.getPlayerList?.() || [];
         return list
           .filter((player) => player.connected && !player.isMe)
           .map((player) => player.userName);

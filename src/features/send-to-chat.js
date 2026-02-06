@@ -122,7 +122,7 @@
         messageOptions.icon = fallbackIcon;
       }
 
-      ChatManager.sendJsonMessage(payload, messageOptions);
+      ChatManager.sendJsonMessage(payload, messageOptions, "chat.link");
     }
 
     // Track hovered floating element

@@ -31,6 +31,7 @@
     await injectScript("src/core/base-manager.js");
     await injectScript("src/core/key-modifiers-manager.js");
     await injectScript("src/core/chat-manager.js");
+    await injectScript("src/core/player-manager.js");
     await injectScript("src/core/token-manager.js");
     await injectScript("src/core/measurement-manager.js");
     await injectScript("src/core/dice-manager.js");
@@ -39,6 +40,7 @@
     await injectScript("src/core/chat-ui-manager.js");
     await injectScript("src/core/tooltip-manager.js");
     await injectScript("src/core/html-manager.js");
+    await injectScript("src/core/session-state-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([

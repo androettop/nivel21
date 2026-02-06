@@ -4,6 +4,8 @@
 	       Feature: Parse Chat Links
 	    ======================= */
 
+    const CHAT_LINK_KEY = "chat.link";
+
     // Regex to find custom n21 links and markdown links
     const combinedLinkRegex =
       /\[\[n21:[^\|]*\|\|([^\]]+)\]\]|\[([^\]]+)\]\(([^)]+)\)/g;
@@ -90,7 +92,7 @@
 
             if (match[1]) {
               const payload = ChatManager.decodeJsonMessage(match[1]);
-              if (payload) {
+              if (payload && payload.key === CHAT_LINK_KEY) {
                 const anchor = createFloatingAnchorFromPayload(payload);
                 fragment.appendChild(anchor);
               } else {
