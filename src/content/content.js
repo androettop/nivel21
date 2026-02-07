@@ -27,21 +27,27 @@
     // 1. Load core utilities
     await injectScript("src/core/utils.js");
 
-    // 2. Load managers
+    // 2. Load base manager
     await injectScript("src/core/base-manager.js");
-    await injectScript("src/core/key-modifiers-manager.js");
-    await injectScript("src/core/chat-manager.js");
-    await injectScript("src/core/token-manager.js");
-    await injectScript("src/core/measurement-manager.js");
-    await injectScript("src/core/dice-manager.js");
-    await injectScript("src/core/floating-panel-manager.js");
-    await injectScript("src/core/action-bar-manager.js");
-    await injectScript("src/core/chat-ui-manager.js");
-    await injectScript("src/core/tooltip-manager.js");
-    await injectScript("src/core/html-manager.js");
 
-    // 3. Load features (order matters if features depend on each other)
+    // 3. Load managers and features in parallel
     await Promise.all([
+      // Managers
+      injectScript("src/core/main-menu-ui-manager.js"),
+      injectScript("src/core/chat-ui-manager.js"),
+      injectScript("src/core/key-modifiers-manager.js"),
+      injectScript("src/core/chat-manager.js"),
+      injectScript("src/core/player-manager.js"),
+      injectScript("src/core/token-manager.js"),
+      injectScript("src/core/measurement-manager.js"),
+      injectScript("src/core/dice-manager.js"),
+      injectScript("src/core/floating-panel-manager.js"),
+      injectScript("src/core/action-bar-manager.js"),
+      injectScript("src/core/tooltip-manager.js"),
+      injectScript("src/core/html-manager.js"),
+      injectScript("src/core/session-state-manager.js"),
+
+      // Features
       injectScript("src/features/advantage-disadvantage.js"),
       injectScript("src/features/send-to-chat.js"),
       injectScript("src/features/parse-chat-links.js"),
@@ -51,6 +57,8 @@
       injectScript("src/features/multi-measurement.js"),
       injectScript("src/features/whisper-mode.js"),
       injectScript("src/features/multi-level-action-bar.js"),
+      injectScript("src/features/session-state-demo.js"),
+      injectScript("src/features/ambient-fx.js"),
     ]);
   });
 })();

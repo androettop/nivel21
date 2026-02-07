@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -35,6 +35,7 @@
         "src/core/base-manager.js",
         "src/core/key-modifiers-manager.js",
         "src/core/chat-manager.js",
+        "src/core/player-manager.js",
         "src/core/token-manager.js",
         "src/core/measurement-manager.js",
         "src/core/dice-manager.js",
@@ -43,6 +44,8 @@
         "src/core/chat-ui-manager.js",
         "src/core/tooltip-manager.js",
         "src/core/html-manager.js",
+        "src/core/session-state-manager.js",
+        "src/core/main-menu-ui-manager.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",
@@ -51,7 +54,9 @@
         "src/features/snap-to-grid.js",
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
-        "src/features/multi-level-action-bar.js"
+        "src/features/multi-level-action-bar.js",
+        "src/features/session-state-demo.js",
+        "src/features/ambient-fx.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }
