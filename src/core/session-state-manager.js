@@ -20,6 +20,7 @@
       this._playerManager = null;
       this._unsubscribeChatListener = null;
       this._pendingMessageIds = new Set();
+      this._messageVisibility = "hidden";
       this._stateKey = "state.session";
       this._readyKey = "state.ready";
       this._requestKey = "state.request";
@@ -154,7 +155,7 @@
 
       this._chatManager.sendJsonMessage(
         { targetSessionId },
-        { visibility: "hidden" },
+        { visibility: this._messageVisibility },
         this._requestKey,
       );
 
@@ -303,7 +304,7 @@
       const payload = { ...mergedState, __messageId: messageId };
       this._chatManager.sendJsonMessage(
         payload,
-        { visibility: "hidden" },
+        { visibility: this._messageVisibility },
         this._stateKey,
       );
 
@@ -361,7 +362,7 @@
 
       this._chatManager.sendJsonMessage(
         { t: "ready" },
-        { visibility: "hidden" },
+        { visibility: this._messageVisibility },
         this._readyKey,
       );
     }
@@ -380,7 +381,7 @@
       const payload = { ...this._state, __messageId: messageId };
       this._chatManager.sendJsonMessage(
         payload,
-        { visibility: "hidden" },
+        { visibility: this._messageVisibility },
         this._stateKey,
       );
     }
