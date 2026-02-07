@@ -162,8 +162,8 @@
         "<label for='n21-ambient-fx-color' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
         "Color de ambiente" +
         "</label>" +
-        `<input id='n21-ambient-fx-color' alpha type='color'${valueAttribute} ` +
-        "style='width: 100%; height: 36px; border: none; padding: 0; background: transparent; margin-bottom: 12px;' />" +
+        `<input id='n21-ambient-fx-color' type='color'${valueAttribute} ` +
+        "style='border: none; padding: 0; background: transparent; margin-bottom: 12px;' />" +
         "<label for='n21-ambient-fx-opacity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
         "Intensidad" +
         "</label>" +
