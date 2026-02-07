@@ -272,13 +272,22 @@
       }
 
       // Update local state immediately
-      const mergedState = { ...this._state, ...newState };
+      const mergedState = { ...this._state };
       let changed = false;
 
       for (const [key, value] of Object.entries(newState)) {
+        if (value === undefined || value === null) {
+          if (Object.prototype.hasOwnProperty.call(mergedState, key)) {
+            delete mergedState[key];
+            changed = true;
+          }
+          continue;
+        }
+
         if (this._state[key] !== value) {
           changed = true;
         }
+        mergedState[key] = value;
       }
 
       if (!changed) {

@@ -41,6 +41,7 @@
     await injectScript("src/core/tooltip-manager.js");
     await injectScript("src/core/html-manager.js");
     await injectScript("src/core/session-state-manager.js");
+    await injectScript("src/core/main-menu-ui-manager.js");
 
     // 3. Load features (order matters if features depend on each other)
     await Promise.all([
@@ -54,6 +55,7 @@
       injectScript("src/features/whisper-mode.js"),
       injectScript("src/features/multi-level-action-bar.js"),
       injectScript("src/features/session-state-demo.js"),
+      injectScript("src/features/ambient-fx.js"),
     ]);
   });
 })();

@@ -45,6 +45,7 @@
         "src/core/tooltip-manager.js",
         "src/core/html-manager.js",
         "src/core/session-state-manager.js",
+        "src/core/main-menu-ui-manager.js",
         "src/features/advantage-disadvantage.js",
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",
@@ -54,7 +55,8 @@
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
         "src/features/multi-level-action-bar.js",
-        "src/features/session-state-demo.js"
+        "src/features/session-state-demo.js",
+        "src/features/ambient-fx.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

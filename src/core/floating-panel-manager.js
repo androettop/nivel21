@@ -172,8 +172,10 @@
       const $panel = $(
         this._createStaticPanelHtml(title, icon, color, html, className, style),
       );
-      const $container = $(".floating-panels");
-      $container.append($panel);
+
+      $("#floating-panels-holder").append($panel);
+
+      
 
       if (typeof window.bindFloatingPanels === "function") {
         window.bindFloatingPanels();
