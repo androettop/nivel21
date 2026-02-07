@@ -55,7 +55,6 @@
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
         "src/features/multi-level-action-bar.js",
-        "src/features/session-state-demo.js",
         "src/features/ambient-fx.js"
       ],
       "matches": ["https://nivel20.com/*"]
