@@ -8,7 +8,7 @@
 
     const MIN_HEIGHT = 0.001;
     const MAX_HEIGHT = 10;
-    const STEP = 0.5;
+    const STEP = 0.06;
 
     function isEditableTarget(target) {
       return (
