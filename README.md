@@ -165,6 +165,16 @@ Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrí
 
 ---
 
+### Efectos Ambientales
+
+Crea capas de color sobre el tablero para simular horas del día, clima o eventos astronómicos. El DM puede ajustar color, intensidad y modo de fusión para ambientar la escena.
+
+<a id="ambient-fx">
+ <img src="popup/img/ambient-fx.png" alt="Efectos Ambientales" />
+</a>
+
+---
+
 ### Carpetas anidadas
 
 Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa. Organiza acciones en carpetas usando el separador " > " en el nombre. La barra se convierte en carpetas anidadas automáticamente.
