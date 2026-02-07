@@ -277,10 +277,23 @@
           e.preventDefault();
           e.stopPropagation();
 
+          const isSelected = $button.hasClass("selected");
+
           // Remove selected from siblings
           $container
             .find(".action-bar-element .action-bar-button.selected")
             .removeClass("selected");
+
+          if (isSelected) {
+            // Collapse this folder: remove deeper containers
+            $baseElement
+              .find("[data-folder-depth]")
+              .filter(function () {
+                return parseInt($(this).attr("data-folder-depth")) >= depth + 1;
+              })
+              .remove();
+            return;
+          }
 
           $button.addClass("selected");
 
