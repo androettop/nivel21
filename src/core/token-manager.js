@@ -53,6 +53,11 @@
       return true;
     }
 
+    isTokenSelectable(networkId) {
+      const token = this.getToken(networkId);
+      return token?.tags?.has("selectable");
+    }
+
     /**
      * Check if the TokenManager is ready for use
      * @returns {boolean} True if the manager is ready
