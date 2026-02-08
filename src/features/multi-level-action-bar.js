@@ -277,10 +277,23 @@
           e.preventDefault();
           e.stopPropagation();
 
+          const isSelected = $button.hasClass("selected");
+
           // Remove selected from siblings
           $container
             .find(".action-bar-element .action-bar-button.selected")
             .removeClass("selected");
+
+          if (isSelected) {
+            // Collapse this folder: remove deeper containers
+            $baseElement
+              .find("[data-folder-depth]")
+              .filter(function () {
+                return parseInt($(this).attr("data-folder-depth")) >= depth + 1;
+              })
+              .remove();
+            return;
+          }
 
           $button.addClass("selected");
 
@@ -407,6 +420,67 @@
     { priority: 100 },
   );
 
+  /**
+   * Watch for action bars rendered inside #panel-actions
+   * and build them from their stored elements data.
+   */
+  function initPanelActionsObserver() {
+    const $panels = $("[id='panel-actions']");
+    if (!$panels.length) return;
+
+    function buildPanelActionBar($actionBar, attempt = 0) {
+      if ($actionBar.hasClass("n21-action-bar")) return;
+
+      const elements = $actionBar.data("elements");
+      if (!Array.isArray(elements)) {
+        if (attempt < 5) {
+          setTimeout(() => buildPanelActionBar($actionBar, attempt + 1), 50);
+        }
+        return;
+      }
+
+      const $primaryBar = $actionBar
+        .find(".action-bar-row.primary-bar")
+        .first();
+      if (!$primaryBar.length) return;
+
+      $actionBar.addClass("n21-action-bar");
+      const normalizedItems = normalizeActionItems(elements);
+      window.createBar($primaryBar[0], normalizedItems, null, 0);
+    }
+
+    $panels.each(function () {
+      const $panel = $(this);
+
+      // Initialize any existing action bars
+      $panel.find(".action-bar").each(function () {
+        buildPanelActionBar($(this));
+      });
+
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (!(node instanceof HTMLElement)) return;
+
+            if (node.matches && node.matches(".action-bar")) {
+              buildPanelActionBar($(node));
+              return;
+            }
+
+            const $nestedActionBars = $(node).find(".action-bar");
+            if ($nestedActionBars.length) {
+              $nestedActionBars.each(function () {
+                buildPanelActionBar($(this));
+              });
+            }
+          });
+        });
+      });
+
+      observer.observe($panel[0], { childList: true, subtree: true });
+    });
+  }
+
   // Handler for cleaning conflicting classes on action bar toggle
   $(document).on("click", '[data-toggle="action-bar"]', function () {
     const $actionBar = $(this).closest(".action-bar-wrapper").find(".action-bar");
@@ -417,6 +491,8 @@
       }
     }, 50);
   });
+
+  initPanelActionsObserver();
 
   console.log("[N21 Plugin] Multi-level Action Bar loaded");
 })();
