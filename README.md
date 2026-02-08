@@ -107,6 +107,7 @@ Ejemplos:
 - **/w "Ana María" ¿puedes revisar la pista?**
 
 **Autocompletado con Tab:**
+
 - Escribe `/w` y presiona Tab para ciclar entre todos los usuarios conectados
 - Escribe `/w Lu` y presiona Tab para autocompletar usuarios que comienzan con "Lu"
 - Presiona Tab varias veces para ciclar entre todas las coincidencias
@@ -147,6 +148,20 @@ Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos e
 
 <a id="token-height-order">
  <img src="popup/img/token-height-order.png" alt="Altura de Tokens" />
+</a>
+
+---
+
+### Mover Tokens con el Teclado
+
+Permite mover uno o varios tokens seleccionados con las flechas del teclado.
+
+| Tecla       | Accion                  |
+| ----------- | ----------------------- |
+| **Flechas** | Mover token una casilla |
+
+<a id="token-move-arrows">
+ <img src="popup/img/token-move-arrows.png" alt="Mover Tokens con el Teclado" />
 </a>
 
 ---
