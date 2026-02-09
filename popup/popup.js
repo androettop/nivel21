@@ -182,8 +182,23 @@ function renderSettingsView() {
           input.classList.add('capturing');
           input.value = 'Presiona una tecla...';
           
+          let captureTimeout;
+          
+          const clearCapture = () => {
+            input.classList.remove('capturing');
+            input.value = keyValue || '';
+            if (captureTimeout) clearTimeout(captureTimeout);
+          };
+          
           const captureKey = (e) => {
             e.preventDefault();
+            
+            // Allow Escape to cancel
+            if (e.key === 'Escape') {
+              clearCapture();
+              document.removeEventListener('keydown', captureKey);
+              return;
+            }
             
             let key = e.key;
             let combo = [];
@@ -193,14 +208,22 @@ function renderSettingsView() {
             if (e.shiftKey) combo.push('Shift');
             if (e.metaKey) combo.push('Meta');
             
-            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
-              if (key.startsWith('Arrow')) {
-                combo.push(key);
-              } else if (key === ' ') {
-                combo.push('Space');
-              } else {
-                combo.push(key.toUpperCase());
-              }
+            // Don't allow modifier-only combinations
+            if (['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+              return;
+            }
+            
+            // Handle special keys with proper casing
+            if (key.startsWith('Arrow')) {
+              combo.push(key);
+            } else if (key === ' ') {
+              combo.push('Space');
+            } else if (['PageUp', 'PageDown', 'Delete', 'Backspace', 'Enter', 'Tab', 'Escape'].includes(key)) {
+              combo.push(key);
+            } else if (key.length === 1) {
+              combo.push(key.toUpperCase());
+            } else {
+              combo.push(key);
             }
             
             const newValue = combo.join('+');
@@ -211,9 +234,16 @@ function renderSettingsView() {
             settingsManager.save();
             
             document.removeEventListener('keydown', captureKey);
+            if (captureTimeout) clearTimeout(captureTimeout);
           };
           
-          document.addEventListener('keydown', captureKey, { once: true });
+          // Auto-cancel after 10 seconds
+          captureTimeout = setTimeout(() => {
+            clearCapture();
+            document.removeEventListener('keydown', captureKey);
+          }, 10000);
+          
+          document.addEventListener('keydown', captureKey);
         });
         
         keyRow.appendChild(label);

@@ -81,20 +81,36 @@
         return this.loadPromise;
       }
 
-      this.loadPromise = new Promise((resolve) => {
+      this.loadPromise = new Promise((resolve, reject) => {
         // Try to load from chrome.storage
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
-          chrome.storage.sync.get(['nivel21Settings'], (result) => {
-            if (result.nivel21Settings) {
-              this.settings = this.mergeWithDefaults(result.nivel21Settings);
-            } else {
-              this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-            }
+          try {
+            chrome.storage.sync.get(['nivel21Settings'], (result) => {
+              if (chrome.runtime.lastError) {
+                console.warn('N21: Error loading settings:', chrome.runtime.lastError);
+                this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+                this.loaded = true;
+                resolve(this.settings);
+                return;
+              }
+              
+              if (result.nivel21Settings) {
+                this.settings = this.mergeWithDefaults(result.nivel21Settings);
+              } else {
+                this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+              }
+              this.loaded = true;
+              resolve(this.settings);
+            });
+          } catch (err) {
+            console.warn('N21: Error accessing storage:', err);
+            this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
             this.loaded = true;
             resolve(this.settings);
-          });
+          }
         } else {
           // Fallback to default settings
+          console.log('N21: Chrome storage not available, using defaults');
           this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
           this.loaded = true;
           resolve(this.settings);
