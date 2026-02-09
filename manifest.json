@@ -5,7 +5,8 @@
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
   "background": {
     "service_worker": "src/background.js",
@@ -32,6 +33,7 @@
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/utils.js",
+        "src/core/settings-loader.js",
         "src/core/base-manager.js",
         "src/core/key-modifiers-manager.js",
         "src/core/chat-manager.js",

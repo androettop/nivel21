@@ -4,7 +4,17 @@
        Feature: Ambient FX
     ======================= */
 
-    const { loadManagers } = window._n21_;
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('ambient-fx')) {
+      console.log('N21: Feature Ambient FX is disabled');
+      return;
+    }
+    
     const [
       MainMenuUIManager,
       FloatingPanelManager,

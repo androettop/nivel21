@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Nivel21</title>
+    <title>Nivel21 - Configuración</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,290 +16,61 @@
       <img src="img/logo.png" alt="Nivel21 Logo" height="60px" class="logo" />
     </div>
 
-    <div class="content">
-      <!-- Feature 1: Ventaja/Desventaja -->
-      <div class="feature">
-        <div class="feature-title">Tiradas con Ventaja/Desventaja</div>
-        <div class="feature-description">
-          Modifica automáticamente tus tiradas de dados manteniendo presionadas
-          las teclas especiales mientras haces clic en un botón de tirada.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift</span>
-          <span class="hotkey-description">Tirada con Ventaja</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Alt</span>
-          <span class="hotkey-description">Tirada con Desventaja</span>
-        </div>
-        <img
-          src="img/advantage-disadvantage.png"
-          alt="Tiradas con Ventaja/Desventaja"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 2: Mediciones Persistentes -->
-      <div class="feature">
-        <div class="feature-title">Mediciones Persistentes</div>
-        <div class="feature-description">
-          Mantén tus mediciones en el mapa de forma persistente. Activa o
-          desactiva el modo de persistencia usando el botón de anclaje en el
-          panel de mediciones.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key"
-            >Botón <i style="margin-left: 4px" class="fa fa-anchor"></i
-          ></span>
-          <span class="hotkey-description"
-            >Alternar persistencia de mediciones</span
-          >
-        </div>
-
-        <img
-          src="img/multi-measurement.png"
-          alt="Mediciones Persistentes"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 3: Compartir Contenido al Chat -->
-      <div class="feature">
-        <div class="feature-title">Compartir Contenido al Chat</div>
-        <div class="feature-description">
-          Comparte rápidamente conjuros, items, reglas y otros contenidos con tu
-          DM y compañeros. Los elementos se resaltan en azul cuando están listos
-          para compartir.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift + Click</span>
-          <span class="hotkey-description">Comparte el elemento al chat</span>
-        </div>
-        <img
-          src="img/send-to-chat.png"
-          alt="Compartir Contenido al Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 4: Enlaces en el Chat -->
-      <div class="feature">
-        <div class="feature-title">Enlaces en Mensajes del Chat</div>
-        <div class="feature-description">
-          Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20
-          se detectan automáticamente en el chat y se abren en ventanas
-          internas.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Auto</span>
-          <span class="hotkey-description"
-            >Los enlaces se convierten automáticamente al escribirlos</span
-          >
-        </div>
-        <img
-          src="img/parse-chat-links.png"
-          alt="Enlaces en Mensajes del Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 5: Susurrar en el Chat -->
-      <div class="feature">
-        <div class="feature-title">Susurrar en el Chat</div>
-        <div class="feature-description">
-          Envía mensajes privados a otros jugadores escribiendo /w nombre.
-          El modo se cambia automáticamente a privado y solo el destinatario
-          verá el mensaje. Los susurros se destacan en verde en el chat.
-        </div>
-        <div class="feature-description">
-          <strong>Los usuarios sin la extensión no podrán recibir susurros.</strong>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">/w nombre mensaje</span>
-          <span class="hotkey-description">Enviar susurro privado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Tab</span>
-          <span class="hotkey-description">Autocompletar nombre de usuario conectado</span>
-        </div>
-        <div class="feature-description">
-          <strong>Ejemplos:</strong>
-        </div>
-        <div class="feature-description">
-          • <code>/w Lucius hola, ¿estás listo?</code><br />
-          • <code>/w "Ana María" ¿puedes revisar la pista?</code>
-        </div>
-        <div class="feature-description">
-          <strong>Autocompletado con Tab:</strong>
-        </div>
-        <div class="feature-description">
-          • Escribe <code>/w</code> y presiona Tab para ciclar entre todos los usuarios conectados<br />
-          • Escribe <code>/w Lu</code> y presiona Tab para autocompletar usuarios que comienzan con "Lu"<br />
-          • Presiona Tab varias veces para ciclar entre todas las coincidencias<br />
-          • Las comillas se agregan automáticamente para nombres con espacios
-        </div>
-        <img
-          src="img/whisper-mode.png"
-          alt="Susurrar en el Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 6: Atajos para Tokens -->
-      <div class="feature">
-        <div class="feature-title">Atajos para Tokens</div>
-        <div class="feature-description">
-          Controla rápidamente los tokens/fichas del mapa usando atajos de
-          teclado. Selecciona un token primero.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + H</span>
-          <span class="hotkey-description">Alternar visibilidad del token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + B</span>
-          <span class="hotkey-description">Bloquear/desbloquear el token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + E</span>
-          <span class="hotkey-description">Editar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + D</span>
-          <span class="hotkey-description">Duplicar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Delete</span>
-          <span class="hotkey-description">Eliminar el token seleccionado</span>
-        </div>
-        <img
-          src="img/token-hotkeys.png"
-          alt="Atajos para Tokens"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 7: Altura de Tokens -->
-      <div class="feature">
-        <div class="feature-title">Altura de Tokens</div>
-        <div class="feature-description">
-          Ajusta la altura de uno o varios tokens seleccionados para colocarlos
-          encima o debajo de otros en el orden deseado.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Pg Up</span>
-          <span class="hotkey-description">Subir altura del token (+1)</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Pg Down</span>
-          <span class="hotkey-description">Bajar altura del token (-1)</span>
-        </div>
-        <img
-          src="img/token-height-order.png"
-          alt="Altura de Tokens"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 8: Mover Tokens con el Teclado -->
-      <div class="feature">
-        <div class="feature-title">Mover Tokens con el Teclado</div>
-        <div class="feature-description">
-          Mueve uno o varios tokens seleccionados con las flechas del teclado.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Flechas</span>
-          <span class="hotkey-description">Mover token una casilla</span>
-        </div>
-        <img
-          src="img/token-move-arrows.png"
-          alt="Mover Tokens con el Teclado"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 9: Ajustar a la Cuadrícula -->
-      <div class="feature">
-        <div class="feature-title">Ajustar a la Cuadrícula</div>
-        <div class="feature-description">
-          Mantén presionado Shift al mover tokens para forzarlos a ajustarse a
-          la cuadrícula automáticamente.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift + Arrastrar</span>
-          <span class="hotkey-description">Ajustar token a la cuadrícula</span>
-        </div>
-        <img
-          src="img/snap-to-grid.png"
-          alt="Ajustar a la Cuadrícula"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 10: Efectos Ambientales -->
-      <div class="feature">
-        <div class="feature-title">Efectos Ambientales</div>
-        <div class="feature-description">
-          Agrega una capa de color sobre el tablero para simular horas del dia,
-          clima o eventos astronomicos. Puedes ajustar color, intensidad y modo
-          de fusion para ambientar cada escena.
-        </div>
-        <img
-          src="img/ambient-fx.png"
-          alt="Efectos Ambientales"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 11: Carpetas anidadas -->
-      <div class="feature">
-        <div class="feature-title">Carpetas anidadas</div>
-        <div class="feature-description">
-          Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa.
-          Organiza acciones en carpetas usando el separador " > " en el nombre.
-          La barra se convierte en carpetas anidadas automáticamente.
-        </div>
-        <div class="feature-description">
-          <strong>Ejemplo:</strong>
-        </div>
-        <div class="feature-description">
-          Crea un item llamado "Ataques &gt; Espadas &gt; Estocada"
-        </div>
-        <div class="feature-description">
-          Si quieres elegir un icono en la carpeta "Espadas", crea una accion
-          "Carpeta" o "Sin acción" con nombre "Espadas", y seleccionar el icono
-          deseado.
-        </div>
-        <img
-          src="img/multi-level-action-bar.png"
-          alt="Carpetas anidadas"
-          class="feature-screenshot"
-        />
-      </div>
+    <div class="purpose">
+      Extensión que mejora tu experiencia en <strong>Nivel20</strong>
     </div>
 
-    <div class="footer">
-      <div class="version">Nivel21 v1.2.2</div>
-      <div style="margin-top: 8px; color: #777777; font-size: 11px">
-        Aviso: Estas características dependen del funcionamiento interno del
-        tablero y pueden dejar de funcionar con futuras actualizaciones.
+    <!-- Intro Section -->
+    <div class="intro-section">
+      <div class="intro-text">
+        Activa o desactiva características, personaliza atajos de teclado y configura la extensión a tu gusto.
       </div>
-      <div style="margin-top: 8px; color: #777777">
-        Hecho para mejorar tu experiencia en Nivel20
-      </div>
-      <div style="margin-top: 12px">
+      <div class="intro-links">
+        <a
+          href="https://discord.gg/KRHJm8x6rp"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Únete a Discord para reportar errores o hacer sugerencias"
+          class="intro-link"
+        >
+          <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clip-path="url(#clip0)">
+              <path d="M60.1045 4.8978C55.5792 2.8214 50.7265 1.2916 45.6527 0.41542C45.5603 0.39851 45.468 0.440769 45.4204 0.525289C44.7963 1.6353 44.105 3.0834 43.6209 4.2216C38.1637 3.4046 32.7345 3.4046 27.3892 4.2216C26.905 3.0581 26.1886 1.6353 25.5617 0.525289C25.5141 0.443589 25.4218 0.40133 25.3294 0.41542C20.2584 1.2888 15.4057 2.8186 10.8776 4.8978C10.8384 4.9147 10.8048 4.9429 10.7825 4.9795C1.57795 18.7309 -0.943561 32.1443 0.293408 45.3914C0.299005 45.4562 0.335386 45.5182 0.385761 45.5576C6.45866 50.0174 12.3413 52.7249 18.1147 54.5195C18.2071 54.5477 18.305 54.5139 18.3638 54.4378C19.7295 52.5728 20.9469 50.6063 21.9907 48.5383C22.0523 48.4172 21.9935 48.2735 21.8676 48.2256C19.9366 47.4931 18.0979 46.6 16.3292 45.5858C16.1893 45.5041 16.1781 45.304 16.3068 45.2082C16.679 44.9293 17.0513 44.6391 17.4067 44.3461C17.471 44.2926 17.5606 44.2813 17.6362 44.3151C29.2558 49.6202 41.8354 49.6202 53.3179 44.3151C53.3935 44.2785 53.4831 44.2898 53.5502 44.3433C53.9057 44.6363 54.2779 44.9293 54.6529 45.2082C54.7816 45.304 54.7732 45.5041 54.6333 45.5858C52.8646 46.6197 51.0259 47.4931 49.0921 48.2228C48.9662 48.2707 48.9102 48.4172 48.9718 48.5383C50.038 50.6034 51.2554 52.5699 52.5959 54.435C52.6519 54.5139 52.7526 54.5477 52.845 54.5195C58.6464 52.7249 64.529 50.0174 70.6019 45.5576C70.6551 45.5182 70.6887 45.459 70.6943 45.3942C72.1747 30.0791 68.2147 16.7757 60.1968 4.9823C60.1772 4.9429 60.1437 4.9147 60.1045 4.8978ZM23.7259 37.3253C20.2276 37.3253 17.3451 34.1136 17.3451 30.1693C17.3451 26.225 20.1717 23.0133 23.7259 23.0133C27.308 23.0133 30.1626 26.2532 30.1066 30.1693C30.1066 34.1136 27.28 37.3253 23.7259 37.3253ZM47.3178 37.3253C43.8196 37.3253 40.9371 34.1136 40.9371 30.1693C40.9371 26.225 43.7636 23.0133 47.3178 23.0133C50.9 23.0133 53.7545 26.2532 53.6986 30.1693C53.6986 34.1136 50.9 37.3253 47.3178 37.3253Z" fill="#5865F2"/>
+            </g>
+            <defs>
+              <clipPath id="clip0">
+                <rect width="71" height="55" fill="white"/>
+              </clipPath>
+            </defs>
+          </svg>
+          <span>Únete al Discord</span>
+        </a>
         <a
           href="https://ko-fi.com/androettop"
           target="_blank"
+          rel="noopener noreferrer"
           title="Apoya el proyecto en Ko-fi"
+          class="intro-link kofi-link"
         >
-          <img
-            src="img/kofi.png"
-            alt="Ko-fi"
-            style="height: 36px; cursor: pointer"
-          />
+          <img src="img/kofi.png" alt="Apoya en Ko-fi" class="kofi-button-img" />
         </a>
       </div>
     </div>
+
+    <!-- Unified View -->
+    <div id="features-view" class="view-content">
+      <div id="features-list"></div>
+    </div>
+
+    <div class="footer">
+      <div class="version">Nivel21 v1.2.5</div>
+      <div class="footer-disclaimer">
+        Aviso: Estas características dependen del funcionamiento interno de
+        Nivel20 y pueden dejar de funcionar con futuras actualizaciones.
+      </div>
+    </div>
+
+    <script src="settings.js"></script>
+    <script src="popup.js"></script>
   </body>
 </html>

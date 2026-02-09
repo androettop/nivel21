@@ -1,10 +1,21 @@
-(() => {
+(async () => {
   try {
     /* =======================
 	       Feature: Token Height Order
 	    ======================= */
 
-    const { TokenManager } = window._n21_?.managers || {};
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('token-height-order')) {
+      console.log('N21: Feature Token Height Order is disabled');
+      return;
+    }
+
+    const [TokenManager] = await loadManagers("TokenManager");
 
     const MIN_HEIGHT = 0.001;
     const MAX_HEIGHT = 10;

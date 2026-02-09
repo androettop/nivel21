@@ -1,10 +1,21 @@
-(() => {
+(async () => {
   try {
     /* =======================
          Feature: Token Move Arrows
       ======================= */
 
-    const { TokenManager } = window._n21_?.managers || {};
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('token-move-arrows')) {
+      console.log('N21: Feature Token Move Arrows is disabled');
+      return;
+    }
+
+    const [TokenManager] = await loadManagers("TokenManager");
 
     const STEP = 1;
     const selectedTokenWrapper = ".selected-token-wrapper";

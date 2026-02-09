@@ -1,15 +1,40 @@
 // Content script loader - injects scripts into page context
 (function () {
+  // Cross-browser compatibility: chrome API exists in Firefox too
+  const browserAPI = chrome;
+  
   // Function to inject script into page context
   function injectScript(file) {
     return new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = chrome.runtime.getURL(file);
+      script.src = browserAPI.runtime.getURL(file);
       script.onload = function () {
         this.remove();
         setTimeout(resolve, 200); // slight delay to ensure script is fully loaded
       };
       (document.head || document.documentElement).appendChild(script);
+    });
+  }
+  
+  // Function to inject settings into page context
+  function injectSettings(settings) {
+    const script = document.createElement("script");
+    script.textContent = `window._n21_settings = ${JSON.stringify(settings)};`;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+  
+  // Load settings from storage
+  async function loadSettings() {
+    return new Promise((resolve) => {
+      browserAPI.storage.sync.get(['nivel21Settings'], (result) => {
+        if (browserAPI.runtime.lastError) {
+          console.warn('N21: Error loading settings:', browserAPI.runtime.lastError);
+          resolve(null);
+          return;
+        }
+        resolve(result.nivel21Settings || null);
+      });
     });
   }
 
@@ -19,18 +44,27 @@
     injectScript("src/injected/jquery-checker.js");
   }
 
-  // Wait for jQuery, then inject core and features in order
+  // Wait for jQuery, then load settings and inject everything
   waitForJQuery(async () => {
+    // Load settings from storage first
+    const savedSettings = await loadSettings();
+    
+    // Inject settings into page context
+    injectSettings(savedSettings);
+    
     // 0. Load DOMPurify
     await injectScript("src/lib/purify.min.js");
 
     // 1. Load core utilities
     await injectScript("src/core/utils.js");
 
-    // 2. Load base manager
+    // 2. Load settings manager (uses injected _n21_settings)
+    await injectScript("src/core/settings-loader.js");
+
+    // 3. Load base manager
     await injectScript("src/core/base-manager.js");
 
-    // 3. Load managers and features in parallel
+    // 4. Load managers and features in parallel
     await Promise.all([
       // Managers
       injectScript("src/core/main-menu-ui-manager.js"),

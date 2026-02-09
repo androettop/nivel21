@@ -1,6 +1,15 @@
 (async () => {
   try {
-    const { loadManagers } = window._n21_;
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('multi-measurement')) {
+      console.log('N21: Feature Multi-measurement is disabled');
+      return;
+    }
 
     // Esperar a que MeasurementManager y TooltipManager estén listos
     const [MeasurementManager, TooltipManager] = await loadManagers(
