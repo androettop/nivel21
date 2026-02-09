@@ -54,38 +54,23 @@
     function parseKeyCombination(keyCombo) {
       if (!keyCombo) return null;
       
-      // Handle special case for keys that contain '+'
-      const modifiers = [];
-      let key = keyCombo;
-      
-      // Extract modifiers
-      if (keyCombo.startsWith('Ctrl+')) {
-        modifiers.push('ctrl');
-        key = key.substring(5);
-      }
-      if (keyCombo.startsWith('Alt+')) {
-        modifiers.push('alt');
-        key = key.substring(4);
-      }
-      if (keyCombo.startsWith('Shift+')) {
-        modifiers.push('shift');
-        key = key.substring(6);
-      }
-      if (keyCombo.startsWith('Meta+')) {
-        modifiers.push('meta');
-        key = key.substring(5);
-      }
-      
-      // Re-check in case of combinations like 'Ctrl+Shift+H'
-      const parts = keyCombo.split('+');
-      const finalKey = parts[parts.length - 1];
+      // Determine modifier flags from the combination string
+      const ctrl = keyCombo.includes('Ctrl+');
+      const alt = keyCombo.includes('Alt+');
+      const shift = keyCombo.includes('Shift+');
+      const meta = keyCombo.includes('Meta+');
+
+      // Remove any leading modifier segments (e.g., "Ctrl+", "Alt+", "Shift+", "Meta+")
+      // so that the remaining part is the actual key, which may legitimately be "+".
+      const keyPart = keyCombo.replace(/^((Ctrl|Alt|Shift|Meta)\+)+/, '');
+      if (!keyPart) return null;
       
       return {
-        key: finalKey.toLowerCase(),
-        ctrl: keyCombo.includes('Ctrl+'),
-        alt: keyCombo.includes('Alt+'),
-        shift: keyCombo.includes('Shift+'),
-        meta: keyCombo.includes('Meta+')
+        key: keyPart.toLowerCase(),
+        ctrl,
+        alt,
+        shift,
+        meta
       };
     }
 
@@ -117,11 +102,12 @@
         if (parsed) {
           const keyMatch = e.key.toLowerCase() === parsed.key || 
                           (parsed.key === 'delete' && e.key === 'Delete');
-          const ctrlMatch = parsed.ctrl === (e.ctrlKey || e.metaKey);
+          const ctrlMatch = parsed.ctrl === e.ctrlKey;
+          const metaMatch = parsed.meta === e.metaKey;
           const altMatch = parsed.alt === e.altKey;
           const shiftMatch = parsed.shift === e.shiftKey;
 
-          if (keyMatch && ctrlMatch && altMatch && shiftMatch) {
+          if (keyMatch && ctrlMatch && metaMatch && altMatch && shiftMatch) {
             targetButton = document.querySelector(selector);
             break;
           }

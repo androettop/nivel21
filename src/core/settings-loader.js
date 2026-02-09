@@ -4,6 +4,9 @@
 (function() {
   window._n21_ = window._n21_ || {};
   
+  // Cross-browser compatibility
+  const browserAPI = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
+  
   const DEFAULT_SETTINGS = {
     features: {
       'advantage-disadvantage': {
@@ -82,12 +85,12 @@
       }
 
       this.loadPromise = new Promise((resolve, reject) => {
-        // Try to load from chrome.storage
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.sync) {
+        // Try to load from browser storage
+        if (browserAPI && browserAPI.storage && browserAPI.storage.sync) {
           try {
-            chrome.storage.sync.get(['nivel21Settings'], (result) => {
-              if (chrome.runtime.lastError) {
-                console.warn('N21: Error loading settings:', chrome.runtime.lastError);
+            browserAPI.storage.sync.get(['nivel21Settings'], (result) => {
+              if (browserAPI.runtime.lastError) {
+                console.warn('N21: Error loading settings:', browserAPI.runtime.lastError);
                 this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
                 this.loaded = true;
                 resolve(this.settings);
@@ -110,7 +113,7 @@
           }
         } else {
           // Fallback to default settings
-          console.log('N21: Chrome storage not available, using defaults');
+          console.log('N21: Browser storage not available, using defaults');
           this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
           this.loaded = true;
           resolve(this.settings);
@@ -126,10 +129,24 @@
       if (savedSettings && savedSettings.features) {
         Object.keys(savedSettings.features).forEach(featureId => {
           if (merged.features[featureId]) {
-            merged.features[featureId] = {
-              ...merged.features[featureId],
-              ...savedSettings.features[featureId]
+            const defaultFeature = merged.features[featureId];
+            const savedFeature = savedSettings.features[featureId];
+
+            // Start with a shallow merge for top-level properties
+            const mergedFeature = {
+              ...defaultFeature,
+              ...savedFeature
             };
+
+            // Deep-merge nested `keys` so missing keys fall back to defaults
+            if (defaultFeature.keys || savedFeature.keys) {
+              mergedFeature.keys = {
+                ...(defaultFeature.keys || {}),
+                ...(savedFeature.keys || {})
+              };
+            }
+
+            merged.features[featureId] = mergedFeature;
           }
         });
       }
@@ -159,8 +176,8 @@
 
     // Listen for settings changes
     onSettingsChanged(callback) {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
-        chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (browserAPI && browserAPI.storage && browserAPI.storage.onChanged) {
+        browserAPI.storage.onChanged.addListener((changes, areaName) => {
           if (areaName === 'sync' && changes.nivel21Settings) {
             this.settings = this.mergeWithDefaults(changes.nivel21Settings.newValue);
             callback(this.settings);

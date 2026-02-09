@@ -1,23 +1,24 @@
 (async () => {
-  /* =======================
+  try {
+    /* =======================
      Multi-level Action Bar
     ======================= */
 
-  const { loadManagers, settingsLoader } = window._n21_;
-  
-  // Wait for settings to load
-  await settingsLoader.load();
-  
-  // Check if feature is enabled
-  if (!settingsLoader.isFeatureEnabled('multi-level-action-bar')) {
-    console.log('N21: Feature Multi-level Action Bar is disabled');
-    return;
-  }
-  
-  const { uuid } = window._n21_?.utils || {};
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('multi-level-action-bar')) {
+      console.log('N21: Feature Multi-level Action Bar is disabled');
+      return;
+    }
+    
+    const { uuid } = window._n21_?.utils || {};
 
-  const [ActionBarManager, TooltipManager] = await loadManagers(
-    "ActionBarManager",
+    const [ActionBarManager, TooltipManager] = await loadManagers(
+      "ActionBarManager",
     "TooltipManager",
   );
 
@@ -505,4 +506,7 @@
   initPanelActionsObserver();
 
   console.log("[N21 Plugin] Multi-level Action Bar loaded");
+  } catch (error) {
+    console.warn("N21: Error en feature Multi-level Action Bar:", error.message);
+  }
 })();

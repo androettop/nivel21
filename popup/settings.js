@@ -1,5 +1,8 @@
 // Settings Manager for Nivel21 Extension
 
+// Cross-browser compatibility
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 const DEFAULT_SETTINGS = {
   features: {
     'advantage-disadvantage': {
@@ -72,7 +75,14 @@ class SettingsManager {
 
   async load() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get(['nivel21Settings'], (result) => {
+      browserAPI.storage.sync.get(['nivel21Settings'], (result) => {
+        if (browserAPI.runtime.lastError) {
+          console.warn('N21: Error loading settings:', browserAPI.runtime.lastError);
+          this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+          resolve(this.settings);
+          return;
+        }
+        
         if (result.nivel21Settings) {
           this.settings = this.mergeWithDefaults(result.nivel21Settings);
         } else {
@@ -89,10 +99,24 @@ class SettingsManager {
     if (savedSettings && savedSettings.features) {
       Object.keys(savedSettings.features).forEach(featureId => {
         if (merged.features[featureId]) {
-          merged.features[featureId] = {
-            ...merged.features[featureId],
-            ...savedSettings.features[featureId]
+          const defaultFeature = merged.features[featureId];
+          const savedFeature = savedSettings.features[featureId];
+
+          // Start with a shallow merge for top-level properties
+          const mergedFeature = {
+            ...defaultFeature,
+            ...savedFeature
           };
+
+          // Deep-merge nested `keys` so missing keys fall back to defaults
+          if (defaultFeature.keys || savedFeature.keys) {
+            mergedFeature.keys = {
+              ...(defaultFeature.keys || {}),
+              ...(savedFeature.keys || {})
+            };
+          }
+
+          merged.features[featureId] = mergedFeature;
         }
       });
     }
@@ -102,7 +126,10 @@ class SettingsManager {
 
   async save() {
     return new Promise((resolve) => {
-      chrome.storage.sync.set({ nivel21Settings: this.settings }, () => {
+      browserAPI.storage.sync.set({ nivel21Settings: this.settings }, () => {
+        if (browserAPI.runtime.lastError) {
+          console.error('N21: Error saving settings:', browserAPI.runtime.lastError);
+        }
         resolve();
       });
     });

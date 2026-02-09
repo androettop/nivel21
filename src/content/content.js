@@ -1,10 +1,13 @@
 // Content script loader - injects scripts into page context
 (function () {
+  // Cross-browser compatibility
+  const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+  
   // Function to inject script into page context
   function injectScript(file) {
     return new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = chrome.runtime.getURL(file);
+      script.src = browserAPI.runtime.getURL(file);
       script.onload = function () {
         this.remove();
         setTimeout(resolve, 200); // slight delay to ensure script is fully loaded
