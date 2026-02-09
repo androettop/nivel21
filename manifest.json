@@ -5,7 +5,8 @@
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
-    "activeTab"
+    "activeTab",
+    "storage"
   ],
   "background": {
     "service_worker": "src/background.js",

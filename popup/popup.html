@@ -2,13 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Nivel21</title>
+    <title>Nivel21 - Configuración</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -16,290 +17,53 @@
       <img src="img/logo.png" alt="Nivel21 Logo" height="60px" class="logo" />
     </div>
 
-    <div class="content">
-      <!-- Feature 1: Ventaja/Desventaja -->
-      <div class="feature">
-        <div class="feature-title">Tiradas con Ventaja/Desventaja</div>
-        <div class="feature-description">
-          Modifica automáticamente tus tiradas de dados manteniendo presionadas
-          las teclas especiales mientras haces clic en un botón de tirada.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift</span>
-          <span class="hotkey-description">Tirada con Ventaja</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Alt</span>
-          <span class="hotkey-description">Tirada con Desventaja</span>
-        </div>
-        <img
-          src="img/advantage-disadvantage.png"
-          alt="Tiradas con Ventaja/Desventaja"
-          class="feature-screenshot"
-        />
-      </div>
+    <div class="purpose">
+      Extensión que mejora tu experiencia en <strong>Nivel20</strong>
+    </div>
 
-      <!-- Feature 2: Mediciones Persistentes -->
-      <div class="feature">
-        <div class="feature-title">Mediciones Persistentes</div>
-        <div class="feature-description">
-          Mantén tus mediciones en el mapa de forma persistente. Activa o
-          desactiva el modo de persistencia usando el botón de anclaje en el
-          panel de mediciones.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key"
-            >Botón <i style="margin-left: 4px" class="fa fa-anchor"></i
-          ></span>
-          <span class="hotkey-description"
-            >Alternar persistencia de mediciones</span
-          >
-        </div>
+    <div class="nav-tabs">
+      <button id="nav-settings" class="nav-tab active">⚙️ Configuración</button>
+      <button id="nav-about" class="nav-tab">📖 Características</button>
+    </div>
 
-        <img
-          src="img/multi-measurement.png"
-          alt="Mediciones Persistentes"
-          class="feature-screenshot"
-        />
-      </div>
+    <!-- Settings View -->
+    <div id="settings-view" class="view-content">
+      <div id="features-list"></div>
+    </div>
 
-      <!-- Feature 3: Compartir Contenido al Chat -->
-      <div class="feature">
-        <div class="feature-title">Compartir Contenido al Chat</div>
-        <div class="feature-description">
-          Comparte rápidamente conjuros, items, reglas y otros contenidos con tu
-          DM y compañeros. Los elementos se resaltan en azul cuando están listos
-          para compartir.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift + Click</span>
-          <span class="hotkey-description">Comparte el elemento al chat</span>
-        </div>
-        <img
-          src="img/send-to-chat.png"
-          alt="Compartir Contenido al Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 4: Enlaces en el Chat -->
-      <div class="feature">
-        <div class="feature-title">Enlaces en Mensajes del Chat</div>
-        <div class="feature-description">
-          Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20
-          se detectan automáticamente en el chat y se abren en ventanas
-          internas.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Auto</span>
-          <span class="hotkey-description"
-            >Los enlaces se convierten automáticamente al escribirlos</span
-          >
-        </div>
-        <img
-          src="img/parse-chat-links.png"
-          alt="Enlaces en Mensajes del Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 5: Susurrar en el Chat -->
-      <div class="feature">
-        <div class="feature-title">Susurrar en el Chat</div>
-        <div class="feature-description">
-          Envía mensajes privados a otros jugadores escribiendo /w nombre.
-          El modo se cambia automáticamente a privado y solo el destinatario
-          verá el mensaje. Los susurros se destacan en verde en el chat.
-        </div>
-        <div class="feature-description">
-          <strong>Los usuarios sin la extensión no podrán recibir susurros.</strong>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">/w nombre mensaje</span>
-          <span class="hotkey-description">Enviar susurro privado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Tab</span>
-          <span class="hotkey-description">Autocompletar nombre de usuario conectado</span>
-        </div>
-        <div class="feature-description">
-          <strong>Ejemplos:</strong>
-        </div>
-        <div class="feature-description">
-          • <code>/w Lucius hola, ¿estás listo?</code><br />
-          • <code>/w "Ana María" ¿puedes revisar la pista?</code>
-        </div>
-        <div class="feature-description">
-          <strong>Autocompletado con Tab:</strong>
-        </div>
-        <div class="feature-description">
-          • Escribe <code>/w</code> y presiona Tab para ciclar entre todos los usuarios conectados<br />
-          • Escribe <code>/w Lu</code> y presiona Tab para autocompletar usuarios que comienzan con "Lu"<br />
-          • Presiona Tab varias veces para ciclar entre todas las coincidencias<br />
-          • Las comillas se agregan automáticamente para nombres con espacios
-        </div>
-        <img
-          src="img/whisper-mode.png"
-          alt="Susurrar en el Chat"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 6: Atajos para Tokens -->
-      <div class="feature">
-        <div class="feature-title">Atajos para Tokens</div>
-        <div class="feature-description">
-          Controla rápidamente los tokens/fichas del mapa usando atajos de
-          teclado. Selecciona un token primero.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + H</span>
-          <span class="hotkey-description">Alternar visibilidad del token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + B</span>
-          <span class="hotkey-description">Bloquear/desbloquear el token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + E</span>
-          <span class="hotkey-description">Editar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + D</span>
-          <span class="hotkey-description">Duplicar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Delete</span>
-          <span class="hotkey-description">Eliminar el token seleccionado</span>
-        </div>
-        <img
-          src="img/token-hotkeys.png"
-          alt="Atajos para Tokens"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 7: Altura de Tokens -->
-      <div class="feature">
-        <div class="feature-title">Altura de Tokens</div>
-        <div class="feature-description">
-          Ajusta la altura de uno o varios tokens seleccionados para colocarlos
-          encima o debajo de otros en el orden deseado.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Pg Up</span>
-          <span class="hotkey-description">Subir altura del token (+1)</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Pg Down</span>
-          <span class="hotkey-description">Bajar altura del token (-1)</span>
-        </div>
-        <img
-          src="img/token-height-order.png"
-          alt="Altura de Tokens"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 8: Mover Tokens con el Teclado -->
-      <div class="feature">
-        <div class="feature-title">Mover Tokens con el Teclado</div>
-        <div class="feature-description">
-          Mueve uno o varios tokens seleccionados con las flechas del teclado.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Flechas</span>
-          <span class="hotkey-description">Mover token una casilla</span>
-        </div>
-        <img
-          src="img/token-move-arrows.png"
-          alt="Mover Tokens con el Teclado"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 9: Ajustar a la Cuadrícula -->
-      <div class="feature">
-        <div class="feature-title">Ajustar a la Cuadrícula</div>
-        <div class="feature-description">
-          Mantén presionado Shift al mover tokens para forzarlos a ajustarse a
-          la cuadrícula automáticamente.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift + Arrastrar</span>
-          <span class="hotkey-description">Ajustar token a la cuadrícula</span>
-        </div>
-        <img
-          src="img/snap-to-grid.png"
-          alt="Ajustar a la Cuadrícula"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 10: Efectos Ambientales -->
-      <div class="feature">
-        <div class="feature-title">Efectos Ambientales</div>
-        <div class="feature-description">
-          Agrega una capa de color sobre el tablero para simular horas del dia,
-          clima o eventos astronomicos. Puedes ajustar color, intensidad y modo
-          de fusion para ambientar cada escena.
-        </div>
-        <img
-          src="img/ambient-fx.png"
-          alt="Efectos Ambientales"
-          class="feature-screenshot"
-        />
-      </div>
-
-      <!-- Feature 11: Carpetas anidadas -->
-      <div class="feature">
-        <div class="feature-title">Carpetas anidadas</div>
-        <div class="feature-description">
-          Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa.
-          Organiza acciones en carpetas usando el separador " > " en el nombre.
-          La barra se convierte en carpetas anidadas automáticamente.
-        </div>
-        <div class="feature-description">
-          <strong>Ejemplo:</strong>
-        </div>
-        <div class="feature-description">
-          Crea un item llamado "Ataques &gt; Espadas &gt; Estocada"
-        </div>
-        <div class="feature-description">
-          Si quieres elegir un icono en la carpeta "Espadas", crea una accion
-          "Carpeta" o "Sin acción" con nombre "Espadas", y seleccionar el icono
-          deseado.
-        </div>
-        <img
-          src="img/multi-level-action-bar.png"
-          alt="Carpetas anidadas"
-          class="feature-screenshot"
-        />
-      </div>
+    <!-- About View -->
+    <div id="about-view" class="view-content" style="display: none;">
+      <div id="about-content"></div>
     </div>
 
     <div class="footer">
-      <div class="version">Nivel21 v1.2.2</div>
-      <div style="margin-top: 8px; color: #777777; font-size: 11px">
-        Aviso: Estas características dependen del funcionamiento interno del
-        tablero y pueden dejar de funcionar con futuras actualizaciones.
-      </div>
-      <div style="margin-top: 8px; color: #777777">
-        Hecho para mejorar tu experiencia en Nivel20
-      </div>
-      <div style="margin-top: 12px">
+      <div class="footer-buttons">
+        <a
+          href="https://discord.gg/KRHJm8x6rp"
+          target="_blank"
+          title="Únete a Discord"
+          class="footer-button discord-button"
+        >
+          <i class="fa fa-discord"></i> Discord
+        </a>
         <a
           href="https://ko-fi.com/androettop"
           target="_blank"
           title="Apoya el proyecto en Ko-fi"
+          class="footer-button kofi-button"
         >
-          <img
-            src="img/kofi.png"
-            alt="Ko-fi"
-            style="height: 36px; cursor: pointer"
-          />
+          <img src="img/kofi.png" alt="Ko-fi" class="kofi-icon" />
+          Ko-fi
         </a>
       </div>
+      <div class="version">Nivel21 v1.2.5</div>
+      <div class="footer-disclaimer">
+        Aviso: Estas características dependen del funcionamiento interno de
+        Nivel20 y pueden dejar de funcionar con futuras actualizaciones.
+      </div>
     </div>
+
+    <script src="settings.js"></script>
+    <script src="popup.js"></script>
   </body>
 </html>
