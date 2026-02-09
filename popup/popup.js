@@ -85,36 +85,12 @@ const KEY_LABELS = {
   snapModifier: 'Modificador para ajustar'
 };
 
-let currentView = 'settings';
-
 async function init() {
   await settingsManager.load();
-  
-  setupNavigation();
-  renderSettingsView();
-  showView('settings');
+  renderUnifiedView();
 }
 
-function setupNavigation() {
-  document.getElementById('nav-settings').addEventListener('click', () => showView('settings'));
-  document.getElementById('nav-about').addEventListener('click', () => showView('about'));
-}
-
-function showView(view) {
-  currentView = view;
-  
-  document.getElementById('settings-view').style.display = view === 'settings' ? 'block' : 'none';
-  document.getElementById('about-view').style.display = view === 'about' ? 'block' : 'none';
-  
-  document.getElementById('nav-settings').classList.toggle('active', view === 'settings');
-  document.getElementById('nav-about').classList.toggle('active', view === 'about');
-  
-  if (view === 'about') {
-    renderAboutView();
-  }
-}
-
-function renderSettingsView() {
+function renderUnifiedView() {
   const container = document.getElementById('features-list');
   container.innerHTML = '';
   
@@ -143,7 +119,7 @@ function renderSettingsView() {
     toggle.querySelector('input').addEventListener('change', async (e) => {
       settingsManager.setFeatureEnabled(featureId, e.target.checked);
       await settingsManager.save();
-      renderSettingsView();
+      renderUnifiedView();
     });
     
     header.appendChild(titleDiv);
@@ -156,7 +132,7 @@ function renderSettingsView() {
     desc.textContent = feature.description;
     featureDiv.appendChild(desc);
     
-    // Key bindings (if configurable)
+    // Key bindings (if configurable and enabled)
     if (settings.enabled && feature.configurable.length > 0) {
       const keysDiv = document.createElement('div');
       keysDiv.className = 'feature-keys';
@@ -254,45 +230,7 @@ function renderSettingsView() {
       featureDiv.appendChild(keysDiv);
     }
     
-    container.appendChild(featureDiv);
-  });
-}
-
-function renderAboutView() {
-  const container = document.getElementById('about-content');
-  container.innerHTML = '';
-  
-  Object.keys(FEATURE_INFO).forEach(featureId => {
-    const feature = FEATURE_INFO[featureId];
-    const settings = settingsManager.getFeatureSettings(featureId);
-    
-    const featureDiv = document.createElement('div');
-    featureDiv.className = 'feature';
-    
-    const title = document.createElement('div');
-    title.className = 'feature-title';
-    title.textContent = feature.name;
-    
-    const desc = document.createElement('div');
-    desc.className = 'feature-description';
-    desc.textContent = feature.description;
-    
-    featureDiv.appendChild(title);
-    featureDiv.appendChild(desc);
-    
-    // Show default key bindings
-    if (settings.keys) {
-      Object.keys(settings.keys).forEach(keyName => {
-        const hotkey = document.createElement('div');
-        hotkey.className = 'hotkey';
-        hotkey.innerHTML = `
-          <span class="hotkey-key">${settings.keys[keyName]}</span>
-          <span class="hotkey-description">${KEY_LABELS[keyName] || keyName}</span>
-        `;
-        featureDiv.appendChild(hotkey);
-      });
-    }
-    
+    // Screenshot
     if (feature.screenshot) {
       const img = document.createElement('img');
       img.src = feature.screenshot;
