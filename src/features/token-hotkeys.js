@@ -100,7 +100,13 @@
         const parsed = parseKeyCombination(keyCombo);
         
         if (parsed) {
-          const keyMatch = e.key.toLowerCase() === parsed.key || 
+          // Normalize space key for comparison
+          let eventKey = e.key.toLowerCase();
+          if (e.key === ' ') {
+            eventKey = 'space';
+          }
+          
+          const keyMatch = eventKey === parsed.key || 
                           (parsed.key === 'delete' && e.key === 'Delete');
           const ctrlMatch = parsed.ctrl === e.ctrlKey;
           const metaMatch = parsed.meta === e.metaKey;

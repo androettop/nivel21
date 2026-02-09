@@ -1,7 +1,7 @@
 // Content script loader - injects scripts into page context
 (function () {
-  // Cross-browser compatibility
-  const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+  // Cross-browser compatibility: chrome API exists in Firefox too
+  const browserAPI = chrome;
   
   // Function to inject script into page context
   function injectScript(file) {
@@ -15,6 +15,28 @@
       (document.head || document.documentElement).appendChild(script);
     });
   }
+  
+  // Function to inject settings into page context
+  function injectSettings(settings) {
+    const script = document.createElement("script");
+    script.textContent = `window._n21_settings = ${JSON.stringify(settings)};`;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+  
+  // Load settings from storage
+  async function loadSettings() {
+    return new Promise((resolve) => {
+      browserAPI.storage.sync.get(['nivel21Settings'], (result) => {
+        if (browserAPI.runtime.lastError) {
+          console.warn('N21: Error loading settings:', browserAPI.runtime.lastError);
+          resolve(null);
+          return;
+        }
+        resolve(result.nivel21Settings || null);
+      });
+    });
+  }
 
   // Wait for jQuery to be available in page context
   function waitForJQuery(callback) {
@@ -22,15 +44,21 @@
     injectScript("src/injected/jquery-checker.js");
   }
 
-  // Wait for jQuery, then inject core and features in order
+  // Wait for jQuery, then load settings and inject everything
   waitForJQuery(async () => {
+    // Load settings from storage first
+    const savedSettings = await loadSettings();
+    
+    // Inject settings into page context
+    injectSettings(savedSettings);
+    
     // 0. Load DOMPurify
     await injectScript("src/lib/purify.min.js");
 
     // 1. Load core utilities
     await injectScript("src/core/utils.js");
 
-    // 2. Load settings
+    // 2. Load settings manager (uses injected _n21_settings)
     await injectScript("src/core/settings-loader.js");
 
     // 3. Load base manager

@@ -5,7 +5,7 @@ const FEATURE_INFO = {
     name: 'Tiradas con Ventaja/Desventaja',
     description: 'Modifica automáticamente tus tiradas de dados manteniendo presionadas las teclas especiales mientras haces clic en un botón de tirada.',
     screenshot: 'img/advantage-disadvantage.png',
-    configurable: ['advantage', 'disadvantage']
+    configurable: [] // TODO: Implement key configuration
   },
   'multi-measurement': {
     name: 'Mediciones Persistentes',
@@ -17,7 +17,7 @@ const FEATURE_INFO = {
     name: 'Compartir Contenido al Chat',
     description: 'Comparte rápidamente conjuros, items, reglas y otros contenidos con tu DM y compañeros. Los elementos se resaltan en azul cuando están listos para compartir.',
     screenshot: 'img/send-to-chat.png',
-    configurable: ['send']
+    configurable: [] // TODO: Implement key configuration
   },
   'parse-chat-links': {
     name: 'Enlaces en Mensajes del Chat',
@@ -29,7 +29,7 @@ const FEATURE_INFO = {
     name: 'Susurrar en el Chat',
     description: 'Envía mensajes privados a otros jugadores escribiendo /w nombre. El modo se cambia automáticamente a privado y solo el destinatario verá el mensaje.',
     screenshot: 'img/whisper-mode.png',
-    configurable: ['autocomplete']
+    configurable: [] // TODO: Implement key configuration
   },
   'token-hotkeys': {
     name: 'Atajos para Tokens',
@@ -41,19 +41,19 @@ const FEATURE_INFO = {
     name: 'Altura de Tokens',
     description: 'Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos encima o debajo de otros.',
     screenshot: 'img/token-height-order.png',
-    configurable: ['increaseHeight', 'decreaseHeight']
+    configurable: [] // TODO: Implement key configuration
   },
   'token-move-arrows': {
     name: 'Mover Tokens con el Teclado',
     description: 'Permite mover uno o varios tokens seleccionados con las flechas del teclado.',
     screenshot: 'img/token-move-arrows.png',
-    configurable: ['moveToken']
+    configurable: [] // TODO: Implement key configuration
   },
   'snap-to-grid': {
     name: 'Ajustar a la Cuadrícula',
     description: 'Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrícula automáticamente.',
     screenshot: 'img/snap-to-grid.png',
-    configurable: ['snapModifier']
+    configurable: [] // TODO: Implement key configuration
   },
   'ambient-fx': {
     name: 'Efectos Ambientales',
@@ -90,9 +90,18 @@ async function init() {
   renderUnifiedView();
 }
 
+// Active capture tracking to prevent duplicates
+let activeCapture = null;
+
 function renderUnifiedView() {
   const container = document.getElementById('features-list');
   container.innerHTML = '';
+  
+  // Clear any active capture when re-rendering
+  if (activeCapture) {
+    activeCapture.cancel();
+    activeCapture = null;
+  }
   
   Object.keys(FEATURE_INFO).forEach(featureId => {
     const feature = FEATURE_INFO[featureId];
@@ -155,24 +164,35 @@ function renderUnifiedView() {
         input.readOnly = true;
         
         input.addEventListener('click', () => {
+          // Cancel any existing capture
+          if (activeCapture) {
+            activeCapture.cancel();
+          }
+          
           input.classList.add('capturing');
           input.value = 'Presiona una tecla...';
           
           let captureTimeout;
+          let captureHandler;
           
           const clearCapture = () => {
             input.classList.remove('capturing');
             input.value = keyValue || '';
             if (captureTimeout) clearTimeout(captureTimeout);
+            if (captureHandler) {
+              document.removeEventListener('keydown', captureHandler);
+            }
+            if (activeCapture && activeCapture.input === input) {
+              activeCapture = null;
+            }
           };
           
-          const captureKey = (e) => {
+          captureHandler = async (e) => {
             e.preventDefault();
             
             // Allow Escape to cancel
             if (e.key === 'Escape') {
               clearCapture();
-              document.removeEventListener('keydown', captureKey);
               return;
             }
             
@@ -190,10 +210,11 @@ function renderUnifiedView() {
             }
             
             // Handle special keys with proper casing
-            if (key.startsWith('Arrow')) {
-              combo.push(key);
-            } else if (key === ' ') {
+            // Normalize space key
+            if (key === ' ') {
               combo.push('Space');
+            } else if (key.startsWith('Arrow')) {
+              combo.push(key);
             } else if (['PageUp', 'PageDown', 'Delete', 'Backspace', 'Enter', 'Tab', 'Escape'].includes(key)) {
               combo.push(key);
             } else if (key.length === 1) {
@@ -207,19 +228,23 @@ function renderUnifiedView() {
             input.classList.remove('capturing');
             
             settingsManager.setFeatureKey(featureId, keyName, newValue);
-            settingsManager.save();
+            await settingsManager.save();
             
-            document.removeEventListener('keydown', captureKey);
-            if (captureTimeout) clearTimeout(captureTimeout);
+            clearCapture();
           };
           
           // Auto-cancel after 10 seconds
           captureTimeout = setTimeout(() => {
             clearCapture();
-            document.removeEventListener('keydown', captureKey);
           }, 10000);
           
-          document.addEventListener('keydown', captureKey);
+          // Track active capture
+          activeCapture = {
+            input: input,
+            cancel: clearCapture
+          };
+          
+          document.addEventListener('keydown', captureHandler);
         });
         
         keyRow.appendChild(label);

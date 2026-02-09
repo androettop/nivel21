@@ -4,7 +4,7 @@
 	       Feature: Token Height Order
 	    ======================= */
 
-    const { settingsLoader } = window._n21_;
+    const { loadManagers, settingsLoader } = window._n21_;
     
     // Wait for settings to load
     await settingsLoader.load();
@@ -15,7 +15,7 @@
       return;
     }
 
-    const { TokenManager } = window._n21_?.managers || {};
+    const [TokenManager] = await loadManagers("TokenManager");
 
     const MIN_HEIGHT = 0.001;
     const MAX_HEIGHT = 10;

@@ -1,11 +1,9 @@
 // Settings Loader for Content Scripts
 // This module provides access to extension settings for features
+// Settings are injected from content script (has storage access)
 
 (function() {
   window._n21_ = window._n21_ || {};
-  
-  // Cross-browser compatibility
-  const browserAPI = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
   
   const DEFAULT_SETTINGS = {
     features: {
@@ -84,40 +82,18 @@
         return this.loadPromise;
       }
 
-      this.loadPromise = new Promise((resolve, reject) => {
-        // Try to load from browser storage
-        if (browserAPI && browserAPI.storage && browserAPI.storage.sync) {
-          try {
-            browserAPI.storage.sync.get(['nivel21Settings'], (result) => {
-              if (browserAPI.runtime.lastError) {
-                console.warn('N21: Error loading settings:', browserAPI.runtime.lastError);
-                this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-                this.loaded = true;
-                resolve(this.settings);
-                return;
-              }
-              
-              if (result.nivel21Settings) {
-                this.settings = this.mergeWithDefaults(result.nivel21Settings);
-              } else {
-                this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-              }
-              this.loaded = true;
-              resolve(this.settings);
-            });
-          } catch (err) {
-            console.warn('N21: Error accessing storage:', err);
-            this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-            this.loaded = true;
-            resolve(this.settings);
-          }
+      this.loadPromise = Promise.resolve().then(() => {
+        // Get settings from injected global variable
+        const savedSettings = window._n21_settings;
+        
+        if (savedSettings) {
+          this.settings = this.mergeWithDefaults(savedSettings);
         } else {
-          // Fallback to default settings
-          console.log('N21: Browser storage not available, using defaults');
           this.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-          this.loaded = true;
-          resolve(this.settings);
         }
+        
+        this.loaded = true;
+        return this.settings;
       });
 
       return this.loadPromise;
@@ -172,18 +148,6 @@
     getFeatureKey(featureId, keyName) {
       const feature = this.getFeatureSettings(featureId);
       return feature?.keys?.[keyName];
-    }
-
-    // Listen for settings changes
-    onSettingsChanged(callback) {
-      if (browserAPI && browserAPI.storage && browserAPI.storage.onChanged) {
-        browserAPI.storage.onChanged.addListener((changes, areaName) => {
-          if (areaName === 'sync' && changes.nivel21Settings) {
-            this.settings = this.mergeWithDefaults(changes.nivel21Settings.newValue);
-            callback(this.settings);
-          }
-        });
-      }
     }
   }
 

@@ -1,7 +1,7 @@
 // Settings Manager for Nivel21 Extension
 
-// Cross-browser compatibility
-const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+// Use chrome API (works in both Chrome and Firefox)
+const browserAPI = chrome;
 
 const DEFAULT_SETTINGS = {
   features: {
