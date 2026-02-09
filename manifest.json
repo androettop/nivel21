@@ -33,6 +33,7 @@
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/utils.js",
+        "src/core/settings-loader.js",
         "src/core/base-manager.js",
         "src/core/key-modifiers-manager.js",
         "src/core/chat-manager.js",

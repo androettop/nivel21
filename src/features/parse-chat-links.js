@@ -4,6 +4,17 @@
 	       Feature: Parse Chat Links
 	    ======================= */
 
+    const { settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('parse-chat-links')) {
+      console.log('N21: Feature Parse Chat Links is disabled');
+      return;
+    }
+
     const CHAT_LINK_KEY = "chat.link";
 
     // Regex to find custom n21 links and markdown links

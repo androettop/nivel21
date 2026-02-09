@@ -4,7 +4,17 @@
        Feature: Whisper Mode
     ======================= */
 
-    const { loadManagers } = window._n21_;
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('whisper-mode')) {
+      console.log('N21: Feature Whisper Mode is disabled');
+      return;
+    }
+    
     const [ChatUIManager, PlayerManager] = await loadManagers(
       "ChatUIManager",
       "PlayerManager",

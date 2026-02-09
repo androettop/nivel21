@@ -27,10 +27,13 @@
     // 1. Load core utilities
     await injectScript("src/core/utils.js");
 
-    // 2. Load base manager
+    // 2. Load settings
+    await injectScript("src/core/settings-loader.js");
+
+    // 3. Load base manager
     await injectScript("src/core/base-manager.js");
 
-    // 3. Load managers and features in parallel
+    // 4. Load managers and features in parallel
     await Promise.all([
       // Managers
       injectScript("src/core/main-menu-ui-manager.js"),

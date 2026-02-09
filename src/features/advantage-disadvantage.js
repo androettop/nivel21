@@ -4,7 +4,16 @@
 	       Feature: Advantage / Disadvantage
 	    ======================= */
 
-    const { loadManagers } = window._n21_;
+    const { loadManagers, settingsLoader } = window._n21_;
+    
+    // Wait for settings to load
+    await settingsLoader.load();
+    
+    // Check if feature is enabled
+    if (!settingsLoader.isFeatureEnabled('advantage-disadvantage')) {
+      console.log('N21: Feature Advantage/Disadvantage is disabled');
+      return;
+    }
 
     const [KeyModifiersManager, DiceManager] = await loadManagers(
       "KeyModifiersManager",
