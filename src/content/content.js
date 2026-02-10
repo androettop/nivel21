@@ -45,7 +45,7 @@
       injectScript("src/core/action-bar-manager.js"),
       injectScript("src/core/tooltip-manager.js"),
       injectScript("src/core/html-manager.js"),
-      injectScript("src/core/session-state-manager.js"),
+      // injectScript("src/core/session-state-manager.js"),
 
       // Features
       injectScript("src/features/advantage-disadvantage.js"),
