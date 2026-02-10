@@ -25,7 +25,6 @@
     }
 
     function getConnectedUsernames() {
-      return ["Pepe", "Lily", "Alex", "Pablo"]; // Mocked list for testing
       try {
         const list = PlayerManager?.getPlayerList?.() || [];
         return list
