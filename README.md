@@ -173,6 +173,8 @@ Crea capas de color sobre el tablero para simular horas del día, clima o evento
  <img src="popup/img/ambient-fx.png" alt="Efectos Ambientales" />
 </a>
 
+> Debido a posibles conflictos con las políticas de Nivel20, esta función está temporalmente deshabilitada por ahora. Puede ser reactivada en futuras actualizaciones si se resuelven los problemas.
+
 ---
 
 ### Carpetas anidadas

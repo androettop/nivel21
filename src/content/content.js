@@ -57,7 +57,7 @@
       injectScript("src/features/multi-measurement.js"),
       injectScript("src/features/whisper-mode.js"),
       injectScript("src/features/multi-level-action-bar.js"),
-      injectScript("src/features/ambient-fx.js"),
+      // injectScript("src/features/ambient-fx.js"), // Disabled for now, it may be violating some Level20 policies.
     ]);
   });
 })();
