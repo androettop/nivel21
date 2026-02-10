@@ -32,10 +32,13 @@
 
     const COMMAND_NAME = "ambient-fx";
     const OVERLAY_ID = "n21-ambient-fx-overlay";
+    const PREVIEW_OVERLAY_ID = "n21-ambient-fx-overlay-preview";
     const PANEL_TITLE = "Efectos Ambientales";
     const DEFAULT_BLEND = "multiply";
     const DEFAULT_COLOR = "#000000";
+    const DEFAULT_OPACITY = 0;
     const COMMAND_CLEAR = "clear";
+    const PREVIEW_TOGGLE_ID = "n21-ambient-fx-preview";
     const CHAT_SELECTORS = {
       messageBox: ".room-message",
       userName: ".user-name",
@@ -62,20 +65,7 @@
     let currentColor = null;
     let currentOpacity = null;
     let currentBlend = null;
-
-    function isTransparentValue(value) {
-      if (value === undefined || value === null) return true;
-      const normalized = String(value).trim().toLowerCase();
-      return (
-        normalized === "" ||
-        normalized === "transparent" ||
-        normalized === "none" ||
-        normalized === "rgba(0, 0, 0, 0)" ||
-        normalized === "rgba(0,0,0,0)" ||
-        normalized === "rgba(0, 0, 0, 0.0)" ||
-        normalized === "rgba(0,0,0,0.0)"
-      );
-    }
+    let previewEnabled = false;
 
     function normalizeOpacity(value) {
       if (value === undefined || value === null) return null;
@@ -105,7 +95,7 @@
     }
 
     function isValidColorValue(value) {
-      if (!value || isTransparentValue(value)) return false;
+      if (!value) return false;
       const trimmed = String(value).trim();
       if (!trimmed) return false;
       if (window.CSS && typeof window.CSS.supports === "function") {
@@ -125,6 +115,12 @@
       normalized = Math.max(0, Math.min(1, normalized));
       if (normalized === 1) return null;
       return normalized;
+    }
+
+    function parseOpacityPercentInput(value, fallback = DEFAULT_OPACITY) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return fallback;
+      return Math.max(0, Math.min(100, numeric)) / 100;
     }
 
     function resolveSenderIdFromElement(messageElement) {
@@ -151,13 +147,11 @@
       let nextBlend = currentState.blend ?? null;
 
       if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
-        return { color: null, opacity: null, blend: null };
+        return { color: null, opacity: DEFAULT_OPACITY, blend: null };
       }
 
       if (args[0]) {
-        if (isTransparentValue(args[0])) {
-          nextColor = null;
-        } else if (isValidColorValue(args[0])) {
+        if (isValidColorValue(args[0])) {
           nextColor = args[0];
         }
       }
@@ -250,14 +244,14 @@
       ChatUIManager.processExistingMessages();
     }
 
-    function ensureOverlay() {
+    function ensureOverlayById(id) {
       const canvas = document.querySelector("#application-canvas");
       if (!canvas || !canvas.parentElement) return null;
 
-      let overlay = document.getElementById(OVERLAY_ID);
+      let overlay = document.getElementById(id);
       if (!overlay) {
         overlay = document.createElement("div");
-        overlay.id = OVERLAY_ID;
+        overlay.id = id;
         overlay.className = "n21-ambient-fx-overlay";
 
         const parent = canvas.parentElement;
@@ -269,6 +263,72 @@
       }
 
       return overlay;
+    }
+
+    function ensureOverlay() {
+      return ensureOverlayById(OVERLAY_ID);
+    }
+
+    function ensurePreviewLabel(overlay) {
+      if (!overlay) return;
+      let label = overlay.querySelector(".n21-ambient-fx-preview-label");
+      if (!label) {
+        label = document.createElement("div");
+        label.className = "n21-ambient-fx-preview-label";
+        label.textContent = "Vista previa";
+        label.style.position = "absolute";
+        label.style.inset = "0";
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+        label.style.justifyContent = "center";
+        label.style.fontSize = "48px";
+        label.style.fontWeight = "600";
+        label.style.letterSpacing = "1px";
+        label.style.color = "rgba(255, 255, 255, 0.7)";
+        label.style.textTransform = "uppercase";
+        label.style.pointerEvents = "none";
+        label.style.textShadow = "0 2px 8px rgba(0, 0, 0, 0.4)";
+        overlay.appendChild(label);
+      }
+    }
+
+    function ensurePreviewOverlay() {
+      const overlay = ensureOverlayById(PREVIEW_OVERLAY_ID);
+      ensurePreviewLabel(overlay);
+      return overlay;
+    }
+
+    function getPreviewOverlay() {
+      return document.getElementById(PREVIEW_OVERLAY_ID);
+    }
+
+    function setPreviewVisibility(enabled) {
+      const mainOverlay = ensureOverlay();
+      if (mainOverlay) {
+        mainOverlay.style.display = enabled ? "none" : "";
+      }
+
+      const previewOverlay = enabled ? ensurePreviewOverlay() : getPreviewOverlay();
+      if (previewOverlay) {
+        previewOverlay.style.display = enabled ? "" : "none";
+      }
+    }
+
+    function applyOverlayStyles(overlay, color, opacity, blendMode) {
+      if (!overlay) return;
+
+      if (!color) {
+        overlay.style.backgroundColor = "";
+      } else {
+        overlay.style.backgroundColor = color;
+      }
+
+      const normalizedOpacity = normalizeOpacity(opacity);
+      overlay.style.opacity =
+        normalizedOpacity !== null ? String(normalizedOpacity) : "";
+
+      const normalizedBlend = sanitizeBlendMode(blendMode);
+      overlay.style.mixBlendMode = normalizedBlend || "";
     }
 
     function syncPanelInput(color) {
@@ -286,7 +346,7 @@
       const input = document.querySelector("#n21-ambient-fx-opacity");
       if (!input) return;
 
-      const normalized = normalizeOpacity(opacity) ?? 1;
+      const normalized = normalizeOpacity(opacity) ?? DEFAULT_OPACITY;
       const nextValue = String(Math.round(normalized * 100));
       if (input.value !== nextValue) {
         input.value = nextValue;
@@ -306,7 +366,7 @@
     function buildCommand(color, opacity, blend, forceClear = false) {
       if (forceClear) return `/${COMMAND_NAME} ${COMMAND_CLEAR}`;
 
-      const normalizedOpacity = normalizeOpacity(opacity) ?? 1;
+      const normalizedOpacity = normalizeOpacity(opacity) ?? DEFAULT_OPACITY;
       const normalizedBlend = sanitizeBlendMode(blend) || DEFAULT_BLEND;
       const safeColor = color || DEFAULT_COLOR;
 
@@ -339,41 +399,47 @@
       const blendInput = document.querySelector("#n21-ambient-fx-blend");
 
       const color = colorInput?.value || DEFAULT_COLOR;
-      const opacityRaw = opacityInput?.value;
-      const opacityValue = Number.isFinite(Number(opacityRaw))
-        ? Number(opacityRaw) / 100
-        : 1;
+      const opacityValue = parseOpacityPercentInput(opacityInput?.value);
       const blend = blendInput?.value || DEFAULT_BLEND;
 
       const command = buildCommand(color, opacityValue, blend, forceClear);
       setCommandPreview(command);
+
+      if (previewEnabled) {
+        updatePreviewOverlayFromInputs();
+      }
+    }
+
+    function updatePreviewOverlayFromInputs() {
+      const colorInput = document.querySelector("#n21-ambient-fx-color");
+      const opacityInput = document.querySelector("#n21-ambient-fx-opacity");
+      const blendInput = document.querySelector("#n21-ambient-fx-blend");
+
+      const color = colorInput?.value || DEFAULT_COLOR;
+      const opacityValue = parseOpacityPercentInput(opacityInput?.value);
+      const blend = blendInput?.value || DEFAULT_BLEND;
+
+      const overlay = ensurePreviewOverlay();
+      applyOverlayStyles(overlay, color, opacityValue, blend);
     }
 
     function applyColor(color, opacity, blendMode) {
       const overlay = ensureOverlay();
       if (!overlay) return;
 
-      if (!color) {
-        overlay.style.backgroundColor = "";
-      } else {
-        overlay.style.backgroundColor = color;
-      }
+      applyOverlayStyles(overlay, color, opacity, blendMode);
+
       const normalizedOpacity = normalizeOpacity(opacity);
-      if (normalizedOpacity !== null) {
-        overlay.style.opacity = String(normalizedOpacity);
-      } else {
-        overlay.style.opacity = "";
-      }
       const normalizedBlend = sanitizeBlendMode(blendMode);
-      if (normalizedBlend) {
-        overlay.style.mixBlendMode = normalizedBlend;
-      } else {
-        overlay.style.mixBlendMode = "";
-      }
       syncPanelInput(color);
       syncOpacityInput(normalizedOpacity);
       syncBlendModeInput(normalizedBlend);
       updateCommandPreviewFromState();
+
+      if (previewEnabled) {
+        updatePreviewOverlayFromInputs();
+      }
+      setPreviewVisibility(previewEnabled);
     }
 
     function buildPanelHtml(color, opacity, blendMode) {
@@ -383,7 +449,7 @@
       const initialOpacity =
         typeof normalizedOpacity === "number"
           ? Math.round(normalizedOpacity * 100)
-          : 100;
+          : Math.round(DEFAULT_OPACITY * 100);
       const commandText = buildCommand(
         color,
         normalizedOpacity,
@@ -454,6 +520,10 @@
           normalizedBlend === "luminosity" ? " selected" : ""
         }>Luminosidad</option>` +
         "</select>" +
+        "<label style='display: flex; gap: 8px; align-items: center; margin-top: 12px;'>" +
+        `<input id='${PREVIEW_TOGGLE_ID}' type='checkbox' />` +
+        "Vista previa" +
+        "</label>" +
         "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 100%; margin-top: 12px;'>" +
         "Limpiar efectos" +
         "</button>" +
@@ -467,7 +537,7 @@
     }
 
     function applyState(color, opacity, blendMode) {
-      currentColor = isTransparentValue(color) ? null : color || null;
+      currentColor = color || null;
       currentOpacity = normalizeOpacity(opacity);
       currentBlend = sanitizeBlendMode(blendMode);
       applyColor(currentColor, currentOpacity, currentBlend);
@@ -513,6 +583,19 @@
         });
       }
 
+      const $previewToggle = $panel.find(`#${PREVIEW_TOGGLE_ID}`);
+      if ($previewToggle.length) {
+        $previewToggle.prop("checked", previewEnabled);
+        $previewToggle.off("change.n21AmbientFx");
+        $previewToggle.on("change.n21AmbientFx", () => {
+          previewEnabled = Boolean($previewToggle.prop("checked"));
+          setPreviewVisibility(previewEnabled);
+          if (previewEnabled) {
+            updatePreviewOverlayFromInputs();
+          }
+        });
+      }
+
       const $clearButton = $panel.find("#n21-ambient-fx-clear");
       if ($clearButton.length) {
         $clearButton.off("click.n21AmbientFx");
@@ -522,7 +605,7 @@
             $input.val(DEFAULT_COLOR);
           }
           if ($opacityInput.length) {
-            $opacityInput.val("100");
+            $opacityInput.val(String(Math.round(DEFAULT_OPACITY * 100)));
           }
           if ($blendInput.length) {
             $blendInput.val(DEFAULT_BLEND);
@@ -552,6 +635,7 @@
         $blendInput.val(panelBlend || DEFAULT_BLEND);
       }
       updateCommandPreviewFromState();
+      setPreviewVisibility(previewEnabled);
     }
 
     ChatCommandsManager.registerCommand(COMMAND_NAME, {
@@ -613,7 +697,7 @@
       if (!args.length) return;
 
       if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
-        applyState(null, null, null);
+        applyState(null, DEFAULT_OPACITY, null);
         return;
       }
 
@@ -622,9 +706,7 @@
       let nextBlend = currentBlend;
 
       if (args[0]) {
-        if (isTransparentValue(args[0])) {
-          nextColor = null;
-        } else if (isValidColorValue(args[0])) {
+        if (isValidColorValue(args[0])) {
           nextColor = args[0];
         }
       }
