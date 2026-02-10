@@ -8,32 +8,60 @@
     const [
       MainMenuUIManager,
       FloatingPanelManager,
-      SessionStateManager,
+      ChatCommandsManager,
       PlayerManager,
+      ChatUIManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
-      "SessionStateManager",
+      "ChatCommandsManager",
       "PlayerManager",
+      "ChatUIManager",
     );
 
     if (
       !MainMenuUIManager ||
       !FloatingPanelManager ||
-      !SessionStateManager ||
-      !PlayerManager
+      !ChatCommandsManager ||
+      !PlayerManager ||
+      !ChatUIManager
     ) {
       console.warn("[Ambient FX] Managers not available");
       return;
     }
 
-    const STATE_KEY = "ambientFxColor";
-    const OPACITY_KEY = "ambientFxOpacity";
-    const BLEND_KEY = "ambientFxBlendMode";
+    const COMMAND_NAME = "ambient-fx";
     const OVERLAY_ID = "n21-ambient-fx-overlay";
     const PANEL_TITLE = "Efectos Ambientales";
-    const FORM_DEBOUNCE_MS = 150;
-    let formDebounceTimer = null;
+    const DEFAULT_BLEND = "multiply";
+    const DEFAULT_COLOR = "#000000";
+    const COMMAND_CLEAR = "clear";
+    const CHAT_SELECTORS = {
+      messageBox: ".room-message",
+      userName: ".user-name",
+    };
+    const BLEND_MODES = [
+      "multiply",
+      "normal",
+      "screen",
+      "overlay",
+      "darken",
+      "lighten",
+      "color-dodge",
+      "color-burn",
+      "hard-light",
+      "soft-light",
+      "difference",
+      "exclusion",
+      "hue",
+      "saturation",
+      "color",
+      "luminosity",
+    ];
+
+    let currentColor = null;
+    let currentOpacity = null;
+    let currentBlend = null;
 
     function isTransparentValue(value) {
       if (value === undefined || value === null) return true;
@@ -49,11 +77,6 @@
       );
     }
 
-    function getStateColor(state) {
-      const color = state?.[STATE_KEY];
-      return isTransparentValue(color) ? null : color;
-    }
-
     function normalizeOpacity(value) {
       if (value === undefined || value === null) return null;
       const numeric = Number(value);
@@ -66,8 +89,165 @@
     function normalizeBlendMode(value) {
       if (value === undefined || value === null) return null;
       const normalized = String(value).trim().toLowerCase();
-      if (!normalized || normalized === "multiply") return null;
+      if (!normalized || normalized === DEFAULT_BLEND) return null;
       return normalized;
+    }
+
+    function isKnownBlendMode(value) {
+      if (!value) return false;
+      return BLEND_MODES.includes(value);
+    }
+
+    function sanitizeBlendMode(value) {
+      const normalized = normalizeBlendMode(value);
+      if (!normalized) return null;
+      return isKnownBlendMode(normalized) ? normalized : null;
+    }
+
+    function isValidColorValue(value) {
+      if (!value || isTransparentValue(value)) return false;
+      const trimmed = String(value).trim();
+      if (!trimmed) return false;
+      if (window.CSS && typeof window.CSS.supports === "function") {
+        return window.CSS.supports("color", trimmed);
+      }
+      return true;
+    }
+
+    function parseOpacityCommand(value) {
+      if (value === undefined || value === null || value === "") return null;
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return null;
+      let normalized = numeric;
+      if (numeric > 1) {
+        normalized = numeric / 100;
+      }
+      normalized = Math.max(0, Math.min(1, normalized));
+      if (normalized === 1) return null;
+      return normalized;
+    }
+
+    function resolveSenderIdFromElement(messageElement) {
+      if (!messageElement || !messageElement.closest) return null;
+      const messageBox = messageElement.closest(CHAT_SELECTORS.messageBox);
+      const userNameElement = messageBox?.querySelector(CHAT_SELECTORS.userName);
+      const senderName = userNameElement?.textContent
+        ?.replace(":", "")
+        .trim();
+      if (!senderName) return null;
+
+      const players = PlayerManager.getPlayerList() || [];
+      const sender = players.find((player) => {
+        const playerName = String(player?.userName || "").trim();
+        return playerName === senderName;
+      });
+      return sender?.userId || null;
+    }
+
+    function computeNextStateFromArgs(args, state) {
+      const currentState = state || {};
+      let nextColor = currentState.color ?? null;
+      let nextOpacity = currentState.opacity ?? null;
+      let nextBlend = currentState.blend ?? null;
+
+      if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
+        return { color: null, opacity: null, blend: null };
+      }
+
+      if (args[0]) {
+        if (isTransparentValue(args[0])) {
+          nextColor = null;
+        } else if (isValidColorValue(args[0])) {
+          nextColor = args[0];
+        }
+      }
+
+      if (args[1]) {
+        const rawOpacity = String(args[1]).trim();
+        const parsedOpacity = parseOpacityCommand(rawOpacity);
+        if (
+          parsedOpacity !== null ||
+          rawOpacity === "0" ||
+          rawOpacity === "1"
+        ) {
+          nextOpacity = parsedOpacity;
+        }
+      }
+
+      if (args[2]) {
+        const rawBlend = String(args[2]).trim().toLowerCase();
+        if (isKnownBlendMode(rawBlend)) {
+          nextBlend = rawBlend === DEFAULT_BLEND ? null : rawBlend;
+        }
+      }
+
+      return { color: nextColor, opacity: nextOpacity, blend: nextBlend };
+    }
+
+    function isChatOrderReversed() {
+      const selector =
+        typeof ChatUIManager.getChatContainerSelector === "function"
+          ? ChatUIManager.getChatContainerSelector()
+          : ".room-messages-chat";
+      const container = document.querySelector(selector);
+      if (!container || !window.getComputedStyle) return false;
+      const style = window.getComputedStyle(container);
+      return style?.flexDirection === "column-reverse";
+    }
+
+    function restoreFromChatHistory() {
+      const matches = [];
+      const handlerName = "ambient-fx-restore";
+
+      ChatUIManager.onMessage(
+        handlerName,
+        (element) => {
+          const messageText = element?.textContent?.trim();
+          if (!messageText) return;
+          const parsed = ChatCommandsManager.parseInput(messageText);
+          if (!parsed || !parsed.isCommand || parsed.name !== COMMAND_NAME) {
+            return;
+          }
+
+          const senderId = resolveSenderIdFromElement(element);
+          if (!senderId || !PlayerManager.isUserGameMaster(senderId)) return;
+
+          const args = parsed.args || [];
+          if (!args.length) return;
+          matches.push({ element, args });
+        },
+        {
+          priority: -100,
+          onComplete: () => {
+            if (matches.length) {
+              matches.sort((a, b) => {
+                if (a.element === b.element) return 0;
+                const position = a.element.compareDocumentPosition(b.element);
+                return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+              });
+
+              if (isChatOrderReversed()) {
+                matches.reverse();
+              }
+
+              let lastState = {
+                color: currentColor,
+                opacity: currentOpacity,
+                blend: currentBlend,
+              };
+
+              for (const match of matches) {
+                lastState = computeNextStateFromArgs(match.args, lastState);
+              }
+
+              applyState(lastState.color, lastState.opacity, lastState.blend);
+            }
+            ChatUIManager.removeHandler(handlerName);
+          },
+        },
+      );
+
+      ChatUIManager.processExistingMessages();
     }
 
     function ensureOverlay() {
@@ -117,10 +297,56 @@
       const input = document.querySelector("#n21-ambient-fx-blend");
       if (!input) return;
 
-      const normalized = normalizeBlendMode(blendMode) || "multiply";
+      const normalized = sanitizeBlendMode(blendMode) || DEFAULT_BLEND;
       if (input.value !== normalized) {
         input.value = normalized;
       }
+    }
+
+    function buildCommand(color, opacity, blend, forceClear = false) {
+      if (forceClear) return `/${COMMAND_NAME} ${COMMAND_CLEAR}`;
+
+      const normalizedOpacity = normalizeOpacity(opacity) ?? 1;
+      const normalizedBlend = sanitizeBlendMode(blend) || DEFAULT_BLEND;
+      const safeColor = color || DEFAULT_COLOR;
+
+      if (
+        !color &&
+        normalizedOpacity === 1 &&
+        normalizedBlend === DEFAULT_BLEND
+      ) {
+        return `/${COMMAND_NAME} ${COMMAND_CLEAR}`;
+      }
+
+      const opacityText = String(Math.round(normalizedOpacity * 100) / 100);
+      return `/${COMMAND_NAME} ${safeColor} ${opacityText} ${normalizedBlend}`;
+    }
+
+    function setCommandPreview(value) {
+      const input = document.querySelector("#n21-ambient-fx-command");
+      if (!input) return;
+      input.value = value;
+    }
+
+    function updateCommandPreviewFromState() {
+      const command = buildCommand(currentColor, currentOpacity, currentBlend);
+      setCommandPreview(command);
+    }
+
+    function updateCommandPreviewFromForm(forceClear = false) {
+      const colorInput = document.querySelector("#n21-ambient-fx-color");
+      const opacityInput = document.querySelector("#n21-ambient-fx-opacity");
+      const blendInput = document.querySelector("#n21-ambient-fx-blend");
+
+      const color = colorInput?.value || DEFAULT_COLOR;
+      const opacityRaw = opacityInput?.value;
+      const opacityValue = Number.isFinite(Number(opacityRaw))
+        ? Number(opacityRaw) / 100
+        : 1;
+      const blend = blendInput?.value || DEFAULT_BLEND;
+
+      const command = buildCommand(color, opacityValue, blend, forceClear);
+      setCommandPreview(command);
     }
 
     function applyColor(color, opacity, blendMode) {
@@ -138,7 +364,7 @@
       } else {
         overlay.style.opacity = "";
       }
-      const normalizedBlend = normalizeBlendMode(blendMode);
+      const normalizedBlend = sanitizeBlendMode(blendMode);
       if (normalizedBlend) {
         overlay.style.mixBlendMode = normalizedBlend;
       } else {
@@ -147,16 +373,22 @@
       syncPanelInput(color);
       syncOpacityInput(normalizedOpacity);
       syncBlendModeInput(normalizedBlend);
+      updateCommandPreviewFromState();
     }
 
     function buildPanelHtml(color, opacity, blendMode) {
       const valueAttribute = color ? ` value='${color}'` : "";
       const normalizedOpacity = normalizeOpacity(opacity);
-      const normalizedBlend = normalizeBlendMode(blendMode) || "multiply";
+      const normalizedBlend = sanitizeBlendMode(blendMode) || DEFAULT_BLEND;
       const initialOpacity =
         typeof normalizedOpacity === "number"
           ? Math.round(normalizedOpacity * 100)
           : 100;
+      const commandText = buildCommand(
+        color,
+        normalizedOpacity,
+        normalizedBlend,
+      );
       return (
         "<div class='n21-ambient-fx-panel-body' style='padding: 12px;'>" +
         "<label for='n21-ambient-fx-color' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
@@ -225,29 +457,26 @@
         "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 100%; margin-top: 12px;'>" +
         "Limpiar efectos" +
         "</button>" +
+        "<label for='n21-ambient-fx-command' style='display: block; margin: 12px 0 8px; font-weight: 600;'>" +
+        "Comando para enviar al chat" +
+        "</label>" +
+        `<input id='n21-ambient-fx-command' type='text' readonly value='${commandText}' ` +
+        "style='width: 100%;' />" +
         "</div>"
       );
     }
 
-    function scheduleStateUpdate(nextState) {
-      if (formDebounceTimer) {
-        clearTimeout(formDebounceTimer);
-      }
-
-      formDebounceTimer = setTimeout(() => {
-        SessionStateManager.setState(nextState);
-      }, FORM_DEBOUNCE_MS);
+    function applyState(color, opacity, blendMode) {
+      currentColor = isTransparentValue(color) ? null : color || null;
+      currentOpacity = normalizeOpacity(opacity);
+      currentBlend = sanitizeBlendMode(blendMode);
+      applyColor(currentColor, currentOpacity, currentBlend);
     }
 
     function openPanel() {
-      const currentColor = getStateColor(SessionStateManager.state);
-      const currentOpacity = normalizeOpacity(
-        SessionStateManager.state?.[OPACITY_KEY],
-      );
-      const currentBlend = normalizeBlendMode(
-        SessionStateManager.state?.[BLEND_KEY],
-      );
-      const html = buildPanelHtml(currentColor, currentOpacity, currentBlend);
+      const panelOpacity = normalizeOpacity(currentOpacity ?? null);
+      const panelBlend = sanitizeBlendMode(currentBlend ?? null);
+      const html = buildPanelHtml(currentColor, panelOpacity, panelBlend);
 
       const $panel = FloatingPanelManager.openStaticPanelWithHtml(
         PANEL_TITLE,
@@ -264,40 +493,23 @@
       if (!$input.length) return;
 
       $input.off("input.n21AmbientFx");
-      $input.on("input.n21AmbientFx", (event) => {
-        const value = event.target.value;
-        if (isTransparentValue(value)) {
-          scheduleStateUpdate({ [STATE_KEY]: null });
-          return;
-        }
-        scheduleStateUpdate({ [STATE_KEY]: value });
+      $input.on("input.n21AmbientFx", () => {
+        updateCommandPreviewFromForm();
       });
 
       const $opacityInput = $panel.find("#n21-ambient-fx-opacity");
       if ($opacityInput.length) {
         $opacityInput.off("input.n21AmbientFx");
-        $opacityInput.on("input.n21AmbientFx", (event) => {
-          const raw = Number(event.target.value);
-          const nextOpacity = Number.isFinite(raw) ? raw / 100 : 1;
-          if (nextOpacity >= 1) {
-            scheduleStateUpdate({ [OPACITY_KEY]: null });
-            return;
-          }
-          scheduleStateUpdate({ [OPACITY_KEY]: nextOpacity });
+        $opacityInput.on("input.n21AmbientFx", () => {
+          updateCommandPreviewFromForm();
         });
       }
 
       const $blendInput = $panel.find("#n21-ambient-fx-blend");
       if ($blendInput.length) {
         $blendInput.off("change.n21AmbientFx");
-        $blendInput.on("change.n21AmbientFx", (event) => {
-          const value = event.target.value;
-          const normalized = normalizeBlendMode(value);
-          if (!normalized) {
-            scheduleStateUpdate({ [BLEND_KEY]: null });
-            return;
-          }
-          scheduleStateUpdate({ [BLEND_KEY]: normalized });
+        $blendInput.on("change.n21AmbientFx", () => {
+          updateCommandPreviewFromForm();
         });
       }
 
@@ -306,38 +518,141 @@
         $clearButton.off("click.n21AmbientFx");
         $clearButton.on("click.n21AmbientFx", (event) => {
           event.preventDefault();
-          scheduleStateUpdate({
-            [STATE_KEY]: null,
-            [OPACITY_KEY]: null,
-            [BLEND_KEY]: null,
-          });
+          if ($input.length) {
+            $input.val(DEFAULT_COLOR);
+          }
+          if ($opacityInput.length) {
+            $opacityInput.val("100");
+          }
+          if ($blendInput.length) {
+            $blendInput.val(DEFAULT_BLEND);
+          }
+          updateCommandPreviewFromForm(true);
+        });
+      }
+
+      const $commandInput = $panel.find("#n21-ambient-fx-command");
+      if ($commandInput.length) {
+        $commandInput.off("click.n21AmbientFx focus.n21AmbientFx");
+        $commandInput.on("click.n21AmbientFx focus.n21AmbientFx", (event) => {
+          const target = event.currentTarget;
+          if (target && typeof target.select === "function") {
+            target.select();
+          }
         });
       }
 
       if (currentColor && $input.val() !== currentColor) {
         $input.val(currentColor);
       }
-      if (typeof currentOpacity === "number" && $opacityInput.length) {
-        $opacityInput.val(String(Math.round(currentOpacity * 100)));
+      if (typeof panelOpacity === "number" && $opacityInput.length) {
+        $opacityInput.val(String(Math.round(panelOpacity * 100)));
       }
       if ($blendInput.length) {
-        $blendInput.val(currentBlend || "multiply");
+        $blendInput.val(panelBlend || DEFAULT_BLEND);
       }
+      updateCommandPreviewFromState();
     }
 
-    applyColor(
-      getStateColor(SessionStateManager.state),
-      normalizeOpacity(SessionStateManager.state?.[OPACITY_KEY]),
-      normalizeBlendMode(SessionStateManager.state?.[BLEND_KEY]),
-    );
+    ChatCommandsManager.registerCommand(COMMAND_NAME, {
+      description: "Aplicar efectos ambientales",
+      params: [
+        { name: "color" },
+        { name: "opacity" },
+        {
+          name: "blend",
+          getSuggestions: (fragment) => {
+            if (!fragment) return BLEND_MODES;
+            const lower = fragment.toLowerCase();
+            return BLEND_MODES.filter((mode) => mode.startsWith(lower));
+          },
+        },
+      ],
+      validate: ({ args }) => {
+        if (!args || !args.length) return false;
 
-    SessionStateManager.onChange((state) => {
-      applyColor(
-        getStateColor(state),
-        normalizeOpacity(state?.[OPACITY_KEY]),
-        normalizeBlendMode(state?.[BLEND_KEY]),
-      );
+        const command = String(args[0] || "")
+          .trim()
+          .toLowerCase();
+        if (command === COMMAND_CLEAR) {
+          return args.length === 1;
+        }
+
+        if (!isValidColorValue(args[0])) return false;
+
+        if (args.length > 3) return false;
+
+        if (args[1]) {
+          const rawOpacity = String(args[1]).trim();
+          const parsedOpacity = parseOpacityCommand(rawOpacity);
+          if (
+            parsedOpacity === null &&
+            rawOpacity !== "0" &&
+            rawOpacity !== "1"
+          ) {
+            return false;
+          }
+        }
+
+        if (args[2]) {
+          const rawBlend = String(args[2]).trim().toLowerCase();
+          if (!isKnownBlendMode(rawBlend)) return false;
+        }
+
+        return true;
+      },
     });
+
+    ChatCommandsManager.onCommand((payload) => {
+      if (payload.command?.name !== COMMAND_NAME) return;
+
+      const senderId = payload?.messageData?.raw?.user_id;
+      if (!senderId || !PlayerManager.isUserGameMaster(senderId)) return;
+
+      const args = payload.args || [];
+      if (!args.length) return;
+
+      if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
+        applyState(null, null, null);
+        return;
+      }
+
+      let nextColor = currentColor;
+      let nextOpacity = currentOpacity;
+      let nextBlend = currentBlend;
+
+      if (args[0]) {
+        if (isTransparentValue(args[0])) {
+          nextColor = null;
+        } else if (isValidColorValue(args[0])) {
+          nextColor = args[0];
+        }
+      }
+
+      if (args[1]) {
+        const rawOpacity = String(args[1]).trim();
+        const parsedOpacity = parseOpacityCommand(rawOpacity);
+        if (
+          parsedOpacity !== null ||
+          rawOpacity === "0" ||
+          rawOpacity === "1"
+        ) {
+          nextOpacity = parsedOpacity;
+        }
+      }
+
+      if (args[2]) {
+        const rawBlend = String(args[2]).trim().toLowerCase();
+        if (isKnownBlendMode(rawBlend)) {
+          nextBlend = rawBlend === DEFAULT_BLEND ? null : rawBlend;
+        }
+      }
+
+      applyState(nextColor, nextOpacity, nextBlend);
+    });
+
+    applyColor(currentColor, currentOpacity, currentBlend);
+    restoreFromChatHistory();
 
     if (!PlayerManager.isGameMaster()) {
       return;
