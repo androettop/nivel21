@@ -421,11 +421,11 @@
   );
 
   /**
-   * Watch for action bars rendered inside #panel-actions
+   * Watch for action bars rendered inside .content-body
    * and build them from their stored elements data.
    */
   function initPanelActionsObserver() {
-    const $panels = $("[id='panel-actions']");
+    const $panels = $(".content-body");
     if (!$panels.length) return;
 
     function buildPanelActionBar($actionBar, attempt = 0) {
