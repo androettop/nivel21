@@ -37,6 +37,7 @@
       injectScript("src/core/chat-ui-manager.js"),
       injectScript("src/core/key-modifiers-manager.js"),
       injectScript("src/core/chat-manager.js"),
+      injectScript("src/core/chat-commands-manager.js"),
       injectScript("src/core/player-manager.js"),
       injectScript("src/core/token-manager.js"),
       injectScript("src/core/measurement-manager.js"),
@@ -45,7 +46,6 @@
       injectScript("src/core/action-bar-manager.js"),
       injectScript("src/core/tooltip-manager.js"),
       injectScript("src/core/html-manager.js"),
-      injectScript("src/core/session-state-manager.js"),
 
       // Features
       injectScript("src/features/advantage-disadvantage.js"),

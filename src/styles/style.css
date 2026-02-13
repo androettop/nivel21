@@ -34,8 +34,8 @@
 	left: 0;
 
 	pointer-events: none;
-	background-color: transparent;
-	opacity: 1;
+	background-color: black;
+	opacity: 0;
 	mix-blend-mode: multiply;
 
 	transition: none 200ms ease;
