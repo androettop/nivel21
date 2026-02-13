@@ -11,12 +11,14 @@
       ChatCommandsManager,
       PlayerManager,
       ChatUIManager,
+      ChatManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
       "ChatCommandsManager",
       "PlayerManager",
       "ChatUIManager",
+      "ChatManager",
     );
 
     if (
@@ -24,7 +26,8 @@
       !FloatingPanelManager ||
       !ChatCommandsManager ||
       !PlayerManager ||
-      !ChatUIManager
+      !ChatUIManager ||
+      !ChatManager
     ) {
       console.warn("[Ambient FX] Managers not available");
       return;
@@ -39,6 +42,7 @@
     const DEFAULT_OPACITY = 0;
     const COMMAND_CLEAR = "clear";
     const PREVIEW_TOGGLE_ID = "n21-ambient-fx-preview";
+    const PREVIEW_DISABLE_DELAY_MS = 300;
     const CHAT_SELECTORS = {
       messageBox: ".room-message",
       userName: ".user-name",
@@ -72,7 +76,6 @@
       const numeric = Number(value);
       if (!Number.isFinite(numeric)) return null;
       const clamped = Math.max(0, Math.min(1, numeric));
-      if (clamped === 1) return null;
       return clamped;
     }
 
@@ -108,19 +111,44 @@
       if (value === undefined || value === null || value === "") return null;
       const numeric = Number(value);
       if (!Number.isFinite(numeric)) return null;
-      let normalized = numeric;
-      if (numeric > 1) {
-        normalized = numeric / 100;
-      }
-      normalized = Math.max(0, Math.min(1, normalized));
-      if (normalized === 1) return null;
+      const normalized = Math.max(0, Math.min(1, numeric));
       return normalized;
     }
 
-    function parseOpacityPercentInput(value, fallback = DEFAULT_OPACITY) {
+    function parseOpacityInput(value, fallback = DEFAULT_OPACITY) {
       const numeric = Number(value);
       if (!Number.isFinite(numeric)) return fallback;
-      return Math.max(0, Math.min(100, numeric)) / 100;
+      return Math.max(0, Math.min(1, numeric));
+    }
+
+    function formatOpacityValue(value) {
+      if (value === undefined || value === null) return "0";
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return "0";
+      const clamped = Math.max(0, Math.min(1, numeric));
+      const fixed = clamped.toFixed(2);
+      return fixed.replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+    }
+
+    function getSenderInfo() {
+      const senderInfoElement = document.getElementById(
+        "room_message_sender_info",
+      );
+      return senderInfoElement?.value || null;
+    }
+
+    function sendCommandToChat(commandText, { debounce = false } = {}) {
+      if (!commandText) return;
+      const senderInfo = getSenderInfo();
+      const messageOptions = { visibility: "public" };
+      if (senderInfo) {
+        messageOptions.sender_info = senderInfo;
+      }
+      if (debounce) {
+        ChatManager.sendDebounced(commandText, messageOptions);
+      } else {
+        ChatManager.send(commandText, messageOptions);
+      }
     }
 
     function resolveSenderIdFromElement(messageElement) {
@@ -159,11 +187,7 @@
       if (args[1]) {
         const rawOpacity = String(args[1]).trim();
         const parsedOpacity = parseOpacityCommand(rawOpacity);
-        if (
-          parsedOpacity !== null ||
-          rawOpacity === "0" ||
-          rawOpacity === "1"
-        ) {
+        if (parsedOpacity !== null) {
           nextOpacity = parsedOpacity;
         }
       }
@@ -347,7 +371,7 @@
       if (!input) return;
 
       const normalized = normalizeOpacity(opacity) ?? DEFAULT_OPACITY;
-      const nextValue = String(Math.round(normalized * 100));
+      const nextValue = formatOpacityValue(normalized);
       if (input.value !== nextValue) {
         input.value = nextValue;
       }
@@ -370,44 +394,20 @@
       const normalizedBlend = sanitizeBlendMode(blend) || DEFAULT_BLEND;
       const safeColor = color || DEFAULT_COLOR;
 
-      if (
-        !color &&
-        normalizedOpacity === 1 &&
-        normalizedBlend === DEFAULT_BLEND
-      ) {
-        return `/${COMMAND_NAME} ${COMMAND_CLEAR}`;
-      }
-
-      const opacityText = String(Math.round(normalizedOpacity * 100) / 100);
+      const opacityText = formatOpacityValue(normalizedOpacity);
       return `/${COMMAND_NAME} ${safeColor} ${opacityText} ${normalizedBlend}`;
     }
 
-    function setCommandPreview(value) {
-      const input = document.querySelector("#n21-ambient-fx-command");
-      if (!input) return;
-      input.value = value;
-    }
-
-    function updateCommandPreviewFromState() {
-      const command = buildCommand(currentColor, currentOpacity, currentBlend);
-      setCommandPreview(command);
-    }
-
-    function updateCommandPreviewFromForm(forceClear = false) {
+    function getCommandFromInputs(forceClear = false) {
       const colorInput = document.querySelector("#n21-ambient-fx-color");
       const opacityInput = document.querySelector("#n21-ambient-fx-opacity");
       const blendInput = document.querySelector("#n21-ambient-fx-blend");
 
       const color = colorInput?.value || DEFAULT_COLOR;
-      const opacityValue = parseOpacityPercentInput(opacityInput?.value);
+      const opacityValue = parseOpacityInput(opacityInput?.value);
       const blend = blendInput?.value || DEFAULT_BLEND;
 
-      const command = buildCommand(color, opacityValue, blend, forceClear);
-      setCommandPreview(command);
-
-      if (previewEnabled) {
-        updatePreviewOverlayFromInputs();
-      }
+      return buildCommand(color, opacityValue, blend, forceClear);
     }
 
     function updatePreviewOverlayFromInputs() {
@@ -416,7 +416,7 @@
       const blendInput = document.querySelector("#n21-ambient-fx-blend");
 
       const color = colorInput?.value || DEFAULT_COLOR;
-      const opacityValue = parseOpacityPercentInput(opacityInput?.value);
+      const opacityValue = parseOpacityInput(opacityInput?.value);
       const blend = blendInput?.value || DEFAULT_BLEND;
 
       const overlay = ensurePreviewOverlay();
@@ -434,7 +434,6 @@
       syncPanelInput(color);
       syncOpacityInput(normalizedOpacity);
       syncBlendModeInput(normalizedBlend);
-      updateCommandPreviewFromState();
 
       if (previewEnabled) {
         updatePreviewOverlayFromInputs();
@@ -448,13 +447,8 @@
       const normalizedBlend = sanitizeBlendMode(blendMode) || DEFAULT_BLEND;
       const initialOpacity =
         typeof normalizedOpacity === "number"
-          ? Math.round(normalizedOpacity * 100)
-          : Math.round(DEFAULT_OPACITY * 100);
-      const commandText = buildCommand(
-        color,
-        normalizedOpacity,
-        normalizedBlend,
-      );
+          ? formatOpacityValue(normalizedOpacity)
+          : formatOpacityValue(DEFAULT_OPACITY);
       return (
         "<div class='n21-ambient-fx-panel-body' style='padding: 12px;'>" +
         "<label for='n21-ambient-fx-color' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
@@ -465,7 +459,7 @@
         "<label for='n21-ambient-fx-opacity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
         "Intensidad" +
         "</label>" +
-        `<input id='n21-ambient-fx-opacity' type='range' min='0' max='100' step='1' value='${initialOpacity}' ` +
+        `<input id='n21-ambient-fx-opacity' type='range' min='0' max='1' step='0.01' value='${initialOpacity}' ` +
         "style='width: 100%; margin-bottom: 12px;' />" +
         "<label for='n21-ambient-fx-blend' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
         "Modo de fusion" +
@@ -524,14 +518,14 @@
         `<input id='${PREVIEW_TOGGLE_ID}' type='checkbox' />` +
         "Vista previa" +
         "</label>" +
-        "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 100%; margin-top: 12px;'>" +
-        "Limpiar efectos" +
+        "<div style='display: flex; gap: 8px; margin-top: 12px;'>" +
+        "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 50%;'>" +
+        "Limpiar" +
         "</button>" +
-        "<label for='n21-ambient-fx-command' style='display: block; margin: 12px 0 8px; font-weight: 600;'>" +
-        "Comando para enviar al chat" +
-        "</label>" +
-        `<input id='n21-ambient-fx-command' type='text' readonly value='${commandText}' ` +
-        "style='width: 100%;' />" +
+        "<button id='n21-ambient-fx-apply' class='btn btn-primary' style='width: 50%;'>" +
+        "Aplicar" +
+        "</button>" +
+        "</div>" +
         "</div>"
       );
     }
@@ -564,14 +558,18 @@
 
       $input.off("input.n21AmbientFx");
       $input.on("input.n21AmbientFx", () => {
-        updateCommandPreviewFromForm();
+        if (previewEnabled) {
+          updatePreviewOverlayFromInputs();
+        }
       });
 
       const $opacityInput = $panel.find("#n21-ambient-fx-opacity");
       if ($opacityInput.length) {
         $opacityInput.off("input.n21AmbientFx");
         $opacityInput.on("input.n21AmbientFx", () => {
-          updateCommandPreviewFromForm();
+          if (previewEnabled) {
+            updatePreviewOverlayFromInputs();
+          }
         });
       }
 
@@ -579,7 +577,9 @@
       if ($blendInput.length) {
         $blendInput.off("change.n21AmbientFx");
         $blendInput.on("change.n21AmbientFx", () => {
-          updateCommandPreviewFromForm();
+          if (previewEnabled) {
+            updatePreviewOverlayFromInputs();
+          }
         });
       }
 
@@ -605,23 +605,41 @@
             $input.val(DEFAULT_COLOR);
           }
           if ($opacityInput.length) {
-            $opacityInput.val(String(Math.round(DEFAULT_OPACITY * 100)));
+            $opacityInput.val(formatOpacityValue(DEFAULT_OPACITY));
           }
           if ($blendInput.length) {
             $blendInput.val(DEFAULT_BLEND);
           }
-          updateCommandPreviewFromForm(true);
+          if (previewEnabled) {
+            setTimeout(() => {
+              previewEnabled = false;
+              if ($previewToggle.length) {
+                $previewToggle.prop("checked", false);
+              }
+              setPreviewVisibility(false);
+            }, PREVIEW_DISABLE_DELAY_MS);
+          }
+          const commandText = getCommandFromInputs(true);
+          sendCommandToChat(commandText, { debounce: true });
         });
       }
 
-      const $commandInput = $panel.find("#n21-ambient-fx-command");
-      if ($commandInput.length) {
-        $commandInput.off("click.n21AmbientFx focus.n21AmbientFx");
-        $commandInput.on("click.n21AmbientFx focus.n21AmbientFx", (event) => {
-          const target = event.currentTarget;
-          if (target && typeof target.select === "function") {
-            target.select();
+      const $applyButton = $panel.find("#n21-ambient-fx-apply");
+      if ($applyButton.length) {
+        $applyButton.off("click.n21AmbientFx");
+        $applyButton.on("click.n21AmbientFx", (event) => {
+          event.preventDefault();
+          if (previewEnabled) {
+            setTimeout(() => {
+              previewEnabled = false;
+              if ($previewToggle.length) {
+                $previewToggle.prop("checked", false);
+              }
+              setPreviewVisibility(false);
+            }, PREVIEW_DISABLE_DELAY_MS);
           }
+          const commandText = getCommandFromInputs(false);
+          sendCommandToChat(commandText, { debounce: true });
         });
       }
 
@@ -629,12 +647,11 @@
         $input.val(currentColor);
       }
       if (typeof panelOpacity === "number" && $opacityInput.length) {
-        $opacityInput.val(String(Math.round(panelOpacity * 100)));
+        $opacityInput.val(formatOpacityValue(panelOpacity));
       }
       if ($blendInput.length) {
         $blendInput.val(panelBlend || DEFAULT_BLEND);
       }
-      updateCommandPreviewFromState();
       setPreviewVisibility(previewEnabled);
     }
 
@@ -669,11 +686,7 @@
         if (args[1]) {
           const rawOpacity = String(args[1]).trim();
           const parsedOpacity = parseOpacityCommand(rawOpacity);
-          if (
-            parsedOpacity === null &&
-            rawOpacity !== "0" &&
-            rawOpacity !== "1"
-          ) {
+          if (parsedOpacity === null) {
             return false;
           }
         }
@@ -714,11 +727,7 @@
       if (args[1]) {
         const rawOpacity = String(args[1]).trim();
         const parsedOpacity = parseOpacityCommand(rawOpacity);
-        if (
-          parsedOpacity !== null ||
-          rawOpacity === "0" ||
-          rawOpacity === "1"
-        ) {
+        if (parsedOpacity !== null) {
           nextOpacity = parsedOpacity;
         }
       }
