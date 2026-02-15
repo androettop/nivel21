@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",

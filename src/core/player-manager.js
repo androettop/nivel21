@@ -24,7 +24,11 @@
      * @returns {boolean} True if playerService is available, false otherwise
      */
     isReady() {
-      return !!this._getNative();
+      try {
+        return !!this._getNative()?.me?.()?.userId;
+      } catch (error) {
+        return false;
+      }
     }
 
     /**
