@@ -59,6 +59,7 @@
       injectScript("src/features/whisper-mode.js"),
       injectScript("src/features/multi-level-action-bar.js"),
       injectScript("src/features/ambient-fx.js"),
+      injectScript("src/features/notes-panel.js"),
     ]);
   });
 })();

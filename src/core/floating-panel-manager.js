@@ -206,7 +206,7 @@
         "<div class='card-title wo-url'>" +
         (title || "") +
         "</div> </div> " +
-        "<div class='card-body p-0'> <div class='floating-block'>" +
+        "<div class='card-body d-flex flex-column p-0'> <div class='floating-block flex-grow-1'>" +
         (html || "") +
         "</div> </div> </div> </div>"
       );

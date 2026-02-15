@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -56,7 +56,8 @@
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
         "src/features/multi-level-action-bar.js",
-        "src/features/ambient-fx.js"
+        "src/features/ambient-fx.js",
+        "src/features/notes-panel.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

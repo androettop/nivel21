@@ -548,7 +548,7 @@
         "#822020",
         html,
         "n21-ambient-fx-panel",
-        "width: 300px;",
+        "width: 300px; height: 352px; min-width: 300px; min-height: 352px; max-width: 300px; max-height: 352px;",
       );
 
       if (!$panel || typeof $panel.find !== "function") return;

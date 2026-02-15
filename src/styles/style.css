@@ -52,3 +52,22 @@
 	animation: n21-shake 0.5s;
 	border-color: #dc3545 !important;
 }
+
+.n21-notes-textarea{
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+	padding: 12px;
+	border-radius: 0;
+	font-size: 14px;
+	outline: none;
+}
+
+.n21-floating-block {
+	height: max-content;
+}
+
+.card.floating-panel.n21-ambient-fx-panel.panel-unpin:not(.panel-minimized) .ui-resizable-handle {
+    display: none !important
+}

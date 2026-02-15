@@ -190,6 +190,16 @@ Crea capas de color sobre el tablero para simular horas del día, clima o evento
 
 ---
 
+### Panel de Notas
+
+Abre un panel flotante para tomar notas durante la partida. Las notas se guardan automáticamente en el navegador y persisten entre sesiones.
+
+<a id="notes-panel">
+ <img src="popup/img/notes-panel.png" alt="Panel de Notas" />
+</a>
+
+---
+
 ### Carpetas anidadas
 
 Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa. Organiza acciones en carpetas usando el separador " > " en el nombre. La barra se convierte en carpetas anidadas automáticamente.
