@@ -180,6 +180,16 @@ Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrí
 
 ---
 
+### Distancia recorrida
+
+Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
+
+<a id="token-drag-measurement">
+ <img src="popup/img/token-drag-measurement.png" alt="Distancia recorrida" />
+</a>
+
+---
+
 ### Efectos Ambientales
 
 Crea capas de color sobre el tablero para simular horas del día, clima o eventos astronómicos. El DM puede ajustar color, intensidad y modo de fusión para ambientar la escena.

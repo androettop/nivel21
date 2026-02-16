@@ -6,50 +6,26 @@
 
     const { loadManagers } = window._n21_;
 
-    const [TokenManager, KeyModifiersManager] = await loadManagers("TokenManager", "KeyModifiersManager");
+    const [TokenManager, KeyModifiersManager, NetworkManager] = await loadManagers(
+      "TokenManager",
+      "KeyModifiersManager",
+      "NetworkManager",
+    );
 
     let isDragging = false;
     let dragStarted = false;
     let capturedNetworkIds = new Set();
-    let hookInstalled = false;
 
-    function installHook() {
-      if (hookInstalled) return true;
-
-      const root = window.app?.root;
-      if (!root || typeof root.find !== "function") return false;
-
-      const found = root.find((e) => e && e.name === "Game Manager");
-      const gameManager = Array.isArray(found) ? found[0] : found;
-      if (!gameManager?.script?.networkManager?.room?.send) return false;
-
-      const roomProto = gameManager.script.networkManager.room.__proto__;
-      if (!roomProto?.send) return false;
-
-      const originalSend = roomProto.send;
-
-      roomProto.send = function (event, data, ...args) {
-        if (
-          event === "transform:update" &&
-          isDragging &&
-          dragStarted &&
-          data?.networkId?.includes("TOKEN")
-        ) {
-          capturedNetworkIds.add(data.networkId);
-        }
-        return originalSend.call(this, event, data, ...args);
-      };
-
-      hookInstalled = true;
-      return true;
-    }
-
-    // Instalar hook con polling
-    const hookCheckInterval = setInterval(() => {
-      if (installHook()) clearInterval(hookCheckInterval);
-    }, 500);
-
-    setTimeout(() => clearInterval(hookCheckInterval), 15000);
+    // Subscribe to token transform updates
+    NetworkManager.on("transform:update", (data) => {
+      if (
+        isDragging &&
+        dragStarted &&
+        data?.networkId?.includes("TOKEN")
+      ) {
+        capturedNetworkIds.add(data.networkId);
+      }
+    });
 
     $(document).on("mousedown", "canvas", () => {
       isDragging = true;
