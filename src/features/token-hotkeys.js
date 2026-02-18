@@ -48,7 +48,7 @@
         parts.push(keyLabel);
       }
 
-      return parts.join(" + ");
+      return parts.join("+");
     }
 
     // Check if event matches hotkey
