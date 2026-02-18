@@ -31,9 +31,6 @@
     let currentPanel = null;
     let featureChangePending = false;
 
-    /**
-     * Parse hotkey string into components
-     */
     function parseHotkey(hotkeyString) {
       const lower = String(hotkeyString || "").toLowerCase();
       const parts = lower.split("+").map((p) => p.trim());
@@ -46,9 +43,6 @@
       };
     }
 
-    /**
-     * Format hotkey for display
-     */
     function formatHotkeyForDisplay(hotkeyString) {
       const parsed = parseHotkey(hotkeyString);
       const parts = [];
@@ -57,95 +51,105 @@
       if (parsed.alt) parts.push("Alt");
       if (parsed.shift) parts.push("Shift");
       if (parsed.key) {
-        const keyLabel =
-          parsed.key === "delete"
-            ? "Supr"
-            : parsed.key.toUpperCase();
+        const keyLabel = parsed.key === "delete" ? "Supr" : parsed.key.toUpperCase();
         parts.push(keyLabel);
       }
 
       return parts.join(" + ");
     }
 
-    /**
-     * Escape HTML special characters
-     */
     function escapeHtml(text) {
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
     }
 
-    /**
-     * Get category metadata for UI text
-     */
-    function getCategoryMeta(categoryName) {
-      const meta = {
-        features: {
-          label: "Funciones",
-          description: "Activa o desactiva los módulos que quieres usar.",
-        },
-        hotkeys: {
-          label: "Atajos de teclado",
-          description: "Personaliza combinaciones para acciones rápidas.",
-        },
-        "send-to-chat": {
-          label: "Compartir al chat",
-          description: "Define la tecla modificadora para enviar contenido al chat.",
-        },
-        "snap-to-grid": {
-          label: "Ajuste a cuadrícula",
-          description: "Configura la tecla usada para ajustar tokens al soltar.",
-        },
-        "token-height": {
-          label: "Altura de tokens",
-          description: "Ajusta límites y paso para subir y bajar altura.",
-        },
-        "token-move": {
-          label: "Movimiento de tokens",
-          description: "Configura cuánto se mueve un token por pulsación.",
-        },
-      };
+    function isDefaultSettingValue(setting, value) {
+      if (!setting) return true;
 
-      return (
-        meta[categoryName] || {
-          label: categoryName,
-          description: "",
-        }
-      );
+      const defaultValue = setting.defaultValue;
+
+      if (setting.type === "number") {
+        return Number(value) === Number(defaultValue);
+      }
+
+      if (setting.type === "boolean") {
+        return Boolean(value) === Boolean(defaultValue);
+      }
+
+      return String(value ?? "").toLowerCase() === String(defaultValue ?? "").toLowerCase();
     }
 
-    /**
-     * Build HTML for a boolean setting
-     */
+    function buildModifiedIndicatorHtml(setting, value) {
+      if (isDefaultSettingValue(setting, value)) {
+        return "";
+      }
+
+      return '<span class="n21-setting-modified-badge" title="Modificado" aria-label="Modificado"><i class="fa fa-pencil" aria-hidden="true"></i></span>';
+    }
+
+    function updateSettingModifiedIndicator($panel, settingName, value) {
+      if (!$panel || !$panel.length) return;
+
+      const setting = SettingsManager.getAllSettings()[settingName];
+      if (!setting) return;
+
+      const $item = $panel.find(`.n21-setting-item[data-setting="${settingName}"]`);
+      if (!$item.length) return;
+
+      const isDefault = isDefaultSettingValue(setting, value);
+      $item.toggleClass("is-modified", !isDefault);
+
+      let $badge = $item.find(".n21-setting-modified-badge");
+      if (isDefault) {
+        $badge.remove();
+        return;
+      }
+
+      if (!$badge.length) {
+        const $label = $item.find(".n21-setting-label").first();
+        if (!$label.length) return;
+
+        const $lastLabelSpan = $label.find("span").last();
+        if ($lastLabelSpan.length) {
+          $lastLabelSpan.after('<span class="n21-setting-modified-badge" title="Modificado" aria-label="Modificado"><i class="fa fa-pencil" aria-hidden="true"></i></span>');
+        } else {
+          $label.append('<span class="n21-setting-modified-badge" title="Modificado" aria-label="Modificado"><i class="fa fa-pencil" aria-hidden="true"></i></span>');
+        }
+      }
+    }
+
     function buildBooleanSettingHtml(name, setting, value) {
       const checked = value ? " checked" : "";
       const escapedName = escapeHtml(name);
       const escapedLabel = escapeHtml(setting.label);
+      const modifiedIndicatorHtml = buildModifiedIndicatorHtml(setting, value);
+      const modifiedClass = modifiedIndicatorHtml ? " is-modified" : "";
 
       return `
-        <div class="n21-setting-item" data-setting="${escapedName}">
-          <label class="n21-setting-label">
+        <div class="n21-setting-item p-0${modifiedClass}" data-setting="${escapedName}">
+          <label class="n21-setting-label p-1">
             <input type="checkbox" class="n21-setting-input n21-setting-checkbox" data-setting="${escapedName}" data-type="boolean"${checked} />
             <span>${escapedLabel}</span>
+            ${modifiedIndicatorHtml}
           </label>
         </div>
       `;
     }
 
-    /**
-     * Build HTML for a hotkey setting
-     */
     function buildHotkeySettingHtml(name, setting, value) {
       const escapedName = escapeHtml(name);
       const escapedLabel = escapeHtml(setting.label);
       const displayValue = formatHotkeyForDisplay(value);
       const escapedValue = escapeHtml(displayValue);
+      const modifiedIndicatorHtml = buildModifiedIndicatorHtml(setting, value);
+      const modifiedClass = modifiedIndicatorHtml ? " is-modified" : "";
 
       return `
-        <div class="n21-setting-item n21-hotkey-item" data-setting="${escapedName}">
+        <div class="n21-setting-item n21-hotkey-item${modifiedClass}" data-setting="${escapedName}">
           <label class="n21-setting-label">
             <span>${escapedLabel}</span>
+            ${modifiedIndicatorHtml}
           </label>
           <div class="n21-hotkey-input-wrapper">
             <input type="text"
@@ -163,77 +167,88 @@
       `;
     }
 
-    /**
-     * Build HTML for a select setting
-     */
     function buildSelectSettingHtml(name, setting, value) {
       const escapedName = escapeHtml(name);
       const escapedLabel = escapeHtml(setting.label);
+      const currentValue = String(value ?? setting.defaultValue ?? "");
       const options = Array.isArray(setting.options) ? setting.options : [];
+      const modifiedIndicatorHtml = buildModifiedIndicatorHtml(setting, value);
+      const modifiedClass = modifiedIndicatorHtml ? " is-modified" : "";
 
       const optionsHtml = options
         .map((option) => {
-          const optionValue =
-            option && typeof option === "object"
-              ? String(option.value ?? "")
-              : String(option);
-          const optionLabel =
-            option && typeof option === "object"
-              ? String(option.label ?? option.value ?? "")
-              : String(option);
-          const selected = String(value) === optionValue ? " selected" : "";
-
-          return `<option value="${escapeHtml(optionValue)}"${selected}>${escapeHtml(optionLabel)}</option>`;
+          const optionValue = String(option?.value ?? "");
+          const selected = optionValue === currentValue ? " selected" : "";
+          const escapedValue = escapeHtml(optionValue);
+          const escapedOptionLabel = escapeHtml(option?.label || optionValue);
+          return `<option value="${escapedValue}"${selected}>${escapedOptionLabel}</option>`;
         })
         .join("");
 
       return `
-        <div class="n21-setting-item" data-setting="${escapedName}">
+        <div class="n21-setting-item${modifiedClass}" data-setting="${escapedName}">
           <label class="n21-setting-label" for="n21-setting-${escapedName}">
             <span>${escapedLabel}</span>
+            ${modifiedIndicatorHtml}
           </label>
-          <select id="n21-setting-${escapedName}"
-                  class="n21-setting-input form-control"
-                  data-setting="${escapedName}"
-                  data-type="select">
-            ${optionsHtml}
-          </select>
+          <div class="n21-hotkey-input-wrapper">
+            <select id="n21-setting-${escapedName}"
+                    class="n21-setting-input form-control"
+                    data-setting="${escapedName}"
+                    data-type="select">
+              ${optionsHtml}
+            </select>
+            <button class="n21-setting-reset btn btn-secondary"
+                    data-setting="${escapedName}"
+                    data-type="select">
+              Restablecer
+            </button>
+          </div>
         </div>
       `;
     }
 
-    /**
-     * Build HTML for a number setting
-     */
     function buildNumberSettingHtml(name, setting, value) {
       const escapedName = escapeHtml(name);
       const escapedLabel = escapeHtml(setting.label);
-      const minAttr =
-        typeof setting.min === "number" ? ` min="${setting.min}"` : "";
-      const maxAttr =
-        typeof setting.max === "number" ? ` max="${setting.max}"` : "";
-      const stepAttr =
-        typeof setting.step === "number" ? ` step="${setting.step}"` : "";
+      const numberValue = Number(value);
+      const displayValue = Number.isFinite(numberValue)
+        ? String(numberValue)
+        : String(setting.defaultValue ?? "");
+      const escapedValue = escapeHtml(displayValue);
+      const modifiedIndicatorHtml = buildModifiedIndicatorHtml(setting, value);
+      const modifiedClass = modifiedIndicatorHtml ? " is-modified" : "";
+
+      const minAttr = Number.isFinite(setting.min) ? ` min="${setting.min}"` : "";
+      const maxAttr = Number.isFinite(setting.max) ? ` max="${setting.max}"` : "";
+      const stepAttr = Number.isFinite(setting.step)
+        ? ` step="${setting.step}"`
+        : "";
 
       return `
-        <div class="n21-setting-item" data-setting="${escapedName}">
+        <div class="n21-setting-item${modifiedClass}" data-setting="${escapedName}">
           <label class="n21-setting-label" for="n21-setting-${escapedName}">
             <span>${escapedLabel}</span>
+            ${modifiedIndicatorHtml}
           </label>
-          <input id="n21-setting-${escapedName}"
-                 type="number"
-                 class="n21-setting-input form-control"
-                 data-setting="${escapedName}"
-                 data-type="number"
-                 value="${escapeHtml(String(value ?? setting.defaultValue ?? ""))}"${minAttr}${maxAttr}${stepAttr} />
+          <div class="n21-hotkey-input-wrapper">
+            <input id="n21-setting-${escapedName}"
+                   type="number"
+                   class="n21-setting-input form-control"
+                   data-setting="${escapedName}"
+                   data-type="number"
+                   value="${escapedValue}"${minAttr}${maxAttr}${stepAttr} />
+            <button class="n21-setting-reset btn btn-secondary"
+                    data-setting="${escapedName}"
+                    data-type="number">
+              Restablecer
+            </button>
+          </div>
         </div>
       `;
     }
 
-    /**
-     * Build HTML for settings by category
-     */
-    function buildCategoryHtml(categoryName, categoryLabel, settings) {
+    function buildCategoryHtml(categoryName, categoryMeta, settings) {
       const settingNames = Object.keys(settings || {});
       if (!settingNames.length) return "";
 
@@ -256,8 +271,7 @@
         })
         .join("");
 
-      const categoryMeta = getCategoryMeta(categoryName);
-      const escapedLabel = escapeHtml(categoryLabel);
+      const escapedLabel = escapeHtml(categoryMeta.label || categoryName);
       const escapedDescription = escapeHtml(categoryMeta.description || "");
 
       return `
@@ -277,50 +291,42 @@
       `;
     }
 
-    /**
-     * Build complete settings panel HTML
-     */
     function buildPanelHtml() {
       const allSettings = SettingsManager.getAllSettings();
+      const allCategories = SettingsManager.getAllCategories
+        ? SettingsManager.getAllCategories()
+        : {};
 
-      // Group by category
-      const categories = {};
+      const groupedSettings = {};
       for (const [name, setting] of Object.entries(allSettings)) {
-        const cat = setting.category || "general";
-        if (!categories[cat]) {
-          categories[cat] = {};
+        const categoryName = setting.category || "general";
+        if (!groupedSettings[categoryName]) {
+          groupedSettings[categoryName] = {};
         }
-        categories[cat][name] = setting;
+        groupedSettings[categoryName][name] = setting;
       }
 
-      const orderedCategories = [];
+      const orderedCategories = Object.entries(groupedSettings)
+        .map(([categoryName, settings]) => {
+          const categoryMeta = allCategories[categoryName] || {
+            name: categoryName,
+            label: categoryName,
+            description: "",
+            order: 999,
+          };
 
-      if (categories.features) {
-        orderedCategories.push({
-          key: "features",
-          label: "Funciones",
-          settings: categories.features,
-        });
-      }
-
-      if (categories.hotkeys) {
-        orderedCategories.push({
-          key: "hotkeys",
-          label: "Atajos de teclado",
-          settings: categories.hotkeys,
-        });
-      }
-
-      for (const [catName, settings] of Object.entries(categories)) {
-        if (catName !== "features" && catName !== "hotkeys") {
-          const categoryMeta = getCategoryMeta(catName);
-          orderedCategories.push({
-            key: catName,
-            label: categoryMeta.label || catName,
+          return {
+            key: categoryName,
             settings,
-          });
-        }
-      }
+            meta: categoryMeta,
+          };
+        })
+        .sort((a, b) => {
+          if (a.meta.order !== b.meta.order) {
+            return a.meta.order - b.meta.order;
+          }
+          return String(a.meta.label).localeCompare(String(b.meta.label));
+        });
 
       let html = '<div class="n21-settings-panel-body">';
 
@@ -329,7 +335,7 @@
         html += orderedCategories
           .map((category, index) => {
             const escapedCategory = escapeHtml(category.key);
-            const escapedLabel = escapeHtml(category.label);
+            const escapedLabel = escapeHtml(category.meta.label || category.key);
             const activeClass = index === 0 ? " is-active" : "";
 
             return `
@@ -350,7 +356,7 @@
           .map((category, index) => {
             const categoryHtml = buildCategoryHtml(
               category.key,
-              category.label,
+              category.meta,
               category.settings
             );
 
@@ -368,22 +374,15 @@
 
       html += "</div>";
 
-      // Add reload message if needed
       if (featureChangePending) {
         html =
           `<div class="n21-settings-reload-message">${RELOAD_NOTICE_TEXT}</div>` +
           html;
       }
 
-
-      // Wrap in container
-      html = `<div class="h-100 d-flex flex-column flex-grow-1">${html}</div>`;
-      return html;
+      return `<div class="h-100 d-flex flex-column flex-grow-1">${html}</div>`;
     }
 
-    /**
-     * Attach tab listeners
-     */
     function attachTabListeners($panel) {
       const $tabs = $panel.find(".n21-settings-tab");
       if (!$tabs.length) return;
@@ -404,15 +403,11 @@
       });
     }
 
-    /**
-     * Attach event listeners to settings panel
-     */
     function attachEventListeners($panel) {
       if (!$panel || !$panel.length) return;
 
       attachTabListeners($panel);
 
-      // Boolean checkboxes
       $panel.find('input[type="checkbox"][data-type="boolean"]').each(function () {
         const $input = $(this);
         const settingName = $input.data("setting");
@@ -422,7 +417,6 @@
           const newValue = $input.prop("checked");
           SettingsManager.set(settingName, newValue);
 
-          // Check if this is a feature toggle
           if (settingName.startsWith("feature.") && settingName.endsWith(".enabled")) {
             featureChangePending = true;
             showReloadMessage($panel);
@@ -430,7 +424,6 @@
         });
       });
 
-      // Select settings
       $panel.find('select[data-type="select"]').each(function () {
         const $input = $(this);
         const settingName = $input.data("setting");
@@ -441,23 +434,22 @@
         });
       });
 
-      // Number settings
-      $panel.find('input[data-type="number"]').each(function () {
+      $panel.find('input[type="number"][data-type="number"]').each(function () {
         const $input = $(this);
         const settingName = $input.data("setting");
 
         $input.off("change.n21Settings blur.n21Settings");
         $input.on("change.n21Settings blur.n21Settings", function () {
-          const raw = String($input.val() || "").trim();
-          const numeric = Number(raw);
+          const rawValue = String($input.val() || "").trim();
+          const numericValue = Number(rawValue);
           const setting = SettingsManager.getAllSettings()[settingName];
 
-          if (!setting || !Number.isFinite(numeric)) {
-            $input.val(String(SettingsManager.get(settingName)));
+          if (!setting || !Number.isFinite(numericValue)) {
+            $input.val(String(SettingsManager.get(settingName) ?? ""));
             return;
           }
 
-          let nextValue = numeric;
+          let nextValue = numericValue;
           if (typeof setting.min === "number") {
             nextValue = Math.max(setting.min, nextValue);
           }
@@ -470,7 +462,27 @@
         });
       });
 
-      // Hotkey inputs
+      $panel.find(".n21-setting-reset").each(function () {
+        const $button = $(this);
+        const settingName = $button.data("setting");
+        const settingType = $button.data("type");
+
+        $button.off("click.n21Settings");
+        $button.on("click.n21Settings", function (e) {
+          e.preventDefault();
+          SettingsManager.reset(settingName);
+
+          const newValue = SettingsManager.get(settingName);
+          const $input = $panel.find(
+            `.n21-setting-input[data-setting="${settingName}"][data-type="${settingType}"]`
+          );
+
+          if ($input.length) {
+            $input.val(String(newValue ?? ""));
+          }
+        });
+      });
+
       $panel.find('input[data-type="hotkey"]').each(function () {
         const $input = $(this);
         const settingName = $input.data("setting");
@@ -480,34 +492,27 @@
           e.preventDefault();
           e.stopPropagation();
 
-          const key = e.key.toLowerCase();
+          const key = String(e.key || "").toLowerCase();
           const ctrl = e.ctrlKey;
           const alt = e.altKey;
           const shift = e.shiftKey;
 
-          // Build hotkey string
-          const parts = [];
-          if (ctrl) parts.push("ctrl");
-          if (alt) parts.push("alt");
-          if (shift) parts.push("shift");
-
-          // Ignore modifier-only presses
           if (["control", "alt", "shift", "meta"].includes(key)) {
             return;
           }
 
+          const parts = [];
+          if (ctrl) parts.push("ctrl");
+          if (alt) parts.push("alt");
+          if (shift) parts.push("shift");
           parts.push(key);
+
           const hotkeyString = parts.join("+");
-
-          // Update display
           $input.val(formatHotkeyForDisplay(hotkeyString));
-
-          // Save setting
           SettingsManager.set(settingName, hotkeyString);
         });
       });
 
-      // Hotkey reset buttons
       $panel.find(".n21-hotkey-reset").each(function () {
         const $button = $(this);
         const settingName = $button.data("setting");
@@ -517,7 +522,6 @@
           e.preventDefault();
           SettingsManager.reset(settingName);
 
-          // Update display
           const newValue = SettingsManager.get(settingName);
           const $input = $panel.find(
             `input[data-setting="${settingName}"][data-type="hotkey"]`
@@ -529,13 +533,9 @@
       });
     }
 
-    /**
-     * Show reload message
-     */
     function showReloadMessage($panel) {
       if (!$panel || !$panel.length) return;
 
-      // Check if message already exists
       let $message = $panel.find(".n21-settings-reload-message");
 
       if (!$message.length) {
@@ -546,9 +546,6 @@
       }
     }
 
-    /**
-     * Open settings panel
-     */
     function openSettingsPanel() {
       const html = buildPanelHtml();
 
@@ -566,35 +563,35 @@
       currentPanel = $panel;
       attachEventListeners($panel);
 
-      // Listen for settings changes from other sources
       const unsubscribe = SettingsManager.onChange((name, value) => {
         if (!currentPanel || !currentPanel.length) {
           unsubscribe();
           return;
         }
 
-        // Update the UI to reflect the change
-        const $input = currentPanel.find(`[data-setting="${name}"]`);
-        if ($input.length) {
-          const type = $input.data("type");
-          if (type === "boolean") {
-            $input.prop("checked", value);
-          } else if (type === "hotkey") {
-            $input.val(formatHotkeyForDisplay(value));
-          } else if (type === "number" || type === "select") {
-            $input.val(String(value));
-          }
+        const $input = currentPanel.find(
+          `.n21-setting-input[data-setting="${name}"]`
+        );
+        if (!$input.length) return;
+
+        const type = $input.data("type");
+        if (type === "boolean") {
+          $input.prop("checked", value);
+        } else if (type === "hotkey") {
+          $input.val(formatHotkeyForDisplay(value));
+        } else if (type === "number" || type === "select") {
+          $input.val(String(value ?? ""));
         }
+
+        updateSettingModifiedIndicator(currentPanel, name, value);
       });
 
-      // Clean up on panel close
       $panel.on("remove", () => {
         unsubscribe();
         currentPanel = null;
       });
     }
 
-    // Add menu item
     const header = await MainMenuUIManager.addHeader("Nivel 21", {
       id: "n21-menu-header",
     });

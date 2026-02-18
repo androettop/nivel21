@@ -13,6 +13,7 @@
     constructor() {
       super();
       this._settings = {};
+      this._categories = {};
       this._listeners = [];
       this._storagePrefix = "_n21_";
     }
@@ -26,6 +27,41 @@
      * @private
      */
     _initializeDefaultSettings() {
+      this.registerCategory({
+        name: "features",
+        label: "Funciones",
+        description: "Activa o desactiva los módulos que quieres usar.",
+        order: 10,
+      });
+
+      this.registerCategory({
+        name: "token-shortcuts",
+        label: "Atajos de tokens",
+        description: "Configura teclas rápidas para acciones de tokens.",
+        order: 20,
+      });
+
+      this.registerCategory({
+        name: "token-movement",
+        label: "Movimiento de tokens",
+        description: "Ajusta desplazamiento y comportamiento de cuadrícula.",
+        order: 30,
+      });
+
+      this.registerCategory({
+        name: "chat",
+        label: "Chat",
+        description: "Define cómo interactúan los módulos con el chat.",
+        order: 40,
+      });
+
+      this.registerCategory({
+        name: "advanced",
+        label: "Avanzado",
+        description: "Parámetros finos para casos específicos.",
+        order: 50,
+      });
+
       // Feature enable/disable settings
       this.registerSetting({
         name: "feature.advantage-disadvantage.enabled",
@@ -129,7 +165,7 @@
         label: "Alternar visibilidad de token",
         type: "hotkey",
         defaultValue: "ctrl+h",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -137,7 +173,7 @@
         label: "Alternar bloqueo de token",
         type: "hotkey",
         defaultValue: "ctrl+b",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -145,7 +181,7 @@
         label: "Eliminar token",
         type: "hotkey",
         defaultValue: "delete",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -153,7 +189,7 @@
         label: "Editar token",
         type: "hotkey",
         defaultValue: "ctrl+e",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -161,7 +197,7 @@
         label: "Duplicar token",
         type: "hotkey",
         defaultValue: "ctrl+d",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -169,7 +205,7 @@
         label: "Subir altura de token",
         type: "hotkey",
         defaultValue: "pageup",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -177,7 +213,7 @@
         label: "Bajar altura de token",
         type: "hotkey",
         defaultValue: "pagedown",
-        category: "hotkeys",
+        category: "token-shortcuts",
       });
 
       this.registerSetting({
@@ -185,7 +221,7 @@
         label: "Tecla para compartir al chat",
         type: "select",
         defaultValue: "shift",
-        category: "send-to-chat",
+        category: "chat",
         options: [
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },
@@ -198,7 +234,7 @@
         label: "Tecla para ajustar a cuadrícula",
         type: "select",
         defaultValue: "shift",
-        category: "snap-to-grid",
+        category: "token-movement",
         options: [
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },
@@ -211,7 +247,7 @@
         label: "Paso de altura",
         type: "number",
         defaultValue: 0.06,
-        category: "token-height",
+        category: "advanced",
         min: 0.001,
         max: 2,
         step: 0.001,
@@ -222,7 +258,7 @@
         label: "Altura mínima",
         type: "number",
         defaultValue: 0.001,
-        category: "token-height",
+        category: "advanced",
         min: 0,
         max: 100,
         step: 0.001,
@@ -233,7 +269,7 @@
         label: "Altura máxima",
         type: "number",
         defaultValue: 10,
-        category: "token-height",
+        category: "advanced",
         min: 0.001,
         max: 100,
         step: 0.001,
@@ -244,11 +280,33 @@
         label: "Paso de movimiento (casillas)",
         type: "number",
         defaultValue: 1,
-        category: "token-move",
+        category: "token-movement",
         min: 0.1,
         max: 10,
         step: 0.1,
       });
+    }
+
+    /**
+     * Register a category for settings UI
+     * @param {Object} category - Category configuration
+     * @param {string} category.name - Unique category name
+     * @param {string} category.label - Display label
+     * @param {string} [category.description] - Optional category description
+     * @param {number} [category.order] - Category order in UI
+     */
+    registerCategory(category) {
+      if (!category || !category.name) {
+        console.warn("[SettingsManager] Invalid category registration");
+        return;
+      }
+
+      this._categories[category.name] = {
+        name: category.name,
+        label: category.label || category.name,
+        description: category.description || "",
+        order: Number.isFinite(category.order) ? category.order : 999,
+      };
     }
 
     /**
@@ -267,6 +325,16 @@
         return;
       }
 
+      if (!this._categories[setting.category || "general"]) {
+        const categoryName = setting.category || "general";
+        this.registerCategory({
+          name: categoryName,
+          label: categoryName,
+          description: "",
+          order: 999,
+        });
+      }
+
       this._settings[setting.name] = {
         ...setting,
         name: setting.name,
@@ -276,6 +344,14 @@
         category: setting.category || "general",
         options: setting.options || null,
       };
+    }
+
+    /**
+     * Get all categories registered for settings UI
+     * @returns {Object} Categories keyed by name
+     */
+    getAllCategories() {
+      return { ...this._categories };
     }
 
     /**
