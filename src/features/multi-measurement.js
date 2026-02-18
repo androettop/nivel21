@@ -22,17 +22,22 @@
     // Obtener el entity manager y hookear requestDestroy
     const entityManager = MeasurementManager.getEntityManager();
     if (entityManager) {
-      const originalRequestDestroy = entityManager.requestDestroy.bind(entityManager);
+      const originalRequestDestroy =
+        entityManager.requestDestroy.bind(entityManager);
 
       entityManager.requestDestroy = function (...args) {
-        const firstParam = args[0];
+        const networkId = args[0];
+
+        const measurement = entityManager.findByNetworkId(networkId);
+        const itNeverPersists = measurement?.color === "FAFAFA";
 
         // Mantener mediciones si persistentMeasurements está activado
         if (
-          firstParam &&
-          typeof firstParam === "string" &&
-          firstParam.includes("MEASUREMENT") &&
-          persistentMeasurements
+          networkId &&
+          typeof networkId === "string" &&
+          networkId.includes("MEASUREMENT") &&
+          persistentMeasurements &&
+          !itNeverPersists
         ) {
           return false;
         }
