@@ -29,7 +29,7 @@
       // Feature enable/disable settings
       this.registerSetting({
         name: "feature.advantage-disadvantage.enabled",
-        label: "Ventaja/Desventaja",
+        label: "Tiradas con Ventaja/Desventaja",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -37,7 +37,7 @@
 
       this.registerSetting({
         name: "feature.send-to-chat.enabled",
-        label: "Enviar al chat",
+        label: "Compartir Contenido al Chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -45,7 +45,7 @@
 
       this.registerSetting({
         name: "feature.parse-chat-links.enabled",
-        label: "Enlaces en el chat",
+        label: "Enlaces en Mensajes del Chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -53,7 +53,7 @@
 
       this.registerSetting({
         name: "feature.token-hotkeys.enabled",
-        label: "Atajos de teclado para tokens",
+        label: "Atajos para Tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -61,7 +61,7 @@
 
       this.registerSetting({
         name: "feature.token-height-order.enabled",
-        label: "Orden de altura de tokens",
+        label: "Altura de Tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -69,7 +69,7 @@
 
       this.registerSetting({
         name: "feature.token-move-arrows.enabled",
-        label: "Flechas de movimiento de tokens",
+        label: "Mover Tokens con el Teclado",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -77,7 +77,7 @@
 
       this.registerSetting({
         name: "feature.snap-to-grid.enabled",
-        label: "Ajustar a cuadrícula",
+        label: "Ajustar a la Cuadrícula",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -85,7 +85,7 @@
 
       this.registerSetting({
         name: "feature.multi-measurement.enabled",
-        label: "Medición múltiple",
+        label: "Mediciones Persistentes",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -93,7 +93,7 @@
 
       this.registerSetting({
         name: "feature.whisper-mode.enabled",
-        label: "Modo susurro",
+        label: "Susurrar en el Chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -101,7 +101,7 @@
 
       this.registerSetting({
         name: "feature.multi-level-action-bar.enabled",
-        label: "Barra de acción multinivel",
+        label: "Carpetas anidadas",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -117,7 +117,7 @@
 
       this.registerSetting({
         name: "feature.notes-panel.enabled",
-        label: "Panel de notas",
+        label: "Panel de Notas",
         type: "boolean",
         defaultValue: true,
         category: "features",

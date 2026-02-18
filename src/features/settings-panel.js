@@ -19,12 +19,12 @@
     }
 
     const MENU_ITEM_ID = "n21-settings-panel";
-    const PANEL_TITLE = "Configuración";
+    const PANEL_TITLE = "Ajustes de Nivel21";
     const PANEL_ICON = "ft-settings";
     const PANEL_COLOR = "#822020";
     const PANEL_CLASS = "n21-settings-panel";
     const PANEL_STYLE =
-      "min-width: 500px; min-height: 600px; width: 500px; height: 600px;";
+      "min-width: 540px; min-height: 620px; width: 540px; height: 620px;";
 
     let currentPanel = null;
     let featureChangePending = false;
@@ -75,6 +75,29 @@
     }
 
     /**
+     * Get category metadata for UI text
+     */
+    function getCategoryMeta(categoryName) {
+      const meta = {
+        features: {
+          label: "Funciones",
+          description: "Activa o desactiva los módulos que quieres usar.",
+        },
+        hotkeys: {
+          label: "Atajos de teclado",
+          description: "Personaliza combinaciones para acciones rápidas.",
+        },
+      };
+
+      return (
+        meta[categoryName] || {
+          label: categoryName,
+          description: "",
+        }
+      );
+    }
+
+    /**
      * Build HTML for a boolean setting
      */
     function buildBooleanSettingHtml(name, setting, value) {
@@ -85,7 +108,7 @@
       return `
         <div class="n21-setting-item" data-setting="${escapedName}">
           <label class="n21-setting-label">
-            <input type="checkbox" class="n21-setting-input" data-setting="${escapedName}" data-type="boolean"${checked} />
+            <input type="checkbox" class="n21-setting-input n21-setting-checkbox" data-setting="${escapedName}" data-type="boolean"${checked} />
             <span>${escapedLabel}</span>
           </label>
         </div>
@@ -107,12 +130,12 @@
             <span>${escapedLabel}</span>
           </label>
           <div class="n21-hotkey-input-wrapper">
-            <input type="text" 
-                   class="n21-setting-input n21-hotkey-input" 
-                   data-setting="${escapedName}" 
-                   data-type="hotkey" 
-                   value="${escapedValue}" 
-                   readonly 
+            <input type="text"
+                   class="n21-setting-input form-control n21-hotkey-input"
+                   data-setting="${escapedName}"
+                   data-type="hotkey"
+                   value="${escapedValue}"
+                   readonly
                    placeholder="Presione una tecla..." />
             <button class="n21-hotkey-reset btn btn-sm btn-secondary" data-setting="${escapedName}">
               Restablecer
@@ -126,6 +149,9 @@
      * Build HTML for settings by category
      */
     function buildCategoryHtml(categoryName, categoryLabel, settings) {
+      const settingNames = Object.keys(settings || {});
+      if (!settingNames.length) return "";
+
       const settingsHtml = Object.entries(settings)
         .map(([name, setting]) => {
           const value = SettingsManager.get(name);
@@ -141,11 +167,20 @@
         })
         .join("");
 
+      const categoryMeta = getCategoryMeta(categoryName);
       const escapedLabel = escapeHtml(categoryLabel);
+      const escapedDescription = escapeHtml(categoryMeta.description || "");
 
       return `
         <div class="n21-settings-category" data-category="${categoryName}">
-          <h3 class="n21-settings-category-title">${escapedLabel}</h3>
+          <div class="n21-settings-category-header">
+            <h3 class="n21-settings-category-title">${escapedLabel}</h3>
+          </div>
+          ${
+            escapedDescription
+              ? `<p class="n21-settings-category-description">${escapedDescription}</p>`
+              : ""
+          }
           <div class="n21-settings-category-content">
             ${settingsHtml}
           </div>

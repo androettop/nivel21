@@ -73,50 +73,153 @@
 }
 
 /* Settings Panel Styles */
+.n21-settings-panel .floating-block {
+	background: rgba(8, 8, 10, 0.55);
+}
+
 .n21-settings-panel-body {
-	padding: 16px;
+	padding: 16px 18px 20px;
 	overflow-y: auto;
 	max-height: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.n21-settings-panel-body::-webkit-scrollbar {
+	width: 8px;
+}
+
+.n21-settings-panel-body::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 999px;
+}
+
+.n21-settings-panel-intro {
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.n21-settings-panel-intro-title {
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.2;
+	margin-bottom: 4px;
+}
+
+.n21-settings-panel-intro-subtitle {
+	font-size: 12px;
+	opacity: 0.8;
+	margin-bottom: 8px;
+}
+
+.n21-settings-panel-stats {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.n21-settings-stat {
+	display: inline-flex;
+	align-items: center;
+	height: 22px;
+	padding: 0 8px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	border-radius: 999px;
+	background: rgba(130, 32, 32, 0.3);
+	border: 1px solid rgba(130, 32, 32, 0.5);
 }
 
 .n21-settings-category {
-	margin-bottom: 24px;
+	padding: 12px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.n21-settings-category-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 4px;
 }
 
 .n21-settings-category-title {
-	font-size: 16px;
+	font-size: 15px;
 	font-weight: 600;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+	margin: 0;
+}
+
+.n21-settings-category-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 7px;
+	font-size: 11px;
+	font-weight: 700;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.12);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.n21-settings-category-description {
+	margin: 0 0 10px;
+	font-size: 12px;
+	opacity: 0.75;
 }
 
 .n21-settings-category-content {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
 }
 
 .n21-setting-item {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 8px;
+	padding: 9px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(0, 0, 0, 0.16);
+	transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.n21-setting-item:hover {
+	border-color: rgba(255, 255, 255, 0.2);
+	background: rgba(0, 0, 0, 0.24);
 }
 
 .n21-setting-label {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 10px;
 	cursor: pointer;
 	font-size: 14px;
+	line-height: 1.3;
+	margin: 0;
 }
 
-.n21-setting-label input[type="checkbox"] {
+.n21-setting-checkbox {
+	width: 16px;
+	height: 16px;
+	accent-color: #822020;
+	margin: 0;
+	flex: 0 0 auto;
 	cursor: pointer;
 }
 
-.n21-hotkey-item {
-	gap: 8px;
+.n21-hotkey-item .n21-setting-label {
+	justify-content: space-between;
+	cursor: default;
 }
 
 .n21-hotkey-input-wrapper {
@@ -126,34 +229,47 @@
 }
 
 .n21-hotkey-input {
-	flex: 1;
-	padding: 6px 12px;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	font-size: 14px;
 	cursor: pointer;
-	background-color: #f8f9fa;
+	font-family: monospace;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: inherit;
 }
 
 .n21-hotkey-input:focus {
 	outline: none;
 	border-color: #822020;
-	background-color: #fff;
+	box-shadow: 0 0 0 2px rgba(130, 32, 32, 0.2);
 }
 
 .n21-hotkey-reset {
 	padding: 6px 12px;
 	white-space: nowrap;
+	flex: 0 0 auto;
 }
 
 .n21-settings-reload-message {
-	background-color: #fff3cd;
-	border: 1px solid #ffc107;
-	color: #856404;
-	padding: 12px;
-	margin: 16px;
-	border-radius: 4px;
-	font-size: 14px;
-	font-weight: 500;
+	background: rgba(255, 193, 7, 0.16);
+	border: 1px solid rgba(255, 193, 7, 0.55);
+	color: #ffe082;
+	padding: 10px 12px;
+	margin: 14px 18px 0;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
 	text-align: center;
+}
+
+@media (max-width: 680px) {
+	.n21-hotkey-input-wrapper {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.n21-hotkey-reset {
+		width: 100%;
+	}
 }
