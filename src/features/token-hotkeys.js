@@ -42,11 +42,13 @@
       if (parsed.shift) parts.push("Shift");
       if (parsed.key) {
         const keyLabel =
-          parsed.key === "delete" ? "Supr." : parsed.key.toUpperCase();
+          parsed.key === "delete"
+            ? "Supr"
+            : parsed.key.toUpperCase();
         parts.push(keyLabel);
       }
 
-      return parts.join("+");
+      return parts.join(" + ");
     }
 
     // Check if event matches hotkey
