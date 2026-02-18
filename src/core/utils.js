@@ -21,11 +21,10 @@
     const root = window.app?.root;
     if (!root || typeof root.find !== "function") return null;
 
-    const found = root.find((e) => e && e.name === "Game Manager");
-    const gameManager = Array.isArray(found) ? found[0] : found;
-    if (!gameManager || !gameManager.script) return null;
+    const found = root.find((c) => c && c.script?.[managerName]);
+    if (!found?.[0]) return null;
 
-    return gameManager.script[managerName] || null;
+    return found?.[0]?.script?.[managerName] || null;
   }
 
   /**
