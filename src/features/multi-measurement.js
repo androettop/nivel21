@@ -15,7 +15,9 @@
     }
 
     // Estado local de persistencia de mediciones
-    let persistentMeasurements = false;
+    let persistentMeasurements = Boolean(
+      SettingsManager.get("multi-measurement.default-persistent"),
+    );
 
     // Obtener el entity manager y hookear requestDestroy
     const entityManager = MeasurementManager.getEntityManager();

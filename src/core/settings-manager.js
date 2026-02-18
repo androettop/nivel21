@@ -285,6 +285,40 @@
         max: 10,
         step: 0.1,
       });
+
+      this.registerSetting({
+        name: "multi-measurement.default-persistent",
+        label: "Mediciones persistentes por defecto",
+        type: "boolean",
+        defaultValue: false,
+        category: "advanced",
+      });
+
+      this.registerSetting({
+        name: "advantage-disadvantage.advantage-modifier",
+        label: "Tecla para ventaja",
+        type: "select",
+        defaultValue: "shift",
+        category: "advanced",
+        options: [
+          { value: "shift", label: "Shift" },
+          { value: "ctrl", label: "Ctrl" },
+          { value: "alt", label: "Alt" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "advantage-disadvantage.disadvantage-modifier",
+        label: "Tecla para desventaja",
+        type: "select",
+        defaultValue: "alt",
+        category: "advanced",
+        options: [
+          { value: "shift", label: "Shift" },
+          { value: "ctrl", label: "Ctrl" },
+          { value: "alt", label: "Alt" },
+        ],
+      });
     }
 
     /**

@@ -19,19 +19,42 @@
 
     let hoverEl = null;
 
+    function getConfiguredModifiers() {
+      const advantage = String(
+        SettingsManager.get("advantage-disadvantage.advantage-modifier") ||
+          "shift",
+      ).toLowerCase();
+      const disadvantage = String(
+        SettingsManager.get("advantage-disadvantage.disadvantage-modifier") ||
+          "alt",
+      ).toLowerCase();
+
+      const allowedModifiers = ["shift", "ctrl", "alt"];
+
+      return {
+        advantage: allowedModifiers.includes(advantage) ? advantage : "shift",
+        disadvantage: allowedModifiers.includes(disadvantage)
+          ? disadvantage
+          : "alt",
+      };
+    }
+
     function updateOutline(el, modifiers) {
       if (!el) return;
 
       const $el = $(el);
+      const configured = getConfiguredModifiers();
+      const advantageActive = Boolean(modifiers[configured.advantage]);
+      const disadvantageActive = Boolean(modifiers[configured.disadvantage]);
 
       $el.removeClass("n21-advantage n21-disadvantage");
 
       /* --- cancel out if both pressed --- */
-      if (modifiers.shift && modifiers.alt) return;
+      if (advantageActive && disadvantageActive) return;
 
-      if (modifiers.shift) {
+      if (advantageActive) {
         $el.addClass("n21-advantage");
-      } else if (modifiers.alt) {
+      } else if (disadvantageActive) {
         $el.addClass("n21-disadvantage");
       }
     }
@@ -70,9 +93,12 @@
         }
 
         const modifiers = KeyModifiersManager.getState();
+        const configured = getConfiguredModifiers();
+        const advantageActive = Boolean(modifiers[configured.advantage]);
+        const disadvantageActive = Boolean(modifiers[configured.disadvantage]);
 
         /* --- cancel out --- */
-        if (modifiers.shift && modifiers.alt) {
+        if (advantageActive && disadvantageActive) {
           return [notation, ...args];
         }
 
@@ -92,9 +118,9 @@
         }
 
         /* --- apply advantage / disadvantage --- */
-        if (modifiers.shift) {
+        if (advantageActive) {
           dicePart = `max(${dicePart},${dicePart})`;
-        } else if (modifiers.alt) {
+        } else if (disadvantageActive) {
           dicePart = `min(${dicePart},${dicePart})`;
         }
 
