@@ -62,6 +62,20 @@
         order: 50,
       });
 
+      this.registerCategory({
+        name: "medicion",
+        label: "Medición",
+        description: "Configuración de mediciones y distancias.",
+        order: 60,
+      });
+
+      this.registerCategory({
+        name: "dados",
+        label: "Dados",
+        description: "Configuración de tiradas y modificadores de dados.",
+        order: 70,
+      });
+
       // Feature enable/disable settings
       this.registerSetting({
         name: "feature.advantage-disadvantage.enabled",
@@ -251,39 +265,6 @@
       });
 
       this.registerSetting({
-        name: "token-height.step",
-        label: "Paso de altura",
-        type: "number",
-        defaultValue: 0.06,
-        category: "advanced",
-        min: 0.001,
-        max: 2,
-        step: 0.001,
-      });
-
-      this.registerSetting({
-        name: "token-height.min",
-        label: "Altura mínima",
-        type: "number",
-        defaultValue: 0.001,
-        category: "advanced",
-        min: 0,
-        max: 100,
-        step: 0.001,
-      });
-
-      this.registerSetting({
-        name: "token-height.max",
-        label: "Altura máxima",
-        type: "number",
-        defaultValue: 10,
-        category: "advanced",
-        min: 0.001,
-        max: 100,
-        step: 0.001,
-      });
-
-      this.registerSetting({
         name: "token-move.step",
         label: "Paso de movimiento (casillas)",
         type: "number",
@@ -299,7 +280,7 @@
         label: "Mediciones persistentes por defecto",
         type: "boolean",
         defaultValue: false,
-        category: "advanced",
+        category: "medicion",
       });
 
       this.registerSetting({
@@ -307,7 +288,7 @@
         label: "Tecla para ventaja",
         type: "select",
         defaultValue: "shift",
-        category: "advanced",
+        category: "dados",
         options: [
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },
@@ -320,7 +301,7 @@
         label: "Tecla para desventaja",
         type: "select",
         defaultValue: "alt",
-        category: "advanced",
+        category: "dados",
         options: [
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },

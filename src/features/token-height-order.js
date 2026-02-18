@@ -14,6 +14,11 @@
 
     const { TokenManager } = window._n21_?.managers || {};
 
+    // Constants for height adjustment
+    const MIN_HEIGHT = 0.001;
+    const MAX_HEIGHT = 10;
+    const STEP = 0.06;
+
     function parseHotkey(hotkeyString) {
       const lower = String(hotkeyString || "").toLowerCase();
       const parts = lower.split("+").map((p) => p.trim());
@@ -38,19 +43,6 @@
       return ctrlMatch && altMatch && shiftMatch && keyMatch;
     }
 
-    function getNumberSetting(name, fallback) {
-      const numeric = Number(SettingsManager.get(name));
-      return Number.isFinite(numeric) ? numeric : fallback;
-    }
-
-    function getHeightConfig() {
-      const step = Math.max(0.001, getNumberSetting("token-height.step", 0.06));
-      const minHeight = Math.max(0, getNumberSetting("token-height.min", 0.001));
-      const maxHeightRaw = getNumberSetting("token-height.max", 10);
-      const maxHeight = Math.max(minHeight, maxHeightRaw);
-      return { step, minHeight, maxHeight };
-    }
-
     function isEditableTarget(target) {
       return (
         target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
@@ -65,7 +57,7 @@
       return [];
     }
 
-    function updateTokenHeights(delta, config) {
+    function updateTokenHeights(delta) {
       const selectedSchemas = getSelectedSchemas();
       if (!selectedSchemas.length) return;
 
@@ -82,8 +74,8 @@
             ? selectedSchema.position.y
             : 0;
         const nextY = Math.min(
-          config.maxHeight,
-          Math.max(config.minHeight, currentY + delta),
+          MAX_HEIGHT,
+          Math.max(MIN_HEIGHT, currentY + delta),
         );
 
         TokenManager.updatePosition(selectedSchema.networkId, {
@@ -103,9 +95,8 @@
       if (!isUp && !isDown) return;
 
       e.preventDefault();
-      const config = getHeightConfig();
-      const delta = isUp ? config.step : -config.step;
-      updateTokenHeights(delta, config);
+      const delta = isUp ? STEP : -STEP;
+      updateTokenHeights(delta);
     });
   } catch (error) {
     console.warn("N21: Error en feature Token Height Order:", error.message);
