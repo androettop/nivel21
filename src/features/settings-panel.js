@@ -25,6 +25,8 @@
     const PANEL_CLASS = "n21-settings-panel";
     const PANEL_STYLE =
       "min-width: 540px; min-height: 620px; width: 540px; height: 620px;";
+    const RELOAD_NOTICE_TEXT =
+      "Uno o más cambios requieren <a href='#' onclick='location.reload()'>recargar la página</a> para aplicarse.";
 
     let currentPanel = null;
     let featureChangePending = false;
@@ -137,7 +139,7 @@
                    value="${escapedValue}"
                    readonly
                    placeholder="Presione una tecla..." />
-            <button class="n21-hotkey-reset btn btn-sm btn-secondary" data-setting="${escapedName}">
+            <button class="n21-hotkey-reset btn btn-secondary" data-setting="${escapedName}">
               Restablecer
             </button>
           </div>
@@ -232,10 +234,13 @@
       // Add reload message if needed
       if (featureChangePending) {
         html =
-          '<div class="n21-settings-reload-message">Se han cambiado las funciones. Recarga la página para aplicar los cambios.</div>' +
+          `<div class="n21-settings-reload-message">${RELOAD_NOTICE_TEXT}</div>` +
           html;
       }
 
+
+      // Wrap in container
+      html = `<div class="h-100 d-flex flex-column flex-grow-1">${html}</div>`;
       return html;
     }
 
@@ -333,7 +338,7 @@
 
       if (!$message.length) {
         $message = $(
-          '<div class="n21-settings-reload-message">Se han cambiado las funciones. Recarga la página para aplicar los cambios.</div>'
+          `<div class="n21-settings-reload-message">${RELOAD_NOTICE_TEXT}</div>`
         );
         $panel.find(".n21-settings-panel-body").before($message);
       }

@@ -241,8 +241,8 @@
 
 .n21-hotkey-input:focus {
 	outline: none;
-	border-color: #822020;
-	box-shadow: 0 0 0 2px rgba(130, 32, 32, 0.2);
+	border-color: #822020 !important;
+	box-shadow: 0 0 0 2px rgba(130, 32, 32, 0.2) !important;
 }
 
 .n21-hotkey-reset {
