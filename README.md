@@ -166,20 +166,6 @@ Permite mover uno o varios tokens seleccionados con las flechas del teclado.
 
 ---
 
-### Ajustar a la Cuadrícula
-
-Mantén presionado Shift al mover tokens para forzarlos a ajustarse a la cuadrícula automáticamente.
-
-| Tecla                 | Acción                        |
-| --------------------- | ----------------------------- |
-| **Shift + Arrastrar** | Ajustar token a la cuadrícula |
-
-<a id="snap-to-grid">
- <img src="popup/img/snap-to-grid.png" alt="Ajustar a la Cuadrícula" />
-</a>
-
----
-
 ### Distancia recorrida
 
 Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.

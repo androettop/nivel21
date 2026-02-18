@@ -126,14 +126,6 @@
       });
 
       this.registerSetting({
-        name: "feature.snap-to-grid.enabled",
-        label: "Ajustar a la Cuadrícula",
-        type: "boolean",
-        defaultValue: true,
-        category: "features",
-      });
-
-      this.registerSetting({
         name: "feature.multi-measurement.enabled",
         label: "Mediciones Persistentes",
         type: "boolean",
@@ -244,19 +236,6 @@
         type: "select",
         defaultValue: "shift",
         category: "chat",
-        options: [
-          { value: "shift", label: "Shift" },
-          { value: "ctrl", label: "Ctrl" },
-          { value: "alt", label: "Alt" },
-        ],
-      });
-
-      this.registerSetting({
-        name: "snap-to-grid.modifier",
-        label: "Tecla para ajustar a cuadrícula",
-        type: "select",
-        defaultValue: "shift",
-        category: "token-movement",
         options: [
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },

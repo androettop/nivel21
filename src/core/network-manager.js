@@ -36,11 +36,13 @@
       const root = window.app?.root;
       if (!root || typeof root.find !== "function") return false;
 
+      const native = this._getNative();
+
       const found = root.find((e) => e && e.name === "Game Manager");
       const gameManager = Array.isArray(found) ? found[0] : found;
-      if (!gameManager?.script?.networkManager?.room?.send) return false;
+      if (!native?.room?.send) return false;
 
-      const roomProto = gameManager.script.networkManager.room.__proto__;
+      const roomProto = native.room.__proto__;
       if (!roomProto?.send) return false;
 
       const originalSend = roomProto.send;
