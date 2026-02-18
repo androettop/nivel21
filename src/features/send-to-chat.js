@@ -6,13 +6,19 @@
 
     const { loadManagers } = window._n21_;
 
-    const [ChatManager, KeyModifiersManager, FloatingPanelManager, HtmlManager] =
+    const [ChatManager, KeyModifiersManager, FloatingPanelManager, HtmlManager, SettingsManager] =
       await loadManagers(
         "ChatManager",
         "KeyModifiersManager",
         "FloatingPanelManager",
         "HtmlManager",
+        "SettingsManager",
       );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.send-to-chat.enabled")) {
+      return;
+    }
 
     // ==================== Local Helper Functions ====================
 

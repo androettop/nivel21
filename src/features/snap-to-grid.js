@@ -6,7 +6,12 @@
 
     const { loadManagers } = window._n21_;
 
-    const [TokenManager, KeyModifiersManager] = await loadManagers("TokenManager", "KeyModifiersManager");
+    const [TokenManager, KeyModifiersManager, SettingsManager] = await loadManagers("TokenManager", "KeyModifiersManager", "SettingsManager");
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.snap-to-grid.enabled")) {
+      return;
+    }
 
     let isDragging = false;
     let dragStarted = false;

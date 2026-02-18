@@ -6,10 +6,16 @@
 
     const { loadManagers } = window._n21_;
 
-    const [KeyModifiersManager, DiceManager] = await loadManagers(
+    const [KeyModifiersManager, DiceManager, SettingsManager] = await loadManagers(
       "KeyModifiersManager",
       "DiceManager",
+      "SettingsManager",
     );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.advantage-disadvantage.enabled")) {
+      return;
+    }
 
     let hoverEl = null;
 

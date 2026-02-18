@@ -7,10 +7,16 @@
     const { loadManagers } = window._n21_;
     const { uuid } = window._n21_?.utils || {};
 
-    const [MainMenuUIManager, FloatingPanelManager] = await loadManagers(
+    const [MainMenuUIManager, FloatingPanelManager, SettingsManager] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
+      "SettingsManager",
     );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.notes-panel.enabled")) {
+      return;
+    }
 
     if (!MainMenuUIManager || !FloatingPanelManager) {
       console.warn("[Notes Panel] Managers not available");

@@ -3,10 +3,16 @@
     const { loadManagers } = window._n21_;
 
     // Esperar a que MeasurementManager y TooltipManager estén listos
-    const [MeasurementManager, TooltipManager] = await loadManagers(
+    const [MeasurementManager, TooltipManager, SettingsManager] = await loadManagers(
       "MeasurementManager",
       "TooltipManager",
+      "SettingsManager",
     );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.multi-measurement.enabled")) {
+      return;
+    }
 
     // Estado local de persistencia de mediciones
     let persistentMeasurements = false;

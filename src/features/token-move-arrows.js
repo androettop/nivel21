@@ -1,8 +1,16 @@
-(() => {
+(async () => {
   try {
     /* =======================
          Feature: Token Move Arrows
       ======================= */
+
+    const { loadManagers } = window._n21_;
+    const [SettingsManager] = await loadManagers("SettingsManager");
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.token-move-arrows.enabled")) {
+      return;
+    }
 
     const { TokenManager } = window._n21_?.managers || {};
 

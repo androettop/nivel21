@@ -12,12 +12,18 @@
 
     const { loadManagers } = window._n21_;
 
-    const [ChatManager, ChatUIManager, TooltipManager, HtmlManager] = await loadManagers(
+    const [ChatManager, ChatUIManager, TooltipManager, HtmlManager, SettingsManager] = await loadManagers(
       "ChatManager",
       "ChatUIManager",
       "TooltipManager",
       "HtmlManager",
+      "SettingsManager",
     );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.parse-chat-links.enabled")) {
+      return;
+    }
 
     // Check if URL is from nivel20.com
     function isNivel20Url(url) {

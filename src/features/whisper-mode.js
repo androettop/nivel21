@@ -5,8 +5,13 @@
     ======================= */
 
     const { loadManagers } = window._n21_;
-    const [ChatUIManager, PlayerManager, ChatCommandsManager] =
-      await loadManagers("ChatUIManager", "PlayerManager", "ChatCommandsManager");
+    const [ChatUIManager, PlayerManager, ChatCommandsManager, SettingsManager] =
+      await loadManagers("ChatUIManager", "PlayerManager", "ChatCommandsManager", "SettingsManager");
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.whisper-mode.enabled")) {
+      return;
+    }
 
     // ==================== Constants ====================
     const SELECTORS = {

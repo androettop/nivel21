@@ -12,6 +12,7 @@
       PlayerManager,
       ChatUIManager,
       ChatManager,
+      SettingsManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
@@ -19,7 +20,13 @@
       "PlayerManager",
       "ChatUIManager",
       "ChatManager",
+      "SettingsManager",
     );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.ambient-fx.enabled")) {
+      return;
+    }
 
     if (
       !MainMenuUIManager ||

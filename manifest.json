@@ -33,6 +33,7 @@
         "src/injected/jquery-checker.js",
         "src/core/utils.js",
         "src/core/base-manager.js",
+        "src/core/settings-manager.js",
         "src/core/key-modifiers-manager.js",
         "src/core/chat-manager.js",
         "src/core/chat-commands-manager.js",
@@ -57,7 +58,8 @@
         "src/features/whisper-mode.js",
         "src/features/multi-level-action-bar.js",
         "src/features/ambient-fx.js",
-        "src/features/notes-panel.js"
+        "src/features/notes-panel.js",
+        "src/features/settings-panel.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

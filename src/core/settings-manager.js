@@ -1,0 +1,406 @@
+(() => {
+  /* =======================
+       SettingsManager - Manage settings for all features
+    ======================= */
+
+  const { BaseManager } = window._n21_?.managers || {};
+
+  /**
+   * SettingsManager provides centralized settings management with localStorage
+   * Features can register their settings and listen for changes
+   */
+  class SettingsManager extends BaseManager {
+    constructor() {
+      super();
+      this._settings = {};
+      this._listeners = [];
+      this._storagePrefix = "_n21_";
+    }
+
+    async init() {
+      this._initializeDefaultSettings();
+    }
+
+    /**
+     * Initialize default settings for all features
+     * @private
+     */
+    _initializeDefaultSettings() {
+      // Feature enable/disable settings
+      this.registerSetting({
+        name: "feature.advantage-disadvantage.enabled",
+        label: "Ventaja/Desventaja",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.send-to-chat.enabled",
+        label: "Enviar al chat",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.parse-chat-links.enabled",
+        label: "Enlaces en el chat",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-hotkeys.enabled",
+        label: "Atajos de teclado para tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-height-order.enabled",
+        label: "Orden de altura de tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-move-arrows.enabled",
+        label: "Flechas de movimiento de tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.snap-to-grid.enabled",
+        label: "Ajustar a cuadrícula",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.multi-measurement.enabled",
+        label: "Medición múltiple",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.whisper-mode.enabled",
+        label: "Modo susurro",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.multi-level-action-bar.enabled",
+        label: "Barra de acción multinivel",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.ambient-fx.enabled",
+        label: "Efectos ambientales",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.notes-panel.enabled",
+        label: "Panel de notas",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      // Token hotkeys settings
+      this.registerSetting({
+        name: "hotkey.token.visibility",
+        label: "Alternar visibilidad de token",
+        type: "hotkey",
+        defaultValue: "ctrl+h",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "hotkey.token.lock",
+        label: "Alternar bloqueo de token",
+        type: "hotkey",
+        defaultValue: "ctrl+b",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "hotkey.token.remove",
+        label: "Eliminar token",
+        type: "hotkey",
+        defaultValue: "delete",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "hotkey.token.edit",
+        label: "Editar token",
+        type: "hotkey",
+        defaultValue: "ctrl+e",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "hotkey.token.duplicate",
+        label: "Duplicar token",
+        type: "hotkey",
+        defaultValue: "ctrl+d",
+        category: "hotkeys",
+      });
+    }
+
+    /**
+     * Register a new setting
+     * @param {Object} setting - Setting configuration
+     * @param {string} setting.name - Unique setting name (e.g., "feature.token-hotkeys.enabled")
+     * @param {string} setting.label - Display label
+     * @param {string} setting.type - Type: "boolean", "string", "number", "hotkey"
+     * @param {*} setting.defaultValue - Default value
+     * @param {string} setting.category - Category: "features", "hotkeys", etc.
+     * @param {Array} [setting.options] - Options for select type
+     */
+    registerSetting(setting) {
+      if (!setting || !setting.name) {
+        console.warn("[SettingsManager] Invalid setting registration");
+        return;
+      }
+
+      this._settings[setting.name] = {
+        name: setting.name,
+        label: setting.label || setting.name,
+        type: setting.type || "string",
+        defaultValue: setting.defaultValue,
+        category: setting.category || "general",
+        options: setting.options || null,
+      };
+    }
+
+    /**
+     * Get all registered settings
+     * @returns {Object} All settings keyed by name
+     */
+    getAllSettings() {
+      return { ...this._settings };
+    }
+
+    /**
+     * Get settings by category
+     * @param {string} category - Category name
+     * @returns {Object} Settings in the category
+     */
+    getSettingsByCategory(category) {
+      const result = {};
+      for (const [name, setting] of Object.entries(this._settings)) {
+        if (setting.category === category) {
+          result[name] = setting;
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Get a setting value
+     * @param {string} name - Setting name
+     * @returns {*} The setting value (from storage or default)
+     */
+    get(name) {
+      const setting = this._settings[name];
+      if (!setting) {
+        console.warn(`[SettingsManager] Unknown setting: ${name}`);
+        return undefined;
+      }
+
+      const storageKey = this._storagePrefix + name;
+      const storedValue = this._getFromStorage(storageKey);
+
+      if (storedValue !== null) {
+        return this._parseValue(storedValue, setting.type);
+      }
+
+      return setting.defaultValue;
+    }
+
+    /**
+     * Set a setting value
+     * @param {string} name - Setting name
+     * @param {*} value - New value
+     * @param {Object} options - Options { silent: boolean }
+     */
+    set(name, value, options = {}) {
+      const setting = this._settings[name];
+      if (!setting) {
+        console.warn(`[SettingsManager] Unknown setting: ${name}`);
+        return;
+      }
+
+      const storageKey = this._storagePrefix + name;
+
+      // If value equals default, remove from storage
+      if (this._isDefaultValue(value, setting.defaultValue)) {
+        this._removeFromStorage(storageKey);
+      } else {
+        this._saveToStorage(storageKey, value);
+      }
+
+      // Notify listeners
+      if (!options.silent) {
+        this._notifyListeners(name, value, setting.defaultValue);
+      }
+    }
+
+    /**
+     * Check if a value equals the default value
+     * @private
+     */
+    _isDefaultValue(value, defaultValue) {
+      if (value === defaultValue) return true;
+      if (typeof value === "string" && typeof defaultValue === "string") {
+        return value.toLowerCase() === defaultValue.toLowerCase();
+      }
+      return false;
+    }
+
+    /**
+     * Reset a setting to its default value
+     * @param {string} name - Setting name
+     */
+    reset(name) {
+      const setting = this._settings[name];
+      if (!setting) {
+        console.warn(`[SettingsManager] Unknown setting: ${name}`);
+        return;
+      }
+
+      const storageKey = this._storagePrefix + name;
+      this._removeFromStorage(storageKey);
+
+      this._notifyListeners(name, setting.defaultValue, setting.defaultValue);
+    }
+
+    /**
+     * Reset all settings to defaults
+     */
+    resetAll() {
+      for (const name in this._settings) {
+        this.reset(name);
+      }
+    }
+
+    /**
+     * Listen for setting changes
+     * @param {Function} callback - Function(name, value, defaultValue)
+     * @returns {Function} Unsubscribe function
+     */
+    onChange(callback) {
+      if (typeof callback !== "function") {
+        console.warn("[SettingsManager] onChange callback must be a function");
+        return () => {};
+      }
+
+      this._listeners.push(callback);
+
+      // Return unsubscribe function
+      return () => {
+        const index = this._listeners.indexOf(callback);
+        if (index > -1) {
+          this._listeners.splice(index, 1);
+        }
+      };
+    }
+
+    /**
+     * Notify all listeners of a setting change
+     * @private
+     */
+    _notifyListeners(name, value, defaultValue) {
+      for (const listener of this._listeners) {
+        try {
+          listener(name, value, defaultValue);
+        } catch (error) {
+          console.warn("[SettingsManager] Error in change listener:", error);
+        }
+      }
+    }
+
+    /**
+     * Get value from localStorage
+     * @private
+     */
+    _getFromStorage(key) {
+      try {
+        const value = localStorage.getItem(key);
+        return value;
+      } catch (error) {
+        console.warn("[SettingsManager] Error reading from localStorage:", error);
+        return null;
+      }
+    }
+
+    /**
+     * Save value to localStorage
+     * @private
+     */
+    _saveToStorage(key, value) {
+      try {
+        localStorage.setItem(key, String(value));
+      } catch (error) {
+        console.warn("[SettingsManager] Error writing to localStorage:", error);
+      }
+    }
+
+    /**
+     * Remove value from localStorage
+     * @private
+     */
+    _removeFromStorage(key) {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn("[SettingsManager] Error removing from localStorage:", error);
+      }
+    }
+
+    /**
+     * Parse stored value to correct type
+     * @private
+     */
+    _parseValue(value, type) {
+      if (value === null || value === undefined) return null;
+
+      switch (type) {
+        case "boolean":
+          return value === "true" || value === true;
+        case "number":
+          return Number(value);
+        case "string":
+        case "hotkey":
+        default:
+          return String(value);
+      }
+    }
+
+    isReady() {
+      return true;
+    }
+  }
+
+  // Register SettingsManager
+  const { registerManager } = window._n21_.utils;
+  registerManager("SettingsManager", SettingsManager);
+})();

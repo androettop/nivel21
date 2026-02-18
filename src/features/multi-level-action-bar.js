@@ -6,10 +6,16 @@
   const { loadManagers } = window._n21_;
   const { uuid } = window._n21_?.utils || {};
 
-  const [ActionBarManager, TooltipManager] = await loadManagers(
+  const [ActionBarManager, TooltipManager, SettingsManager] = await loadManagers(
     "ActionBarManager",
     "TooltipManager",
+    "SettingsManager",
   );
+
+  // Check if feature is enabled
+  if (!SettingsManager.get("feature.multi-level-action-bar.enabled")) {
+    return;
+  }
 
   /**
    * Check if an item is a folder
