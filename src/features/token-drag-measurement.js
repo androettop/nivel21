@@ -85,6 +85,7 @@
             shape: "none",
             visibility: "private",
             color: "FAFAFA",
+            distanceMode: "dnd-classic",
           });
 
           MeasurementManager.setActive(true);
