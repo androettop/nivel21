@@ -200,6 +200,16 @@ Abre un panel flotante para tomar notas durante la partida. Las notas se guardan
 
 ---
 
+### Panel de Configuración
+
+Centraliza todas las configuraciones de Nivel21 en un panel de ajustes.
+
+<a id="settings-panel">
+ <img src="popup/img/settings-panel.png" alt="Panel de Configuración" />
+</a>
+
+---
+
 ### Carpetas anidadas
 
 Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa. Organiza acciones en carpetas usando el separador " > " en el nombre. La barra se convierte en carpetas anidadas automáticamente.
