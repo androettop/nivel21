@@ -13,6 +13,22 @@
       return;
     }
 
+    function getConfiguredModifier() {
+      const modifier = String(
+        SettingsManager.get("snap-to-grid.modifier") || "shift",
+      ).toLowerCase();
+      if (["shift", "ctrl", "alt"].includes(modifier)) {
+        return modifier;
+      }
+      return "shift";
+    }
+
+    function isConfiguredModifierPressed() {
+      const modifier = getConfiguredModifier();
+      const modifiers = KeyModifiersManager.getState() || {};
+      return Boolean(modifiers[modifier]);
+    }
+
     let isDragging = false;
     let dragStarted = false;
     let capturedNetworkIds = new Set();
