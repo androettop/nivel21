@@ -765,6 +765,7 @@
         id: "n21-ambient-fx-item",
         title: PANEL_TITLE,
         iconClass: "ft-sun",
+        order: 10,
         menuId: "ambient-fx",
         onClick: () => {
           openPanel();

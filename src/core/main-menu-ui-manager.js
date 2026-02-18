@@ -60,13 +60,20 @@
       if (!menu) return null;
 
       const id = options.id;
+      const parsedOrder = Number(options.order);
+      const itemOrder = Number.isFinite(parsedOrder) ? parsedOrder : 500;
       if (id) {
         const existing = menu.querySelector(`[data-n21-id="${id}"]`);
-        if (existing) return existing;
+        if (existing) {
+          existing.dataset.n21Order = String(itemOrder);
+          this._insertElement(menu, existing, placement.afterElement, itemOrder);
+          return existing;
+        }
       }
 
       const item = document.createElement("li");
       item.className = "nav-item";
+      item.dataset.n21Order = String(itemOrder);
       if (id) {
         item.dataset.n21Id = id;
       }
@@ -97,18 +104,56 @@
       link.appendChild(title);
       item.appendChild(link);
 
-      this._insertElement(menu, item, placement.afterElement);
+      this._insertElement(menu, item, placement.afterElement, itemOrder);
 
       return item;
     }
 
-    _insertElement(menu, element, afterElement) {
+    _insertElement(menu, element, afterElement, order = 500) {
       if (afterElement && afterElement.parentElement === menu) {
+        if (afterElement.classList?.contains("navigation-header")) {
+          this._insertItemWithinHeader(menu, element, afterElement, order);
+          return;
+        }
+
         if (afterElement.nextSibling) {
           menu.insertBefore(element, afterElement.nextSibling);
         } else {
           menu.appendChild(element);
         }
+        return;
+      }
+
+      menu.appendChild(element);
+    }
+
+    _insertItemWithinHeader(menu, element, headerElement, order) {
+      let cursor = headerElement.nextElementSibling;
+      let nextHeader = null;
+
+      while (cursor) {
+        if (cursor.classList?.contains("navigation-header")) {
+          nextHeader = cursor;
+          break;
+        }
+
+        if (cursor.classList?.contains("nav-item")) {
+          const existingOrder = Number(cursor.dataset.n21Order);
+          const normalizedExistingOrder = Number.isFinite(existingOrder)
+            ? existingOrder
+            : 500;
+
+          if (normalizedExistingOrder > order) {
+            menu.insertBefore(element, cursor);
+            return;
+          }
+        }
+
+        cursor = cursor.nextElementSibling;
+      }
+
+      if (nextHeader) {
+        menu.insertBefore(element, nextHeader);
         return;
       }
 

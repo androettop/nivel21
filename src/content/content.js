@@ -30,12 +30,10 @@
     // 2. Load base manager
     await injectScript("src/core/base-manager.js");
 
-    // 3. Load SettingsManager first
-    await injectScript("src/core/settings-manager.js");
-
-    // 4. Load managers and features in parallel
+    // 3. Load managers and features in parallel
     await Promise.all([
       // Managers
+      injectScript("src/core/settings-manager.js"),
       injectScript("src/core/main-menu-ui-manager.js"),
       injectScript("src/core/chat-ui-manager.js"),
       injectScript("src/core/key-modifiers-manager.js"),

@@ -92,6 +92,7 @@
         id: MENU_ITEM_ID,
         title: "Notas",
         iconClass: "ft-file",
+        order: 20,
         onClick: () => {
           openNotesPanel();
         },

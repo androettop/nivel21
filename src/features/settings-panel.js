@@ -601,6 +601,7 @@
         id: MENU_ITEM_ID,
         title: "Configuración",
         iconClass: "ft-settings",
+        order: 1000,
         onClick: () => {
           openSettingsPanel();
         },
