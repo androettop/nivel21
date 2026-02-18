@@ -18,6 +18,22 @@
     let capturedNetworkIds = new Set();
     let hookInstalled = false;
 
+    function getConfiguredModifier() {
+      const modifier = String(
+        SettingsManager.get("snap-to-grid.modifier") || "shift",
+      ).toLowerCase();
+      if (["shift", "ctrl", "alt"].includes(modifier)) {
+        return modifier;
+      }
+      return "shift";
+    }
+
+    function isConfiguredModifierPressed() {
+      const modifier = getConfiguredModifier();
+      const modifiers = KeyModifiersManager.getState() || {};
+      return Boolean(modifiers[modifier]);
+    }
+
     function installHook() {
       if (hookInstalled) return true;
 
@@ -67,7 +83,7 @@
     });
 
     $(document).on("mouseup", () => {
-      if (isDragging && dragStarted && KeyModifiersManager.getState().shift) {
+      if (isDragging && dragStarted && isConfiguredModifierPressed()) {
         setTimeout(snapSelectedTokens, 10);
       }
       isDragging = false;

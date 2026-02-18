@@ -163,6 +163,92 @@
         defaultValue: "ctrl+d",
         category: "hotkeys",
       });
+
+      this.registerSetting({
+        name: "hotkey.token.height.up",
+        label: "Subir altura de token",
+        type: "hotkey",
+        defaultValue: "pageup",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "hotkey.token.height.down",
+        label: "Bajar altura de token",
+        type: "hotkey",
+        defaultValue: "pagedown",
+        category: "hotkeys",
+      });
+
+      this.registerSetting({
+        name: "send-to-chat.modifier",
+        label: "Tecla para compartir al chat",
+        type: "select",
+        defaultValue: "shift",
+        category: "send-to-chat",
+        options: [
+          { value: "shift", label: "Shift" },
+          { value: "ctrl", label: "Ctrl" },
+          { value: "alt", label: "Alt" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "snap-to-grid.modifier",
+        label: "Tecla para ajustar a cuadrícula",
+        type: "select",
+        defaultValue: "shift",
+        category: "snap-to-grid",
+        options: [
+          { value: "shift", label: "Shift" },
+          { value: "ctrl", label: "Ctrl" },
+          { value: "alt", label: "Alt" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "token-height.step",
+        label: "Paso de altura",
+        type: "number",
+        defaultValue: 0.06,
+        category: "token-height",
+        min: 0.001,
+        max: 2,
+        step: 0.001,
+      });
+
+      this.registerSetting({
+        name: "token-height.min",
+        label: "Altura mínima",
+        type: "number",
+        defaultValue: 0.001,
+        category: "token-height",
+        min: 0,
+        max: 100,
+        step: 0.001,
+      });
+
+      this.registerSetting({
+        name: "token-height.max",
+        label: "Altura máxima",
+        type: "number",
+        defaultValue: 10,
+        category: "token-height",
+        min: 0.001,
+        max: 100,
+        step: 0.001,
+      });
+
+      this.registerSetting({
+        name: "token-move.step",
+        label: "Paso de movimiento (casillas)",
+        type: "number",
+        defaultValue: 1,
+        category: "token-move",
+        min: 0.1,
+        max: 10,
+        step: 0.1,
+      });
     }
 
     /**
@@ -182,6 +268,7 @@
       }
 
       this._settings[setting.name] = {
+        ...setting,
         name: setting.name,
         label: setting.label || setting.name,
         type: setting.type || "string",

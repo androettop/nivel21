@@ -89,6 +89,22 @@
           label: "Atajos de teclado",
           description: "Personaliza combinaciones para acciones rápidas.",
         },
+        "send-to-chat": {
+          label: "Compartir al chat",
+          description: "Define la tecla modificadora para enviar contenido al chat.",
+        },
+        "snap-to-grid": {
+          label: "Ajuste a cuadrícula",
+          description: "Configura la tecla usada para ajustar tokens al soltar.",
+        },
+        "token-height": {
+          label: "Altura de tokens",
+          description: "Ajusta límites y paso para subir y bajar altura.",
+        },
+        "token-move": {
+          label: "Movimiento de tokens",
+          description: "Configura cuánto se mueve un token por pulsación.",
+        },
       };
 
       return (
@@ -148,6 +164,73 @@
     }
 
     /**
+     * Build HTML for a select setting
+     */
+    function buildSelectSettingHtml(name, setting, value) {
+      const escapedName = escapeHtml(name);
+      const escapedLabel = escapeHtml(setting.label);
+      const options = Array.isArray(setting.options) ? setting.options : [];
+
+      const optionsHtml = options
+        .map((option) => {
+          const optionValue =
+            option && typeof option === "object"
+              ? String(option.value ?? "")
+              : String(option);
+          const optionLabel =
+            option && typeof option === "object"
+              ? String(option.label ?? option.value ?? "")
+              : String(option);
+          const selected = String(value) === optionValue ? " selected" : "";
+
+          return `<option value="${escapeHtml(optionValue)}"${selected}>${escapeHtml(optionLabel)}</option>`;
+        })
+        .join("");
+
+      return `
+        <div class="n21-setting-item" data-setting="${escapedName}">
+          <label class="n21-setting-label" for="n21-setting-${escapedName}">
+            <span>${escapedLabel}</span>
+          </label>
+          <select id="n21-setting-${escapedName}"
+                  class="n21-setting-input form-control"
+                  data-setting="${escapedName}"
+                  data-type="select">
+            ${optionsHtml}
+          </select>
+        </div>
+      `;
+    }
+
+    /**
+     * Build HTML for a number setting
+     */
+    function buildNumberSettingHtml(name, setting, value) {
+      const escapedName = escapeHtml(name);
+      const escapedLabel = escapeHtml(setting.label);
+      const minAttr =
+        typeof setting.min === "number" ? ` min="${setting.min}"` : "";
+      const maxAttr =
+        typeof setting.max === "number" ? ` max="${setting.max}"` : "";
+      const stepAttr =
+        typeof setting.step === "number" ? ` step="${setting.step}"` : "";
+
+      return `
+        <div class="n21-setting-item" data-setting="${escapedName}">
+          <label class="n21-setting-label" for="n21-setting-${escapedName}">
+            <span>${escapedLabel}</span>
+          </label>
+          <input id="n21-setting-${escapedName}"
+                 type="number"
+                 class="n21-setting-input form-control"
+                 data-setting="${escapedName}"
+                 data-type="number"
+                 value="${escapeHtml(String(value ?? setting.defaultValue ?? ""))}"${minAttr}${maxAttr}${stepAttr} />
+        </div>
+      `;
+    }
+
+    /**
      * Build HTML for settings by category
      */
     function buildCategoryHtml(categoryName, categoryLabel, settings) {
@@ -163,6 +246,10 @@
               return buildBooleanSettingHtml(name, setting, value);
             case "hotkey":
               return buildHotkeySettingHtml(name, setting, value);
+            case "select":
+              return buildSelectSettingHtml(name, setting, value);
+            case "number":
+              return buildNumberSettingHtml(name, setting, value);
             default:
               return "";
           }
@@ -206,27 +293,77 @@
         categories[cat][name] = setting;
       }
 
-      let html = '<div class="n21-settings-panel-body">';
+      const orderedCategories = [];
 
-      // Features category
       if (categories.features) {
-        html += buildCategoryHtml("features", "Funciones", categories.features);
+        orderedCategories.push({
+          key: "features",
+          label: "Funciones",
+          settings: categories.features,
+        });
       }
 
-      // Hotkeys category
       if (categories.hotkeys) {
-        html += buildCategoryHtml(
-          "hotkeys",
-          "Atajos de teclado",
-          categories.hotkeys
-        );
+        orderedCategories.push({
+          key: "hotkeys",
+          label: "Atajos de teclado",
+          settings: categories.hotkeys,
+        });
       }
 
-      // Other categories
       for (const [catName, settings] of Object.entries(categories)) {
         if (catName !== "features" && catName !== "hotkeys") {
-          html += buildCategoryHtml(catName, catName, settings);
+          const categoryMeta = getCategoryMeta(catName);
+          orderedCategories.push({
+            key: catName,
+            label: categoryMeta.label || catName,
+            settings,
+          });
         }
+      }
+
+      let html = '<div class="n21-settings-panel-body">';
+
+      if (orderedCategories.length) {
+        html += '<div class="n21-settings-tabs" role="tablist">';
+        html += orderedCategories
+          .map((category, index) => {
+            const escapedCategory = escapeHtml(category.key);
+            const escapedLabel = escapeHtml(category.label);
+            const activeClass = index === 0 ? " is-active" : "";
+
+            return `
+              <button type="button"
+                      class="n21-settings-tab${activeClass}"
+                      role="tab"
+                      data-category-tab="${escapedCategory}"
+                      aria-selected="${index === 0 ? "true" : "false"}">
+                ${escapedLabel}
+              </button>
+            `;
+          })
+          .join("");
+        html += "</div>";
+
+        html += '<div class="n21-settings-tab-panels">';
+        html += orderedCategories
+          .map((category, index) => {
+            const categoryHtml = buildCategoryHtml(
+              category.key,
+              category.label,
+              category.settings
+            );
+
+            if (!categoryHtml) return "";
+
+            const activeClass = index === 0 ? " is-active" : "";
+            return categoryHtml.replace(
+              'class="n21-settings-category"',
+              `class="n21-settings-category${activeClass}"`
+            );
+          })
+          .join("");
+        html += "</div>";
       }
 
       html += "</div>";
@@ -245,10 +382,35 @@
     }
 
     /**
+     * Attach tab listeners
+     */
+    function attachTabListeners($panel) {
+      const $tabs = $panel.find(".n21-settings-tab");
+      if (!$tabs.length) return;
+
+      $tabs.off("click.n21SettingsTab");
+      $tabs.on("click.n21SettingsTab", function () {
+        const $tab = $(this);
+        const category = $tab.data("categoryTab");
+        if (!category) return;
+
+        $tabs.removeClass("is-active").attr("aria-selected", "false");
+        $tab.addClass("is-active").attr("aria-selected", "true");
+
+        $panel.find(".n21-settings-category").removeClass("is-active");
+        $panel
+          .find(`.n21-settings-category[data-category="${category}"]`)
+          .addClass("is-active");
+      });
+    }
+
+    /**
      * Attach event listeners to settings panel
      */
     function attachEventListeners($panel) {
       if (!$panel || !$panel.length) return;
+
+      attachTabListeners($panel);
 
       // Boolean checkboxes
       $panel.find('input[type="checkbox"][data-type="boolean"]').each(function () {
@@ -265,6 +427,46 @@
             featureChangePending = true;
             showReloadMessage($panel);
           }
+        });
+      });
+
+      // Select settings
+      $panel.find('select[data-type="select"]').each(function () {
+        const $input = $(this);
+        const settingName = $input.data("setting");
+
+        $input.off("change.n21Settings");
+        $input.on("change.n21Settings", function () {
+          SettingsManager.set(settingName, String($input.val() || ""));
+        });
+      });
+
+      // Number settings
+      $panel.find('input[data-type="number"]').each(function () {
+        const $input = $(this);
+        const settingName = $input.data("setting");
+
+        $input.off("change.n21Settings blur.n21Settings");
+        $input.on("change.n21Settings blur.n21Settings", function () {
+          const raw = String($input.val() || "").trim();
+          const numeric = Number(raw);
+          const setting = SettingsManager.getAllSettings()[settingName];
+
+          if (!setting || !Number.isFinite(numeric)) {
+            $input.val(String(SettingsManager.get(settingName)));
+            return;
+          }
+
+          let nextValue = numeric;
+          if (typeof setting.min === "number") {
+            nextValue = Math.max(setting.min, nextValue);
+          }
+          if (typeof setting.max === "number") {
+            nextValue = Math.min(setting.max, nextValue);
+          }
+
+          SettingsManager.set(settingName, nextValue);
+          $input.val(String(nextValue));
         });
       });
 
@@ -379,6 +581,8 @@
             $input.prop("checked", value);
           } else if (type === "hotkey") {
             $input.val(formatHotkeyForDisplay(value));
+          } else if (type === "number" || type === "select") {
+            $input.val(String(value));
           }
         }
       });

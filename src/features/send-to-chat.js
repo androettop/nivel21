@@ -54,6 +54,22 @@
     const floatingElementsSelector = "[data-floating], [data-static-floating]";
     let hoverEl = null;
 
+    function getConfiguredModifier() {
+      const modifier = String(
+        SettingsManager.get("send-to-chat.modifier") || "shift",
+      ).toLowerCase();
+      if (["shift", "ctrl", "alt"].includes(modifier)) {
+        return modifier;
+      }
+      return "shift";
+    }
+
+    function isConfiguredModifierActive(modifiers) {
+      if (!modifiers) return false;
+      const modifier = getConfiguredModifier();
+      return Boolean(modifiers[modifier]);
+    }
+
     // Helper function to get icon URL from floating element
     function getIconUrlFromElement(element) {
       const img = element.querySelector("img");
@@ -74,12 +90,12 @@
     }
 
     // Helper function to update visual feedback
-    function updateChatFilter(el, isShiftPressed) {
+    function updateChatFilter(el, isModifierPressed) {
       if (!el) return;
 
       const $el = $(el);
 
-      if (isShiftPressed) {
+      if (isModifierPressed) {
         $el.addClass("n21-send-to-chat");
       } else {
         $el.removeClass("n21-send-to-chat");
@@ -135,23 +151,23 @@
     $(document)
       .on("mouseenter", floatingElementsSelector, function () {
         hoverEl = this;
-        updateChatFilter(this, KeyModifiersManager.getState().shift);
+        updateChatFilter(this, isConfiguredModifierActive(KeyModifiersManager.getState()));
       })
       .on("mouseleave", floatingElementsSelector, function () {
         clearChatFilter(this);
         hoverEl = null;
       });
 
-    // Update visual feedback when shift modifier changes
+    // Update visual feedback when configured modifier changes
     KeyModifiersManager.onChange((modifiers) => {
-      updateChatFilter(hoverEl, modifiers.shift);
+      updateChatFilter(hoverEl, isConfiguredModifierActive(modifiers));
     });
 
-    // Intercept loadInFloatingPanel to send to chat if shift is pressed
+    // Intercept loadInFloatingPanel to send to chat if configured modifier is pressed
     FloatingPanelManager.onLoad(
       "send-to-chat",
       (data) => {
-        if (KeyModifiersManager.getState().shift) {
+        if (isConfiguredModifierActive(KeyModifiersManager.getState())) {
           if (data.title) {
             sendPayloadToChat(
               {
@@ -173,7 +189,7 @@
     FloatingPanelManager.onOpen(
       "send-to-chat",
       (arg1, arg2, arg3, arg4) => {
-        if (KeyModifiersManager.getState().shift) {
+        if (isConfiguredModifierActive(KeyModifiersManager.getState())) {
           let data = null;
 
           if (arg1 instanceof HTMLElement) {

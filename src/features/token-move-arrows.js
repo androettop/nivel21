@@ -13,9 +13,13 @@
     }
 
     const { TokenManager } = window._n21_?.managers || {};
-
-    const STEP = 1;
     const selectedTokenWrapper = ".selected-token-wrapper";
+
+    function getMovementStep() {
+      const configured = Number(SettingsManager.get("token-move.step"));
+      if (!Number.isFinite(configured)) return 1;
+      return Math.max(0.1, configured);
+    }
 
     function isEditableTarget(target) {
       return (
@@ -72,14 +76,15 @@
     const pressedKeys = new Set();
 
     function applyMovementFromPressed(selectedSchemas) {
+      const step = getMovementStep();
       const hasUp = pressedKeys.has("ArrowUp");
       const hasDown = pressedKeys.has("ArrowDown");
       const hasLeft = pressedKeys.has("ArrowLeft");
       const hasRight = pressedKeys.has("ArrowRight");
 
-      const deltaZ = hasUp && hasDown ? 0 : hasUp ? -STEP : hasDown ? STEP : 0;
+      const deltaZ = hasUp && hasDown ? 0 : hasUp ? -step : hasDown ? step : 0;
       const deltaX =
-        hasLeft && hasRight ? 0 : hasLeft ? -STEP : hasRight ? STEP : 0;
+        hasLeft && hasRight ? 0 : hasLeft ? -step : hasRight ? step : 0;
 
       if (deltaX === 0 && deltaZ === 0) return;
       updateTokenPositions(selectedSchemas, deltaX, deltaZ);
