@@ -6,13 +6,19 @@
 
     const { loadManagers } = window._n21_;
 
-    const [TokenManager, MeasurementManager, CameraManager, NetworkManager] =
+    const [TokenManager, MeasurementManager, CameraManager, NetworkManager, SettingsManager] =
       await loadManagers(
         "TokenManager",
         "MeasurementManager",
         "CameraManager",
         "NetworkManager",
+        "SettingsManager",
       );
+
+    // Check if feature is enabled
+    if (!SettingsManager.get("feature.token-drag-measurement.enabled")) {
+      return;
+    }
 
     let isDragging = false;
     let draggedTokenNetworkId = null; // The token being dragged

@@ -159,6 +159,14 @@
         category: "features",
       });
 
+      this.registerSetting({
+        name: "feature.token-drag-measurement.enabled",
+        label: "Medición de Distancias al Arrastrar",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
       // Token hotkeys settings
       this.registerSetting({
         name: "hotkey.token.visibility",
