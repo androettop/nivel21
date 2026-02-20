@@ -58,6 +58,7 @@
       injectScript("src/features/token-height-order.js"),
       injectScript("src/features/token-move-arrows.js"),
       injectScript("src/features/token-drag-measurement.js"),
+      injectScript("src/features/snap-to-grid.js"),
       injectScript("src/features/multi-measurement.js"),
       injectScript("src/features/whisper-mode.js"),
       injectScript("src/features/multi-level-action-bar.js"),

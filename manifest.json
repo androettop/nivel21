@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -56,6 +56,7 @@
         "src/features/token-height-order.js",
         "src/features/token-move-arrows.js",
         "src/features/token-drag-measurement.js",
+        "src/features/snap-to-grid.js",
         "src/features/multi-measurement.js",
         "src/features/whisper-mode.js",
         "src/features/multi-level-action-bar.js",
