@@ -181,6 +181,14 @@
         category: "features",
       });
 
+      this.registerSetting({
+        name: "feature.token-drag-speed.enabled",
+        label: "Velocidad de Movimiento de Tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
       // Token hotkeys settings
       this.registerSetting({
         name: "hotkey.token.visibility",
@@ -273,6 +281,17 @@
           { value: "ctrl", label: "Ctrl" },
           { value: "alt", label: "Alt" },
         ],
+      });
+
+      this.registerSetting({
+        name: "token-drag.maxDragStep",
+        label: "Velocidad de arrastre de tokens",
+        type: "number",
+        defaultValue: 10,
+        category: "token-movement",
+        min: 0.3,
+        max: 10,
+        step: 0.1,
       });
 
       this.registerSetting({
