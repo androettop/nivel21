@@ -191,6 +191,19 @@ Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
 
 ---
 
+### Velocidad de arrastre de tokens
+
+Incrementa la velocidad de las animaciones al arrastrar tokens por el mapa.
+La velocidad es personalizable desde la configuración. 
+
+Evita que los tokens se desacomoden al arrastrar varios a la vez por largas distancias.
+
+<a id="token-drag-speed">
+ <img src="popup/img/token-drag-speed.png" alt="Velocidad de arrastre de tokens" />
+</a>
+
+---
+
 ### Efectos Ambientales
 
 Crea capas de color sobre el tablero para simular horas del día, clima o eventos astronómicos. El DM puede ajustar color, intensidad y modo de fusión para ambientar la escena.

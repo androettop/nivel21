@@ -226,7 +226,7 @@
         name: "hotkey.token.duplicate",
         label: "Duplicar token",
         type: "hotkey",
-        defaultValue: "ctrl+d",
+        defaultValue: "ctrl+j",
         category: "token-shortcuts",
       });
 
