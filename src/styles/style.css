@@ -115,11 +115,19 @@
 }
 
 .n21-token-note-chat-image {
-	max-width: 100%;
-	max-height: 220px;
-	width: auto;
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.n21-token-note-chat-image--square {
+	border-radius: 0;
+}
+
+.n21-token-note-chat-image--contain {
+	width: 100%;
 	height: auto;
-	border-radius: 6px;
 	object-fit: contain;
 }
 

@@ -6,12 +6,13 @@
 
     const { loadManagers } = window._n21_;
 
-    const [ChatManager, ChatUIManager, CanvasDropdownManager, SettingsManager] = await loadManagers(
-      "ChatManager",
-      "ChatUIManager",
-      "CanvasDropdownManager",
-      "SettingsManager",
-    );
+    const [ChatManager, ChatUIManager, CanvasDropdownManager, SettingsManager] =
+      await loadManagers(
+        "ChatManager",
+        "ChatUIManager",
+        "CanvasDropdownManager",
+        "SettingsManager",
+      );
 
     const TOKEN_NOTES_CHAT_KEY = "feature.token-notes";
     const N21_MESSAGE_REGEX = /\[\[n21:[^\|]*\|\|([^\]]+)\]\]/g;
@@ -42,20 +43,32 @@
       const title = toText(payload?.name);
       const description = toText(payload?.description);
       const imageUrl = toText(payload?.imageUrl);
+      const borderType = toText(payload?.border_type);
+      const borderColor = toText(payload?.border_color);
 
       if (title) {
         const titleEl = document.createElement("div");
         titleEl.className = "n21-token-note-chat-title";
-        titleEl.textContent = title;
+        titleEl.textContent = `${title}:`;
         container.appendChild(titleEl);
       }
 
       if (imageUrl) {
         const image = document.createElement("img");
         image.className = "n21-token-note-chat-image";
+        
+        if (borderType === "none") {
+          image.classList.add("n21-token-note-chat-image--square", "n21-token-note-chat-image--contain");
+        }
+        
         image.src = imageUrl;
         image.alt = title || "Token";
         image.loading = "lazy";
+
+        if (borderType === "default" && borderColor) {
+          image.style.border = `2px solid ${borderColor}`;
+        }
+
         container.appendChild(image);
       }
 
@@ -98,7 +111,9 @@
         }
 
         if (lastIndex < text.length) {
-          fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+          fragment.appendChild(
+            document.createTextNode(text.substring(lastIndex)),
+          );
         }
 
         node.parentNode.replaceChild(fragment, node);
@@ -120,8 +135,7 @@
       showOn: ["token"],
       order: 50,
       onClick: (context) => {
-          const token = context?.token;
-          console.log(token);
+        const token = context?.token;
         const tokenInstance = token?.script?.tokenInstance;
 
         const metadataJson = tokenInstance?.schema?.metadata;
@@ -129,6 +143,8 @@
 
         const name = toText(metadata.name);
         const description = toText(metadata.description);
+        const borderType = toText(metadata.border_type);
+        const borderColor = toText(metadata.border_color);
         const imageUrl = toText(tokenInstance?.imageUrl);
 
         if (!name && !imageUrl && !description) return;
@@ -138,6 +154,8 @@
             name,
             imageUrl,
             description,
+            border_type: borderType,
+            border_color: borderColor,
           },
           {},
           TOKEN_NOTES_CHAT_KEY,
