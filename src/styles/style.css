@@ -68,6 +68,67 @@
 	height: max-content;
 }
 
+.n21-canvas-dropdown-menu {
+	position: fixed;
+	z-index: 12000;
+	min-width: 170px;
+	padding: 6px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: rgba(16, 16, 18, 0.92);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+	display: none;
+}
+
+.n21-canvas-dropdown-item {
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: transparent;
+	border: none;
+	padding: 8px 10px;
+	border-radius: 6px;
+	color: inherit;
+	font-size: 13px;
+	line-height: 1.25;
+	cursor: pointer;
+}
+
+.n21-canvas-dropdown-item:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.n21-token-note-chat {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 8px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.n21-token-note-chat-title {
+	font-weight: 700;
+	font-size: 14px;
+	line-height: 1.2;
+}
+
+.n21-token-note-chat-image {
+	max-width: 100%;
+	max-height: 220px;
+	width: auto;
+	height: auto;
+	border-radius: 6px;
+	object-fit: contain;
+}
+
+.n21-token-note-chat-description {
+	white-space: pre-wrap;
+	font-size: 13px;
+	line-height: 1.35;
+}
+
 .card.floating-panel.n21-ambient-fx-panel.panel-unpin:not(.panel-minimized) .ui-resizable-handle {
     display: none !important
 }

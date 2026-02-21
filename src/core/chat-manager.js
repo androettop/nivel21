@@ -56,7 +56,7 @@
       const pairs = encoded.split(/(?<!\\)\|/);
 
       for (const pair of pairs) {
-        const matchResult = pair.match(/^([^=]+)=(.*)$/);
+        const matchResult = pair.match(/^([^=]+)=(.*)$/s);
         if (matchResult) {
           const name = matchResult[1];
           const value = matchResult[2]

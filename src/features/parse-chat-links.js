@@ -6,9 +6,8 @@
 
     const CHAT_LINK_KEY = "chat.link";
 
-    // Regex to find custom n21 links and markdown links
-    const combinedLinkRegex =
-      /\[\[n21:[^\|]*\|\|([^\]]+)\]\]|\[([^\]]+)\]\(([^)]+)\)/g;
+    // Regex to find custom n21 links
+    const chatLinkRegex = /\[\[n21:[^\|]*\|\|([^\]]+)\]\]/g;
 
     const { loadManagers } = window._n21_;
 
@@ -24,18 +23,6 @@
     if (!SettingsManager.get("feature.parse-chat-links.enabled")) {
       return;
     }
-
-    // Check if URL is from nivel20.com
-    function isNivel20Url(url) {
-      try {
-        const parsedUrl = new URL(url, window.location.origin);
-        return parsedUrl.hostname === "nivel20.com";
-      } catch (e) {
-        // If it's a relative URL, assume it's from nivel20.com
-        return url.startsWith("/");
-      }
-    }
-
 
     function createFloatingAnchorFromPayload(payload) {
       const anchor = document.createElement("a");
@@ -74,21 +61,21 @@
       return anchor;
     }
 
-    // Function to parse links in text node and replace with anchor elements
-    function parseMarkdownLinks(node) {
+    // Function to parse n21 links in text node and replace with anchor elements
+    function parseChatLinks(node) {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent;
 
         // Check if text contains links
-        if (combinedLinkRegex.test(text)) {
+        if (chatLinkRegex.test(text)) {
           const fragment = document.createDocumentFragment();
           let lastIndex = 0;
           let match;
 
           // Reset regex
-          combinedLinkRegex.lastIndex = 0;
+          chatLinkRegex.lastIndex = 0;
 
-          while ((match = combinedLinkRegex.exec(text)) !== null) {
+          while ((match = chatLinkRegex.exec(text)) !== null) {
             // Add text before the link
             if (match.index > lastIndex) {
               fragment.appendChild(
@@ -96,50 +83,15 @@
               );
             }
 
-            if (match[1]) {
-              const payload = ChatManager.decodeJsonMessage(match[1]);
-              if (payload && payload.key === CHAT_LINK_KEY) {
-                const anchor = createFloatingAnchorFromPayload(payload);
-                fragment.appendChild(anchor);
-              } else {
-                fragment.appendChild(document.createTextNode(match[0]));
-              }
+            const payload = ChatManager.decodeJsonMessage(match[1]);
+            if (payload && payload.key === CHAT_LINK_KEY) {
+              const anchor = createFloatingAnchorFromPayload(payload);
+              fragment.appendChild(anchor);
             } else {
-              const linkText = match[2];
-              const linkUrl = match[3];
-
-              // Only create anchor if URL is from nivel20.com
-              if (isNivel20Url(linkUrl)) {
-                // Create anchor element with data attributes
-                const anchor = document.createElement("a");
-
-                // Parse HTML content safely with DOMPurify
-                if (window.DOMPurify) {
-                  anchor.innerHTML = HtmlManager.sanitize(linkText);
-                  TooltipManager.processAll(anchor);
-                } else {
-                  anchor.textContent = linkText;
-                }
-
-                anchor.href = linkUrl; // (url)
-                anchor.setAttribute("data-floating", "true");
-
-                let floatingTitle = linkText;
-                if (window.DOMPurify) {
-                  const tempDiv = document.createElement("div");
-                  tempDiv.innerHTML = HtmlManager.sanitize(linkText);
-                  floatingTitle = tempDiv.textContent || "";
-                }
-                anchor.setAttribute("data-floating-title", floatingTitle);
-
-                fragment.appendChild(anchor);
-              } else {
-                // If not a nivel20.com link, keep as plain text
-                fragment.appendChild(document.createTextNode(match[0]));
-              }
+              fragment.appendChild(document.createTextNode(match[0]));
             }
 
-            lastIndex = combinedLinkRegex.lastIndex;
+            lastIndex = chatLinkRegex.lastIndex;
           }
 
           // Add remaining text after last link
@@ -158,7 +110,7 @@
         for (const child of childNodes) {
           // Don't parse inside already processed links or script tags
           if (child.nodeName !== "A" && child.nodeName !== "SCRIPT") {
-            parseMarkdownLinks(child);
+            parseChatLinks(child);
           }
         }
       }
@@ -168,7 +120,7 @@
     ChatUIManager.onMessage(
       "parse-chat-links",
       (element) => {
-        parseMarkdownLinks(element);
+        parseChatLinks(element);
       },
       {
         priority: 100,

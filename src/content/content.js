@@ -49,6 +49,8 @@
       injectScript("src/core/action-bar-manager.js"),
       injectScript("src/core/tooltip-manager.js"),
       injectScript("src/core/html-manager.js"),
+      injectScript("src/core/token-description-manager.js"),
+      injectScript("src/core/canvas-dropdown-manager.js"),
 
       // Features
       injectScript("src/features/advantage-disadvantage.js"),
@@ -66,6 +68,7 @@
       injectScript("src/features/ambient-fx.js"),
       injectScript("src/features/notes-panel.js"),
       injectScript("src/features/settings-panel.js"),
+      injectScript("src/features/token-notes.js"),
     ]);
   });
 })();

@@ -189,6 +189,14 @@
         category: "features",
       });
 
+      this.registerSetting({
+        name: "feature.token-notes.enabled",
+        label: "Notas de Token",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
       // Token hotkeys settings
       this.registerSetting({
         name: "hotkey.token.visibility",
