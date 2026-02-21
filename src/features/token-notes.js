@@ -6,12 +6,13 @@
 
     const { loadManagers } = window._n21_;
 
-    const [ChatManager, ChatUIManager, CanvasDropdownManager, SettingsManager] =
+    const [ChatManager, ChatUIManager, CanvasDropdownManager, SettingsManager, PlayerManager] =
       await loadManagers(
         "ChatManager",
         "ChatUIManager",
         "CanvasDropdownManager",
         "SettingsManager",
+        "PlayerManager",
       );
 
     const TOKEN_NOTES_CHAT_KEY = "feature.token-notes";
@@ -82,9 +83,36 @@
       return container;
     }
 
+    function resolveSenderIdFromElement(messageElement) {
+      if (!messageElement || !messageElement.closest) return null;
+
+      const messageBox = messageElement.closest(".room-message");
+      const userNameElement = messageBox?.querySelector(".user-name");
+      const senderName = userNameElement?.textContent
+        ?.replace(":", "")
+        .trim();
+
+      if (!senderName) return null;
+
+      const players = PlayerManager.getPlayerList() || [];
+      const sender = players.find((player) => {
+        const playerName = String(player?.userName || "").trim();
+        return playerName === senderName;
+      });
+
+      return sender?.userId || null;
+    }
+
+    function isMessageFromGameMaster(messageElement) {
+      const senderId = resolveSenderIdFromElement(messageElement);
+      if (!senderId) return false;
+      return PlayerManager.isUserGameMaster(senderId);
+    }
+
     function parseTokenNoteMessages(node) {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent;
+        N21_MESSAGE_REGEX.lastIndex = 0;
         if (!N21_MESSAGE_REGEX.test(text)) return;
 
         const fragment = document.createDocumentFragment();
@@ -134,7 +162,10 @@
       label: "Enviar al chat",
       showOn: ["token"],
       order: 50,
+      gameMasterOnly: true,
       onClick: (context) => {
+        if (!PlayerManager.isGameMaster()) return;
+
         const token = context?.token;
         const tokenInstance = token?.script?.tokenInstance;
 
@@ -166,6 +197,7 @@
     ChatUIManager.onMessage(
       "token-notes-render",
       (element) => {
+        if (!isMessageFromGameMaster(element)) return;
         parseTokenNoteMessages(element);
       },
       { priority: 120 },

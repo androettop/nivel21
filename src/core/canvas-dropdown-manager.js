@@ -15,6 +15,7 @@
       this._options = new Map();
       this._$menu = null;
       this._cameraManager = null;
+      this._playerManager = null;
       this._rightClickState = null;
       this._rightClickStateTimeout = null;
     }
@@ -24,9 +25,10 @@
 
       try {
         const { loadManagers } = window._n21_;
-        const [CameraManager] = await loadManagers("CameraManager");
+        const [CameraManager, PlayerManager] = await loadManagers("CameraManager", "PlayerManager");
 
         this._cameraManager = CameraManager;
+        this._playerManager = PlayerManager;
         this._createMenu();
         this._bindEvents();
 
@@ -53,6 +55,7 @@
         showOn: this._normalizeShowOn(option.showOn || option.contexts || "always"),
         onClick: option.onClick,
         isVisible: typeof option.isVisible === "function" ? option.isVisible : null,
+        gameMasterOnly: !!option.gameMasterOnly,
       };
 
       this._options.set(normalized.id, normalized);
@@ -261,6 +264,10 @@
 
       return options
         .filter((option) => {
+          if (option.gameMasterOnly && !this._isCurrentUserGameMaster()) {
+            return false;
+          }
+
           const visibleByContext =
             option.showOn.includes("always") || option.showOn.includes(context.type);
 
@@ -280,6 +287,14 @@
           if (a.order !== b.order) return a.order - b.order;
           return a.label.localeCompare(b.label);
         });
+    }
+
+    _isCurrentUserGameMaster() {
+      try {
+        return !!this._playerManager?.isGameMaster?.();
+      } catch (error) {
+        return false;
+      }
     }
 
     _showAt(x, y, options, context) {
