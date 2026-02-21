@@ -69,6 +69,7 @@
       injectScript("src/features/notes-panel.js"),
       injectScript("src/features/settings-panel.js"),
       injectScript("src/features/token-notes.js"),
+      injectScript("src/features/center-camera-here.js"),
     ]);
   });
 })();

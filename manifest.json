@@ -66,7 +66,8 @@
         "src/features/notes-panel.js",
         "src/features/settings-panel.js",
         "src/features/token-drag-speed.js",
-        "src/features/token-notes.js"
+        "src/features/token-notes.js",
+        "src/features/center-camera-here.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }
