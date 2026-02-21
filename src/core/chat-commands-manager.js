@@ -132,19 +132,23 @@
     async init() {
       if (this._initialized) return;
 
-      const { loadManagers } = window._n21_;
-      const [ChatManager, ChatUIManager] = await loadManagers(
-        "ChatManager",
-        "ChatUIManager",
-      );
+      try {
+        const { loadManagers } = window._n21_;
+        const [ChatManager, ChatUIManager] = await loadManagers(
+          "ChatManager",
+          "ChatUIManager",
+        );
 
-      this._chatManager = ChatManager;
-      this._chatUiManager = ChatUIManager;
+        this._chatManager = ChatManager;
+        this._chatUiManager = ChatUIManager;
 
-      this._setupChatListener();
-      this._setupAutocomplete();
+        this._setupChatListener();
+        this._setupAutocomplete();
 
-      this._initialized = true;
+        this._initialized = true;
+      } catch (error) {
+        console.warn("[ChatCommandsManager] Initialization error:", error);
+      }
     }
 
     isReady() {
@@ -160,7 +164,8 @@
         rawName: String(name).trim().replace(/^\/+/, ""),
         description: options.description || "",
         params: Array.isArray(options.params) ? options.params : [],
-        validate: typeof options.validate === "function" ? options.validate : null,
+        validate:
+          typeof options.validate === "function" ? options.validate : null,
         onBeforeSend:
           typeof options.onBeforeSend === "function"
             ? options.onBeforeSend
@@ -377,7 +382,11 @@
         }
 
         const selected = suggestions[this._autocompleteState.index];
-        const formatted = formatSuggestion(selected, param, activeToken?.quoteChar);
+        const formatted = formatSuggestion(
+          selected,
+          param,
+          activeToken?.quoteChar,
+        );
 
         let newValue = baseValue;
         let newCursor = cursor;
@@ -394,7 +403,11 @@
           let before = baseValue.slice(0, insertPos);
           const after = baseValue.slice(insertPos);
 
-          if (before.length && !/\s$/.test(before) && before[before.length - 1] !== "/") {
+          if (
+            before.length &&
+            !/\s$/.test(before) &&
+            before[before.length - 1] !== "/"
+          ) {
             before += " ";
           }
 

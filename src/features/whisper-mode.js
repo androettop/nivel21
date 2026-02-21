@@ -164,6 +164,6 @@
 
     subscribeToWhisperMessages();
   } catch (error) {
-    console.error("[Whisper Mode] Error:", error);
+    console.warn("[Whisper Mode] Error:", error);
   }
 })();

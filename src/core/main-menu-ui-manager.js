@@ -4,6 +4,7 @@
     ======================= */
 
   const { BaseManager } = window._n21_?.managers || {};
+  const { isTabletopUrl } = window._n21_?.utils || {};
 
   class MainMenuUIManager extends BaseManager {
     constructor() {
@@ -18,6 +19,7 @@
 
     async init() {
       if (this._initialized) return;
+      if (typeof isTabletopUrl === "function" && !isTabletopUrl()) return;
 
       this._initialized = true;
       this._setupObserver();

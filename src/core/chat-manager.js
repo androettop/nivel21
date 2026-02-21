@@ -243,7 +243,7 @@
      */
     sendJsonMessage(payload, options = {}, key) {
       if (!key) {
-        console.error("[ChatManager] sendJsonMessage requires a key parameter");
+        console.warn("[ChatManager] sendJsonMessage requires a key parameter");
         return;
       }
       const messageText = encodeJsonMessage(payload, key);

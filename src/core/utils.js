@@ -97,6 +97,14 @@
   }
 
   /**
+   * Check if current page is a Nivel20 tabletop URL
+   * @returns {boolean}
+   */
+  function isTabletopUrl() {
+    return /^https:\/\/nivel20\.com\/tabletop(?:\/|$)/.test(window.location.href);
+  }
+
+  /**
    * Register a manager class, instantiate it, call init(), and expose it globally
    * @param {string} name - The name to register the manager under (e.g., 'ChatManager')
    * @param {class} ManagerClass - The manager class to instantiate
@@ -114,6 +122,7 @@
 
   window._n21_.utils.getNativeManager = getNativeManager;
   window._n21_.utils.uuid = uuid;
+  window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.registerManager = registerManager;
 
   // Expose loadManagers globally for features

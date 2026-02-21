@@ -776,6 +776,6 @@
       },
     );
   } catch (error) {
-    console.error("[Ambient FX] Error:", error);
+    console.warn("[Ambient FX] Error:", error);
   }
 })();

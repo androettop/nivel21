@@ -31,10 +31,14 @@
 
       // Load TooltipManager dependency
       const { loadManagers } = window._n21_;
-      const [TooltipManager] = await loadManagers("TooltipManager");
-      this._tooltipManager = TooltipManager;
+      try {
+        const [TooltipManager] = await loadManagers("TooltipManager");
+        this._tooltipManager = TooltipManager;
 
-      this._initialized = true;
+        this._initialized = true;
+      } catch (error) {
+        console.warn("[HtmlManager] Failed to load TooltipManager:", error);
+      }
     }
 
     /**
