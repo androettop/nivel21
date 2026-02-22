@@ -29,6 +29,7 @@
     const PING_RING_DELAY_MS = 200;
     const OVERLAY_ID = "n21-ping-overlay";
     const BASE_PING_SIZE_PX = 800;
+    const BASE_PING_BORDER_WIDTH_PX = 40;
     const BASE_EMOJI_SIZE_PX = 440;
     const AUTO_PING_COLOR = "#ffffff";
 
@@ -136,6 +137,10 @@
       return BASE_PING_SIZE_PX / getCurrentOrthoHeight();
     }
 
+    function getPingBorderWidthPx() {
+      return BASE_PING_BORDER_WIDTH_PX / getCurrentOrthoHeight();
+    }
+
     function getEmojiSizePx() {
       return BASE_EMOJI_SIZE_PX / getCurrentOrthoHeight();
     }
@@ -163,6 +168,7 @@
       const pingSizePx = getPingSizePx();
       activePing.marker.style.width = `${pingSizePx}px`;
       activePing.marker.style.height = `${pingSizePx}px`;
+      activePing.marker.style.setProperty("--n21-ping-ring-border-width", `${getPingBorderWidthPx()}px`);
 
       if (activePing.emojiElement) {
         const emojiSizePx = getEmojiSizePx();
@@ -310,6 +316,7 @@
       marker.style.top = `${screenY}px`;
       marker.style.width = `${getPingSizePx()}px`;
       marker.style.height = `${getPingSizePx()}px`;
+      marker.style.setProperty("--n21-ping-ring-border-width", `${getPingBorderWidthPx()}px`);
       marker.style.setProperty("--n21-ping-border", pingColor?.border || "#840b0b");
       marker.style.setProperty("--n21-ping-fill", pingColor?.fill || "#ce0606");
 
