@@ -10,7 +10,6 @@
     constructor() {
       super();
       this._initialized = false;
-      this._observer = null;
       this._registrations = new Map();
       this._quickMenuSelector = "#quick-menu";
     }
@@ -20,7 +19,6 @@
       if (typeof isTabletopUrl === "function" && !isTabletopUrl()) return;
 
       this._initialized = true;
-      this._setupObserver();
       this._renderAll();
     }
 
@@ -88,19 +86,6 @@
       if (!button) return;
 
       this._setButtonSelected(button, !!registration.getState());
-    }
-
-    _setupObserver() {
-      if (this._observer) return;
-
-      this._observer = new MutationObserver(() => {
-        this._renderAll();
-      });
-
-      this._observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
     }
 
     _findQuickMenu() {
