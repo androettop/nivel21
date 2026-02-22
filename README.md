@@ -262,26 +262,15 @@ Permite agregar notas descriptivas a los tokens que se pueden compartir con los 
 
 ---
 
-### Centrar camara a todos
+### Utilidades de cámara
 
-Permite a los DMs centrar rápidamente la cámara de todos los jugadores en cualquier punto del mapa mediante el menú contextual.
+Herramientas para los DMs que permiten controlar la cámara del mapa mediante el menú contextual.
 
-- **Click derecho en mapa (Solo DM)** - Centrar cámara de todos los jugadores
+- **Centrar cámara a todos** - Centra rápidamente la cámara de todos los jugadores en cualquier punto del mapa
+- **Enderezar cámara** - Restablece la rotación de la cámara a 0 grados para una vista ortogonal perfecta
 
-<a id="center-camera-here">
- <img src="popup/img/center-camera-here.png" alt="Centrar camara a todos" />
-</a>
-
----
-
-### Enderezar Cámara
-
-Restablece la rotación de la cámara a 0 grados para una vista ortogonal perfecta.
-
-- **Click derecho en mapa (Solo DM)** - Enderezar rotación de cámara
-
-<a id="straighten-camera">
- <img src="popup/img/straighten-camera.png" alt="Enderezar Cámara" />
+<a id="camera-utilities">
+ <img src="popup/img/camera-utilities.png" alt="Utilidades de cámara" />
 </a>
 
 ---
