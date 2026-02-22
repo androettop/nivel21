@@ -23,12 +23,13 @@
     }
 
     const PING_COMMAND = "ping";
-    const SEND_DEBOUNCE_MS = 1000;
+    const SEND_DEBOUNCE_MS = 2000;
     const PING_ANIMATION_MS = 1000;
     const PING_RING_COUNT = 3;
     const PING_RING_DELAY_MS = 200;
     const OVERLAY_ID = "n21-ping-overlay";
     const BASE_PING_SIZE_PX = 800;
+    const AUTO_PING_COLOR = "#ffffff";
 
     let lastPingSentAt = 0;
     let pingSyncFrame = null;
@@ -50,7 +51,7 @@
 
       const match = messageText
         .trim()
-        .match(/^\/ping\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*$/i);
+        .match(/^\/ping\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s+(\S+))?\s*$/i);
 
       if (!match) return null;
 
@@ -58,7 +59,9 @@
       const z = Number(match[2]);
       if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
 
-      return { x, z };
+      const color = normalizeColorToken(match[3] || "");
+
+      return { x, z, color };
     }
 
     function getWorldPositionFromContext(context) {
@@ -208,7 +211,50 @@
       return hash;
     }
 
-    function getPingColorFromSenderName(senderName) {
+    function normalizeColorToken(value) {
+      const text = String(value || "").trim().toLowerCase();
+      if (!text) return null;
+      if (/\s/.test(text)) return null;
+
+      if (window.CSS && typeof window.CSS.supports === "function") {
+        if (!window.CSS.supports("color", text)) return null;
+      }
+
+      return text;
+    }
+
+    function colorToAlphaVariant(color, alpha) {
+      const hexMatch = String(color || "")
+        .trim()
+        .toLowerCase()
+        .match(/^#([0-9a-f]{6})$/);
+
+      if (!hexMatch) return color;
+
+      const hex = hexMatch[1];
+      const red = parseInt(hex.slice(0, 2), 16);
+      const green = parseInt(hex.slice(2, 4), 16);
+      const blue = parseInt(hex.slice(4, 6), 16);
+
+      return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    }
+
+    function getConfiguredPingColorToken() {
+      const colorSetting = SettingsManager.get("ping-map.custom-color");
+      const color = normalizeColorToken(colorSetting);
+      if (!color) return null;
+      if (color === AUTO_PING_COLOR) return null;
+      return color;
+    }
+
+    function getPingColorFromSenderName(senderName, customColorToken = null) {
+      if (customColorToken) {
+        return {
+          border: customColorToken,
+          fill: colorToAlphaVariant(customColorToken, 0.4),
+        };
+      }
+
       const normalizedName = String(senderName || "").trim().toLowerCase() || "unknown";
       const hash = hashString(normalizedName);
       const hue = Math.abs(hash) % 360;
@@ -266,13 +312,15 @@
       const x = formatCoordinate(worldX);
       const z = formatCoordinate(worldZ);
       const senderInfo = getSenderInfo();
+      const customColor = getConfiguredPingColorToken();
 
       const messageOptions = { visibility: "public" };
       if (senderInfo) {
         messageOptions.sender_info = senderInfo;
       }
 
-      ChatManager.send(`/${PING_COMMAND} ${x} ${z}`, messageOptions);
+      const customColorArg = customColor ? ` ${customColor}` : "";
+      ChatManager.send(`/${PING_COMMAND} ${x} ${z}${customColorArg}`, messageOptions);
     }
 
     CanvasDropdownManager.registerOption({
@@ -294,7 +342,7 @@
       if (!ping) return true;
 
       const senderName = messageData?.senderName || "unknown";
-      const pingColor = getPingColorFromSenderName(senderName);
+      const pingColor = getPingColorFromSenderName(senderName, ping.color);
 
       showPingAtWorld(ping.x, ping.z, pingColor);
       return true;

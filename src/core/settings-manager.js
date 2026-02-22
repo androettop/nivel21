@@ -205,6 +205,22 @@
         category: "features",
       });
 
+      this.registerSetting({
+        name: "feature.straighten-camera.enabled",
+        label: "Enderezar camara",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "ping-map.custom-color",
+        label: "Color personalizado del ping (blanco = automático)",
+        type: "color",
+        defaultValue: "#ffffff",
+        category: "chat",
+      });
+
       // Token hotkeys settings
       this.registerSetting({
         name: "hotkey.token.visibility",
@@ -372,7 +388,7 @@
      * @param {Object} setting - Setting configuration
      * @param {string} setting.name - Unique setting name (e.g., "feature.token-hotkeys.enabled")
      * @param {string} setting.label - Display label
-     * @param {string} setting.type - Type: "boolean", "string", "number", "hotkey"
+    * @param {string} setting.type - Type: "boolean", "string", "number", "hotkey", "color"
      * @param {*} setting.defaultValue - Default value
      * @param {string} setting.category - Category: "features", "hotkeys", etc.
      * @param {Array} [setting.options] - Options for select type
@@ -609,6 +625,7 @@
           return value === "true" || value === true;
         case "number":
           return Number(value);
+        case "color":
         case "string":
         case "hotkey":
         default:

@@ -68,7 +68,8 @@
         "src/features/token-drag-speed.js",
         "src/features/token-notes.js",
         "src/features/center-camera-here.js",
-        "src/features/ping-map.js"
+        "src/features/ping-map.js",
+        "src/features/straighten-camera.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

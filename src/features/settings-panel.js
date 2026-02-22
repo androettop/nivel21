@@ -248,6 +248,46 @@
       `;
     }
 
+    function normalizeColorValue(value, fallback) {
+      const normalizedFallback = String(fallback || "#ffffff").trim().toLowerCase();
+      const text = String(value ?? "").trim().toLowerCase();
+      const hexColorRegex = /^#[0-9a-f]{6}$/;
+
+      if (hexColorRegex.test(text)) return text;
+      return hexColorRegex.test(normalizedFallback) ? normalizedFallback : "#ffffff";
+    }
+
+    function buildColorSettingHtml(name, setting, value) {
+      const escapedName = escapeHtml(name);
+      const escapedLabel = escapeHtml(setting.label);
+      const colorValue = normalizeColorValue(value, setting.defaultValue);
+      const escapedValue = escapeHtml(colorValue);
+      const modifiedIndicatorHtml = buildModifiedIndicatorHtml(setting, value);
+      const modifiedClass = modifiedIndicatorHtml ? " is-modified" : "";
+
+      return `
+        <div class="n21-setting-item${modifiedClass}" data-setting="${escapedName}">
+          <label class="n21-setting-label" for="n21-setting-${escapedName}">
+            <span>${escapedLabel}</span>
+            ${modifiedIndicatorHtml}
+          </label>
+          <div class="n21-hotkey-input-wrapper">
+            <input id="n21-setting-${escapedName}"
+                   type="color"
+                   class="n21-setting-input form-control"
+                   data-setting="${escapedName}"
+                   data-type="color"
+                   value="${escapedValue}" />
+            <button class="n21-setting-reset btn btn-secondary"
+                    data-setting="${escapedName}"
+                    data-type="color">
+              Restablecer
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     function buildCategoryHtml(categoryName, categoryMeta, settings) {
       const settingNames = Object.keys(settings || {});
       if (!settingNames.length) return "";
@@ -265,6 +305,8 @@
               return buildSelectSettingHtml(name, setting, value);
             case "number":
               return buildNumberSettingHtml(name, setting, value);
+            case "color":
+              return buildColorSettingHtml(name, setting, value);
             default:
               return "";
           }
@@ -462,6 +504,19 @@
         });
       });
 
+      $panel.find('input[type="color"][data-type="color"]').each(function () {
+        const $input = $(this);
+        const settingName = $input.data("setting");
+
+        $input.off("input.n21Settings change.n21Settings");
+        $input.on("input.n21Settings change.n21Settings", function () {
+          const setting = SettingsManager.getAllSettings()[settingName];
+          const nextColor = normalizeColorValue($input.val(), setting?.defaultValue);
+          SettingsManager.set(settingName, nextColor);
+          $input.val(nextColor);
+        });
+      });
+
       $panel.find(".n21-setting-reset").each(function () {
         const $button = $(this);
         const settingName = $button.data("setting");
@@ -579,7 +634,7 @@
           $input.prop("checked", value);
         } else if (type === "hotkey") {
           $input.val(formatHotkeyForDisplay(value));
-        } else if (type === "number" || type === "select") {
+        } else if (type === "number" || type === "select" || type === "color") {
           $input.val(String(value ?? ""));
         }
 

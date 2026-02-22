@@ -71,6 +71,7 @@
       injectScript("src/features/token-notes.js"),
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
+      injectScript("src/features/straighten-camera.js"),
     ]);
   });
 })();

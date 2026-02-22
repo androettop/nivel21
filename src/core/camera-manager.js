@@ -136,6 +136,19 @@
     }
 
     /**
+     * Reset camera orbit yaw to zero
+     * @returns {boolean} True if yaw was updated
+     */
+    straightenCameraYaw() {
+      const nativeManager = this._getNativeManager();
+      const orbitCamera = nativeManager?.orbitCamera;
+
+      if (!orbitCamera) return false;
+      orbitCamera.yaw = 0;
+      return true;
+    }
+
+    /**
      * Check if the manager is ready for use
      * @returns {boolean} True if the camera is available
      */
