@@ -124,6 +124,15 @@
 	margin-left: 4px;
 }
 
+.n21-canvas-dropdown-submenu::before {
+	content: "";
+	position: absolute;
+	left: -4px;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+}
+
 .n21-canvas-dropdown-item-wrapper:hover > .n21-canvas-dropdown-submenu {
 	display: block;
 }
@@ -157,9 +166,9 @@
 
 .n21-ping-emoji {
 	position: absolute;
-	top: -30%;
+	top: -20%;
 	left: 50%;
-	transform: translateX(-50%);
+	transform: translate(-50%, -50%);
 	z-index: 1;
 	line-height: 1;
 	text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
@@ -167,6 +176,11 @@
 	user-select: none;
 	text-align: center;
 	animation: n21-ping-emoji-fade 1s ease-out forwards;
+}
+
+.n21-ping-emoji-img {
+	object-fit: contain;
+	filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
 }
 
 @keyframes n21-ping-emoji-fade {
@@ -189,11 +203,11 @@
 
 @keyframes n21-ping-pop {
 	0% {
-		opacity: 1;
+		opacity: 0.5;
 		transform: scale(0);
 	}
 	50% {
-		opacity: 0.8;
+		opacity: 0.4;
 	}
 	100% {
 		opacity: 0;
@@ -218,20 +232,13 @@
 }
 
 .n21-token-note-chat-image {
-	width: 60px;
-	height: 60px;
-	border-radius: 50%;
-	object-fit: cover;
-}
-
-.n21-token-note-chat-image--square {
-	border-radius: 0;
-}
-
-.n21-token-note-chat-image--contain {
 	width: 100%;
+	border-radius: 50%;
+}
+
+.n21-token-note-chat-image--none {
+	border-radius: 0;
 	height: auto;
-	object-fit: contain;
 }
 
 .n21-token-note-chat-description {

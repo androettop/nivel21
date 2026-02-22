@@ -59,7 +59,7 @@
         image.className = "n21-token-note-chat-image";
         
         if (borderType === "none") {
-          image.classList.add("n21-token-note-chat-image--square", "n21-token-note-chat-image--contain");
+          image.classList.add("n21-token-note-chat-image--none");
         }
         
         image.src = imageUrl;
@@ -67,7 +67,7 @@
         image.loading = "lazy";
 
         if (borderType === "default" && borderColor) {
-          image.style.border = `2px solid ${borderColor}`;
+          image.style.border = `10px solid ${borderColor}`;
         }
 
         container.appendChild(image);

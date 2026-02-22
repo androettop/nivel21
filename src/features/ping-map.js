@@ -24,7 +24,7 @@
 
     const PING_COMMAND = "ping";
     const SEND_DEBOUNCE_MS = 2000;
-    const PING_ANIMATION_MS = 100000;
+    const PING_ANIMATION_MS = 2000;
     const PING_RING_COUNT = 3;
     const PING_RING_DELAY_MS = 200;
     const OVERLAY_ID = "n21-ping-overlay";
@@ -32,12 +32,13 @@
     const BASE_EMOJI_SIZE_PX = 440;
     const AUTO_PING_COLOR = "#ffffff";
 
-    const PING_PRESETS = [//❗❌⚠️✅❓
-      { id: "danger", label: "❗ Peligro", emoji: "❗", color: "#e74c3c" },
-        { id: "cancel", label: "❌ Cruz", emoji: "❌", color: "#7f8c8d" },
-        { id: "warning", label: "⚠️ Advertencia", emoji: "⚠️", color: "#f39c12" },
-        { id: "success", label: "✅ Éxito", emoji: "✅", color: "#27ae60" },
-        { id: "question", label: "❓ Pregunta", emoji: "❓", color: "#2980b9" },
+    const PING_PRESETS = [
+      { id: "danger", label: "❗", emoji: "❗", color: "#e74c3c" },
+      { id: "cancel", label: "❌", emoji: "❌", color: "#e74c3c" },
+      { id: "warning", label: "⚠️", emoji: "⚠️", color: "#f39c12" },
+      { id: "skull", label: "💀", emoji: "💀", color: "#cccccc" },
+      { id: "question", label: "❓", emoji: "❓", color: "#e74c3c" },
+      { id: "fire", label: "🔥", emoji: "🔥", color: "#ff8310" },
     ];
 
     let lastPingSentAt = 0;
@@ -165,7 +166,14 @@
 
       if (activePing.emojiElement) {
         const emojiSizePx = getEmojiSizePx();
-        activePing.emojiElement.style.fontSize = `${emojiSizePx}px`;
+        activePing.emojiElement.style.animationDuration = `${PING_ANIMATION_MS}ms`;
+
+        if (activePing.emojiElement.tagName === "IMG") {
+          activePing.emojiElement.style.width = `${emojiSizePx}px`;
+          activePing.emojiElement.style.height = `${emojiSizePx}px`;
+        } else {
+          activePing.emojiElement.style.fontSize = `${emojiSizePx}px`;
+        }
       }
 
       return true;
@@ -259,6 +267,11 @@
       return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
     }
 
+    function isImageUrl(value) {
+      const text = String(value || "").trim();
+      return /^https?:\/\/.+/i.test(text);
+    }
+
     function getConfiguredPingColorToken() {
       const colorSetting = SettingsManager.get("ping-map.custom-color");
       const color = normalizeColorToken(colorSetting);
@@ -304,15 +317,38 @@
         const ring = document.createElement("div");
         ring.className = "n21-ping-ring";
         ring.style.animationDelay = `${index * PING_RING_DELAY_MS}ms`;
+        ring.style.animationDuration = `${PING_ANIMATION_MS}ms`;
         marker.appendChild(ring);
       }
 
       let emojiElement = null;
       if (emoji) {
-        emojiElement = document.createElement("div");
-        emojiElement.className = "n21-ping-emoji";
-        emojiElement.textContent = emoji;
-        emojiElement.style.fontSize = `${getEmojiSizePx()}px`;
+        const isUrl = isImageUrl(emoji);
+        const getEmojiImageUrl = window._n21_?.utils?.getEmojiImageUrl;
+        
+        // Determine the actual source to use: URL, mapped image, or text emoji
+        let imageUrl = null;
+        if (isUrl) {
+          imageUrl = emoji;
+        } else if (getEmojiImageUrl) {
+          imageUrl = getEmojiImageUrl(emoji);
+        }
+        
+        if (imageUrl) {
+          emojiElement = document.createElement("img");
+          emojiElement.className = "n21-ping-emoji n21-ping-emoji-img";
+          emojiElement.src = imageUrl;
+          emojiElement.alt = "ping";
+          const sizePx = getEmojiSizePx();
+          emojiElement.style.width = `${sizePx}px`;
+          emojiElement.style.height = `${sizePx}px`;
+        } else {
+          emojiElement = document.createElement("div");
+          emojiElement.className = "n21-ping-emoji";
+          emojiElement.textContent = emoji;
+          emojiElement.style.fontSize = `${getEmojiSizePx()}px`;
+        }
+        
         marker.appendChild(emojiElement);
       }
 
@@ -382,7 +418,7 @@
       submenu: [
         {
           id: "n21-ping-simple",
-          label: "Simple Ping",
+          label: "Simple",
           onClick: (context) => {
             const position = getWorldPositionFromContext(context);
             if (!position) return;
