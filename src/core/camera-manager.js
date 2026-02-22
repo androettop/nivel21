@@ -79,6 +79,24 @@
     }
 
     /**
+     * Convert world coordinates to screen/canvas coordinates
+     * @param {number} worldX - World X coordinate
+     * @param {number} worldZ - World Z coordinate
+     * @param {number} worldY - World Y coordinate (defaults to 0)
+     * @returns {Object|null} Screen point {x, y} or null if unavailable
+     */
+    worldToScreen(worldX, worldZ, worldY = 0) {
+      const nativeCamera = this._getNative();
+      if (!nativeCamera || typeof nativeCamera.worldToScreen !== "function") return null;
+
+      return nativeCamera.worldToScreen({
+        x: worldX,
+        y: worldY,
+        z: worldZ,
+      });
+    }
+
+    /**
      * Get current camera settings from native cameraManager
      * @returns {Object|null} Camera settings or null if unavailable
      */

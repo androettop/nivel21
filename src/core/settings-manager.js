@@ -197,6 +197,14 @@
         category: "features",
       });
 
+      this.registerSetting({
+        name: "feature.ping-map.enabled",
+        label: "Ping en Mapa",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
       // Token hotkeys settings
       this.registerSetting({
         name: "hotkey.token.visibility",
