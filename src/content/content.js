@@ -35,6 +35,7 @@
       // Managers
       injectScript("src/core/settings-manager.js"),
       injectScript("src/core/main-menu-ui-manager.js"),
+      injectScript("src/core/quick-menu-ui-manager.js"),
       injectScript("src/core/chat-ui-manager.js"),
       injectScript("src/core/key-modifiers-manager.js"),
       injectScript("src/core/chat-manager.js"),

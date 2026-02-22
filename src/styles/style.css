@@ -144,6 +144,10 @@
 	z-index: 11500;
 }
 
+.n21-single-button-group-item {
+	border-radius: 10px !important;
+}
+
 .n21-ping-marker {
 	position: absolute;
 	width: 800px;

@@ -6,13 +6,16 @@
 
     const { loadManagers } = window._n21_;
 
-    const [TokenManager, MeasurementManager, CameraManager, NetworkManager, SettingsManager] =
+    const SHOW_DISTANCE_SETTING = "token-drag-measurement.show-distance";
+
+    const [TokenManager, MeasurementManager, CameraManager, NetworkManager, SettingsManager, QuickMenuUIManager] =
       await loadManagers(
         "TokenManager",
         "MeasurementManager",
         "CameraManager",
         "NetworkManager",
         "SettingsManager",
+        "QuickMenuUIManager",
       );
 
     // Check if feature is enabled
@@ -28,6 +31,28 @@
     let measurementStarted = false;
     let previousShapeConfig = null;
     let mouseDownEvent = null;
+
+    function isShowDistanceEnabled() {
+      return SettingsManager.get(SHOW_DISTANCE_SETTING) !== false;
+    }
+
+    QuickMenuUIManager.registerConnectedActionsToggle({
+      id: "n21-token-drag-measurement-toggle",
+      groupId: "nivel21",
+      groupOrder: 10,
+      actionOrder: 10,
+      iconClass: "icon-custom-ruler",
+      title: "Mostrar/Ocultar distancia al mover token",
+      getState: () => isShowDistanceEnabled(),
+      onToggle: (nextValue) => {
+        SettingsManager.set(SHOW_DISTANCE_SETTING, !!nextValue);
+      },
+    });
+
+    SettingsManager.onChange((name) => {
+      if (name !== SHOW_DISTANCE_SETTING) return;
+      QuickMenuUIManager.refreshToggleState("n21-token-drag-measurement-toggle");
+    });
 
     /**
      * Convert mouse event coordinates to canvas-relative coordinates
@@ -65,6 +90,7 @@
     NetworkManager.on("transform:update", (data) => {
       if (
         isDragging &&
+        isShowDistanceEnabled() &&
         data?.networkId?.includes("TOKEN") &&
         data.networkId === draggedTokenNetworkId
       ) {

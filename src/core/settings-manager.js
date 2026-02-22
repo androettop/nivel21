@@ -174,6 +174,14 @@
       });
 
       this.registerSetting({
+        name: "token-drag-measurement.show-distance",
+        label: "Mostrar/Ocultar distancia al mover token",
+        type: "boolean",
+        defaultValue: true,
+        category: "medicion",
+      });
+
+      this.registerSetting({
         name: "feature.snap-to-grid.enabled",
         label: "Ajustar a la Cuadrícula",
         type: "boolean",
@@ -313,6 +321,14 @@
           { value: "ctrl", label: "Ctrl" },
           { value: "alt", label: "Alt" },
         ],
+      });
+
+      this.registerSetting({
+        name: "snap-to-grid.fixed-magnetism",
+        label: "Magnetismo de tokens original",
+        type: "boolean",
+        defaultValue: false,
+        category: "token-movement",
       });
 
       this.registerSetting({
