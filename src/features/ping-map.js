@@ -24,12 +24,21 @@
 
     const PING_COMMAND = "ping";
     const SEND_DEBOUNCE_MS = 2000;
-    const PING_ANIMATION_MS = 1000;
+    const PING_ANIMATION_MS = 100000;
     const PING_RING_COUNT = 3;
     const PING_RING_DELAY_MS = 200;
     const OVERLAY_ID = "n21-ping-overlay";
     const BASE_PING_SIZE_PX = 800;
+    const BASE_EMOJI_SIZE_PX = 440;
     const AUTO_PING_COLOR = "#ffffff";
+
+    const PING_PRESETS = [//❗❌⚠️✅❓
+      { id: "danger", label: "❗ Peligro", emoji: "❗", color: "#e74c3c" },
+        { id: "cancel", label: "❌ Cruz", emoji: "❌", color: "#7f8c8d" },
+        { id: "warning", label: "⚠️ Advertencia", emoji: "⚠️", color: "#f39c12" },
+        { id: "success", label: "✅ Éxito", emoji: "✅", color: "#27ae60" },
+        { id: "question", label: "❓ Pregunta", emoji: "❓", color: "#2980b9" },
+    ];
 
     let lastPingSentAt = 0;
     let pingSyncFrame = null;
@@ -51,7 +60,7 @@
 
       const match = messageText
         .trim()
-        .match(/^\/ping\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s+(\S+))?\s*$/i);
+        .match(/^\/ping\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)(?:\s+(\S+))?(?:\s+(\S+))?\s*$/i);
 
       if (!match) return null;
 
@@ -60,8 +69,9 @@
       if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
 
       const color = normalizeColorToken(match[3] || "");
+      const emoji = match[4] || "";
 
-      return { x, z, color };
+      return { x, z, color, emoji };
     }
 
     function getWorldPositionFromContext(context) {
@@ -125,6 +135,10 @@
       return BASE_PING_SIZE_PX / getCurrentOrthoHeight();
     }
 
+    function getEmojiSizePx() {
+      return BASE_EMOJI_SIZE_PX / getCurrentOrthoHeight();
+    }
+
     function getScreenPositionFromWorld(worldX, worldZ) {
       const screenPoint = CameraManager.worldToScreen(worldX, worldZ, 0);
       if (!screenPoint) return null;
@@ -148,6 +162,11 @@
       const pingSizePx = getPingSizePx();
       activePing.marker.style.width = `${pingSizePx}px`;
       activePing.marker.style.height = `${pingSizePx}px`;
+
+      if (activePing.emojiElement) {
+        const emojiSizePx = getEmojiSizePx();
+        activePing.emojiElement.style.fontSize = `${emojiSizePx}px`;
+      }
 
       return true;
     }
@@ -182,12 +201,13 @@
       pingSyncFrame = requestAnimationFrame(sync);
     }
 
-    function registerActivePing(marker, worldX, worldZ) {
+    function registerActivePing(marker, worldX, worldZ, emojiElement = null) {
       const pingId = ++pingSequence;
       activePings.set(pingId, {
         marker,
         worldX,
         worldZ,
+        emojiElement,
       });
 
       startPingPositionSync();
@@ -265,7 +285,7 @@
       };
     }
 
-    function showPingAtScreen(screenX, screenY, worldX, worldZ, pingColor) {
+    function showPingAtScreen(screenX, screenY, worldX, worldZ, pingColor, emoji = "") {
       const overlay = ensureOverlay();
       if (!overlay) return;
 
@@ -287,9 +307,18 @@
         marker.appendChild(ring);
       }
 
+      let emojiElement = null;
+      if (emoji) {
+        emojiElement = document.createElement("div");
+        emojiElement.className = "n21-ping-emoji";
+        emojiElement.textContent = emoji;
+        emojiElement.style.fontSize = `${getEmojiSizePx()}px`;
+        marker.appendChild(emojiElement);
+      }
+
       overlay.appendChild(marker);
 
-      const pingId = registerActivePing(marker, worldX, worldZ);
+      const pingId = registerActivePing(marker, worldX, worldZ, emojiElement);
 
       setTimeout(() => {
         unregisterActivePing(pingId);
@@ -297,14 +326,14 @@
       }, PING_ANIMATION_MS + PING_RING_DELAY_MS * (PING_RING_COUNT - 1));
     }
 
-    function showPingAtWorld(worldX, worldZ, pingColor) {
+    function showPingAtWorld(worldX, worldZ, pingColor, emoji = "") {
       const screenPosition = getScreenPositionFromWorld(worldX, worldZ);
       if (!screenPosition) return;
 
-      showPingAtScreen(screenPosition.x, screenPosition.y, worldX, worldZ, pingColor);
+      showPingAtScreen(screenPosition.x, screenPosition.y, worldX, worldZ, pingColor, emoji);
     }
 
-    function sendPingCommand(worldX, worldZ) {
+    function sendPingCommand(worldX, worldZ, presetId = null) {
       const now = Date.now();
       if (now - lastPingSentAt < SEND_DEBOUNCE_MS) return;
       lastPingSentAt = now;
@@ -312,15 +341,37 @@
       const x = formatCoordinate(worldX);
       const z = formatCoordinate(worldZ);
       const senderInfo = getSenderInfo();
-      const customColor = getConfiguredPingColorToken();
+
+      let color = null;
+      let emoji = null;
+
+      if (presetId) {
+        const preset = PING_PRESETS.find((p) => p.id === presetId);
+        if (preset) {
+          color = preset.color;
+          emoji = preset.emoji;
+        }
+      } else {
+        const customColor = getConfiguredPingColorToken();
+        if (customColor) {
+          color = customColor;
+        }
+      }
 
       const messageOptions = { visibility: "public" };
       if (senderInfo) {
         messageOptions.sender_info = senderInfo;
       }
 
-      const customColorArg = customColor ? ` ${customColor}` : "";
-      ChatManager.send(`/${PING_COMMAND} ${x} ${z}${customColorArg}`, messageOptions);
+      let commandArgs = `/${PING_COMMAND} ${x} ${z}`;
+      if (color) {
+        commandArgs += ` ${color}`;
+      }
+      if (emoji) {
+        commandArgs += ` ${emoji}`;
+      }
+
+      ChatManager.send(commandArgs, messageOptions);
     }
 
     CanvasDropdownManager.registerOption({
@@ -328,12 +379,26 @@
       label: "Ping",
       showOn: ["always"],
       order: 5,
-      onClick: (context) => {
-        const position = getWorldPositionFromContext(context);
-        if (!position) return;
-
-        sendPingCommand(position.x, position.z);
-      },
+      submenu: [
+        {
+          id: "n21-ping-simple",
+          label: "Simple Ping",
+          onClick: (context) => {
+            const position = getWorldPositionFromContext(context);
+            if (!position) return;
+            sendPingCommand(position.x, position.z, null);
+          },
+        },
+        ...PING_PRESETS.map((preset) => ({
+          id: `n21-ping-${preset.id}`,
+          label: preset.label,
+          onClick: (context) => {
+            const position = getWorldPositionFromContext(context);
+            if (!position) return;
+            sendPingCommand(position.x, position.z, preset.id);
+          },
+        })),
+      ],
     });
 
     ChatManager.onMessage((messageData) => {
@@ -344,7 +409,7 @@
       const senderName = messageData?.senderName || "unknown";
       const pingColor = getPingColorFromSenderName(senderName, ping.color);
 
-      showPingAtWorld(ping.x, ping.z, pingColor);
+      showPingAtWorld(ping.x, ping.z, pingColor, ping.emoji);
       return true;
     });
   } catch (error) {

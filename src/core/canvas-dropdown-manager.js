@@ -43,8 +43,15 @@
     }
 
     registerOption(option) {
-      if (!option || !option.id || typeof option.onClick !== "function") {
+      const hasSubmenu = Array.isArray(option.submenu) && option.submenu.length > 0;
+
+      if (!option || !option.id) {
         console.warn("[CanvasDropdownManager] Invalid option registration");
+        return () => {};
+      }
+
+      if (!hasSubmenu && typeof option.onClick !== "function") {
+        console.warn("[CanvasDropdownManager] Option without submenu must have onClick");
         return () => {};
       }
 
@@ -56,6 +63,11 @@
         onClick: option.onClick,
         isVisible: typeof option.isVisible === "function" ? option.isVisible : null,
         gameMasterOnly: !!option.gameMasterOnly,
+        submenu: hasSubmenu ? option.submenu.map((sub) => ({
+          id: sub.id,
+          label: String(sub.label || sub.id),
+          onClick: sub.onClick,
+        })) : null,
       };
 
       this._options.set(normalized.id, normalized);
@@ -303,22 +315,57 @@
       this._$menu.empty();
 
       options.forEach((option) => {
+        const $item = $(
+          `<div class='n21-canvas-dropdown-item-wrapper'></div>`,
+        );
+
         const $button = $(
           `<button type='button' class='n21-canvas-dropdown-item' role='menuitem'>${this._escapeHtml(
             option.label,
           )}</button>`,
         );
 
-        $button.on("click", () => {
-          this.hide();
-          try {
-            option.onClick(context);
-          } catch (error) {
-            console.warn(`[CanvasDropdownManager] Error on option \"${option.id}\":`, error);
-          }
-        });
+        if (option.submenu) {
+          $button.addClass("n21-has-submenu");
 
-        this._$menu.append($button);
+          const $submenu = $(
+            `<div class='n21-canvas-dropdown-submenu' role='menu'></div>`,
+          );
+
+          option.submenu.forEach((subOption) => {
+            const $subButton = $(
+              `<button type='button' class='n21-canvas-dropdown-item' role='menuitem'>${this._escapeHtml(
+                subOption.label,
+              )}</button>`,
+            );
+
+            $subButton.on("click", () => {
+              this.hide();
+              try {
+                subOption.onClick(context);
+              } catch (error) {
+                console.warn(`[CanvasDropdownManager] Error on submenu \"${subOption.id}\":`, error);
+              }
+            });
+
+            $submenu.append($subButton);
+          });
+
+          $item.append($button, $submenu);
+        } else {
+          $button.on("click", () => {
+            this.hide();
+            try {
+              option.onClick(context);
+            } catch (error) {
+              console.warn(`[CanvasDropdownManager] Error on option \"${option.id}\":`, error);
+            }
+          });
+
+          $item.append($button);
+        }
+
+        this._$menu.append($item);
       });
 
       this._$menu.css({
