@@ -249,6 +249,56 @@ Ejemplo:
 
 ---
 
+### Enviar tokens al chat
+
+Permite agregar notas descriptivas a los tokens que se pueden compartir con los jugadores. Los DMs pueden hacer clic derecho en un token para ver o enviar sus notas al chat.
+
+- **Click derecho en token (DM)** - Ver/enviar notas del token
+- **Notas visibles** - Se muestran con formato enriquecido en el chat
+
+<a id="token-notes">
+ <img src="popup/img/token-notes.png" alt="Enviar tokens al chat" />
+</a>
+
+---
+
+### Centrar camara a todos
+
+Permite a los DMs centrar rápidamente la cámara de todos los jugadores en cualquier punto del mapa mediante el menú contextual.
+
+- **Click derecho en mapa (Solo DM)** - Centrar cámara de todos los jugadores
+
+<a id="center-camera-here">
+ <img src="popup/img/center-camera-here.png" alt="Centrar camara a todos" />
+</a>
+
+---
+
+### Enderezar Cámara
+
+Restablece la rotación de la cámara a 0 grados para una vista ortogonal perfecta.
+
+- **Click derecho en mapa (Solo DM)** - Enderezar rotación de cámara
+
+<a id="straighten-camera">
+ <img src="popup/img/straighten-camera.png" alt="Enderezar Cámara" />
+</a>
+
+---
+
+### Ping en el Mapa
+
+Sistema de marcadores visuales animados para señalar ubicaciones en el mapa. Soporta múltiples presets con iconos animados y colores personalizados.
+
+- **Click derecho en mapa** - Menú de ping
+- **Comando manual** - `/ping x z [color] [icon]`
+
+<a id="ping-map">
+ <img src="popup/img/ping-map.png" alt="Ping en el Mapa" />
+</a>
+
+---
+
 ## Comunidad y Soporte
 
 Este proyecto se desarrolla en conjunto con la comunidad.
