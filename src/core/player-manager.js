@@ -110,6 +110,31 @@
 
       return mySessionId === lowestSessionId;
     }
+
+    /**
+     * Register a callback to be called when the player list changes
+     * @param {Function} callback - Function to call when player list changes
+     * @returns {Function} Unsubscribe function to stop listening
+     */
+    onPlayerListChange(callback) {
+      const native = this._getNative();
+      if (!native || typeof callback !== "function") return () => {};
+
+      try {
+        if (typeof native.on === "function") {
+          native.on("playerListChange", callback);
+          return () => {
+            if (typeof native.off === "function") {
+              native.off("playerListChange", callback);
+            }
+          };
+        }
+      } catch (error) {
+        console.warn("[PlayerManager] Failed to register playerListChange listener:", error.message);
+      }
+
+      return () => {};
+    }
   }
 
   // Register PlayerManager

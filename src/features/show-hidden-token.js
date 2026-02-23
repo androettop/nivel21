@@ -129,23 +129,39 @@
       });
     }
 
-    const activePlayers = getActivePlayersList();
+    const CHECK_MARK = " ✓";
 
-    CanvasDropdownManager.registerOption({
-      id: "n21-show-hidden-token-assign",
-      label: "Asignar a",
-      showOn: ["token"],
-      order: 55,
-      gameMasterOnly: true,
-      isVisible: (context) => {
-        if (!PlayerManager.isGameMaster()) return false;
-        if (!context?.tokenNetworkId) return false;
-        return true;
-      },
-      submenu: [
+    function buildSubmenu(context) {
+      const activePlayers = getActivePlayersList();
+      const networkId = toText(context?.tokenNetworkId);
+      const currentAssignedUser = networkId ? getAssignedUserNameForToken(networkId) : null;
+
+      // Build player list: active players + assigned user (if not in active list)
+      const playersMap = new Map();
+
+      // Add active players
+      activePlayers.forEach((player) => {
+        playersMap.set(player.userName.toLowerCase(), player);
+      });
+
+      // Add assigned user if not already in the list
+      if (currentAssignedUser) {
+        const lowerName = currentAssignedUser.toLowerCase();
+        if (!playersMap.has(lowerName)) {
+          playersMap.set(lowerName, {
+            userId: `disconnected-${currentAssignedUser}`,
+            userName: currentAssignedUser,
+            isDisconnected: true,
+          });
+        }
+      }
+
+      const playersToShow = Array.from(playersMap.values());
+
+      return [
         {
           id: "n21-assign-to-nobody",
-          label: "Nadie",
+          label: `Nadie${currentAssignedUser === null ? CHECK_MARK : ""}`,
           onClick: async (context) => {
             if (!PlayerManager.isGameMaster()) return;
 
@@ -155,9 +171,14 @@
             await EditTokenUIManager.clearTokenUserMarkers(networkId);
           },
         },
-        ...activePlayers.map((player) => ({
+        ...playersToShow.map((player) => ({
           id: `n21-assign-to-${player.userId}`,
-          label: player.userName,
+          label: `${player.userName}${
+            currentAssignedUser &&
+            currentAssignedUser.toLowerCase() === player.userName.toLowerCase()
+              ? CHECK_MARK
+              : ""
+          }`,
           onClick: async (context) => {
             if (!PlayerManager.isGameMaster()) return;
 
@@ -175,7 +196,27 @@
             }
           },
         })),
-      ],
+      ];
+    }
+
+    // Register option with dynamic submenu
+    CanvasDropdownManager.registerOption({
+      id: "n21-show-hidden-token-assign",
+      label: "Asignar a",
+      showOn: ["token"],
+      order: 55,
+      gameMasterOnly: true,
+      isVisible: (context) => {
+        if (!PlayerManager.isGameMaster()) return false;
+        if (!context?.tokenNetworkId) return false;
+        return true;
+      },
+      submenu: buildSubmenu,
+    });
+
+    // Listen for player list changes - option will auto-update submenu on next open
+    const unsubscribePlayerListChange = PlayerManager.onPlayerListChange(() => {
+      // No action needed - submenu will be recalculated next time menu opens
     });
   } catch (error) {
     console.warn("N21: Error en feature Show Hidden Token:", error.message);
