@@ -206,6 +206,14 @@
       });
 
       this.registerSetting({
+        name: "feature.show-hidden-token.enabled",
+        label: "Mostrar Tokens Ocultos a Jugadores",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ping-map.enabled",
         label: "Ping en Mapa",
         type: "boolean",

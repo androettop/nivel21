@@ -48,7 +48,7 @@
         "src/core/chat-ui-manager.js",
         "src/core/tooltip-manager.js",
         "src/core/html-manager.js",
-        "src/core/token-description-manager.js",
+        "src/core/edit-token-ui-manager.js",
         "src/core/canvas-dropdown-manager.js",
         "src/core/main-menu-ui-manager.js",
         "src/core/quick-menu-ui-manager.js",
@@ -68,6 +68,7 @@
         "src/features/settings-panel.js",
         "src/features/token-drag-speed.js",
         "src/features/token-notes.js",
+        "src/features/show-hidden-token.js",
         "src/features/center-camera-here.js",
         "src/features/ping-map.js",
         "src/features/straighten-camera.js"
