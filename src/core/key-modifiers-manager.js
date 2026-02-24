@@ -52,7 +52,6 @@
       });
 
       $(window).on("blur", () => {
-        console.log("[KeyModifiersManager] Window lost focus, resetting modifier keys");
         if (!this._shift && !this._alt && !this._ctrl) return;
 
         this._shift = false;

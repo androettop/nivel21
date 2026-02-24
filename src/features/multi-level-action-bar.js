@@ -507,8 +507,6 @@
     });
 
     initPanelActionsObserver();
-
-    console.log("[N21 Plugin] Multi-level Action Bar loaded");
   } catch (error) {
     console.warn("[Multi-level Action Bar] Error:", error);
   }
