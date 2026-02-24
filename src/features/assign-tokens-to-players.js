@@ -1,7 +1,7 @@
 (async () => {
   try {
     /* =======================
-       Feature: Show Hidden Token
+       Feature: Assign Tokens to Players
     ======================= */
 
     const { loadManagers } = window._n21_;
@@ -15,7 +15,7 @@
         "TokenManager",
       );
 
-    if (!SettingsManager.get("feature.show-hidden-token.enabled")) {
+    if (!SettingsManager.get("feature.assign-tokens-to-players.enabled")) {
       return;
     }
 
@@ -201,7 +201,7 @@
 
     // Register option with dynamic submenu
     CanvasDropdownManager.registerOption({
-      id: "n21-show-hidden-token-assign",
+      id: "n21-assign-tokens-to-players",
       label: "Asignar a",
       showOn: ["token"],
       order: 55,
@@ -213,12 +213,7 @@
       },
       submenu: buildSubmenu,
     });
-
-    // Listen for player list changes - option will auto-update submenu on next open
-    const unsubscribePlayerListChange = PlayerManager.onPlayerListChange(() => {
-      // No action needed - submenu will be recalculated next time menu opens
-    });
   } catch (error) {
-    console.warn("N21: Error en feature Show Hidden Token:", error.message);
+    console.warn("N21: Error en feature Assign Tokens to Players:", error.message);
   }
 })();

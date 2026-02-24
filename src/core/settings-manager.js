@@ -206,8 +206,8 @@
       });
 
       this.registerSetting({
-        name: "feature.show-hidden-token.enabled",
-        label: "Mostrar Tokens Ocultos a Jugadores",
+        name: "feature.assign-tokens-to-players.enabled",
+        label: "Asignar Tokens a Jugadores",
         type: "boolean",
         defaultValue: true,
         category: "features",

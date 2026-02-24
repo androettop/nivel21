@@ -70,7 +70,7 @@
       injectScript("src/features/notes-panel.js"),
       injectScript("src/features/settings-panel.js"),
       injectScript("src/features/token-notes.js"),
-      injectScript("src/features/show-hidden-token.js"),
+      injectScript("src/features/assign-tokens-to-players.js"),
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
       injectScript("src/features/straighten-camera.js"),
