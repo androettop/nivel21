@@ -4,8 +4,11 @@ on:
   release:
     types: [released]
 
+permissions:
+  contents: write
+
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -13,6 +16,40 @@ jobs:
 
       - name: Build zip file
         run: ./prepare_zip.sh
+
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: n21ext-zip
+          path: n21ext.zip
+
+  attach-zip-to-release:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: n21ext-zip
+          path: .
+
+      - name: Attach zip to GitHub release
+        run: gh release upload ${{ github.event.release.tag_name }} n21ext.zip --clobber
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+
+  release-chrome-extension:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: n21ext-zip
+          path: .
 
       - name: Release chrome extension
         uses: mnao305/chrome-extension-upload@v5.0.0
@@ -23,6 +60,17 @@ jobs:
           client-secret: ${{ secrets.CLIENT_SECRET }}
           refresh-token: ${{ secrets.REFRESH_TOKEN }}
 
+  release-firefox-addon:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: n21ext-zip
+          path: .
+
       - name: Release firefox add-on
         uses: browser-actions/release-firefox-addon@latest
         with:
@@ -30,3 +78,21 @@ jobs:
           addon-path: n21ext.zip
           auth-api-issuer: ${{ secrets.AUTH_API_ISSUER }}
           auth-api-secret: ${{ secrets.AUTH_API_SECRET }}
+
+  notify-discord:
+    runs-on: ubuntu-latest
+    needs:
+      - attach-zip-to-release
+      - release-chrome-extension
+      - release-firefox-addon
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Discord release
+        run: ./scripts/notify_discord_release.sh "$RELEASE_TAG" "${RELEASE_DESCRIPTION:-Sin descripción}"
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_DESCRIPTION: ${{ github.event.release.body }}
+        shell: bash
