@@ -3,9 +3,18 @@ name: Release chrome extension
 on:
   release:
     types: [released]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish (e.g. v1.2.3)"
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
 
 jobs:
   build:
@@ -13,6 +22,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Build zip file
         run: ./prepare_zip.sh
@@ -35,7 +46,7 @@ jobs:
           path: .
 
       - name: Attach zip to GitHub release
-        run: gh release upload ${{ github.event.release.tag_name }} n21ext.zip --clobber
+        run: gh release upload "$RELEASE_TAG" n21ext.zip --clobber
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
@@ -88,11 +99,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Load release description
+        run: |
+          {
+            echo "RELEASE_DESCRIPTION<<EOF"
+            gh release view "$RELEASE_TAG" --json body --jq '.body'
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Notify Discord release
-        run: ./scripts/notify_discord_release.sh "$RELEASE_TAG" "${RELEASE_DESCRIPTION:-Sin descripción}"
+        run: node ./scripts/notify_discord_release.mjs "$RELEASE_TAG" "${RELEASE_DESCRIPTION:-Sin descripción}"
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_DESCRIPTION: ${{ github.event.release.body }}
-        shell: bash
