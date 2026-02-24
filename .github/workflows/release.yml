@@ -1,0 +1,32 @@
+name: Release chrome extension
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build zip file
+        run: ./prepare_zip.sh
+
+      - name: Release chrome extension
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: n21ext.zip
+          extension-id: jadlpdmjlfghndcehdhjhgndfmigbdoe
+          client-id: ${{ secrets.CLIENT_ID }}
+          client-secret: ${{ secrets.CLIENT_SECRET }}
+          refresh-token: ${{ secrets.REFRESH_TOKEN }}
+
+      - name: Release firefox add-on
+        uses: browser-actions/release-firefox-addon@latest
+        with:
+          addon-id: "nivel21"
+          addon-path: n21ext.zip
+          auth-api-issuer: ${{ secrets.AUTH_API_ISSUER }}
+          auth-api-secret: ${{ secrets.AUTH_API_SECRET }}
