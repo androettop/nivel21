@@ -46,7 +46,7 @@ jobs:
           path: .
 
       - name: Attach zip to GitHub release
-        run: gh release upload "$RELEASE_TAG" n21ext.zip --clobber
+        run: gh release upload "$RELEASE_TAG" n21ext.zip --repo androettop/nivel21 --clobber
         env:
           GITHUB_TOKEN: ${{ github.token }}
         shell: bash
