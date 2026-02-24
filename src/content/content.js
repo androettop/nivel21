@@ -50,7 +50,7 @@
       injectScript("src/core/action-bar-manager.js"),
       injectScript("src/core/tooltip-manager.js"),
       injectScript("src/core/html-manager.js"),
-      injectScript("src/core/token-description-manager.js"),
+      injectScript("src/core/edit-token-ui-manager.js"),
       injectScript("src/core/canvas-dropdown-manager.js"),
 
       // Features
@@ -70,6 +70,7 @@
       injectScript("src/features/notes-panel.js"),
       injectScript("src/features/settings-panel.js"),
       injectScript("src/features/token-notes.js"),
+      injectScript("src/features/assign-tokens-to-players.js"),
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
       injectScript("src/features/straighten-camera.js"),

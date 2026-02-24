@@ -43,7 +43,8 @@
     }
 
     registerOption(option) {
-      const hasSubmenu = Array.isArray(option.submenu) && option.submenu.length > 0;
+      const hasSubmenu = (Array.isArray(option.submenu) && option.submenu.length > 0) || 
+                         typeof option.submenu === "function";
 
       if (!option || !option.id) {
         console.warn("[CanvasDropdownManager] Invalid option registration");
@@ -63,11 +64,13 @@
         onClick: option.onClick,
         isVisible: typeof option.isVisible === "function" ? option.isVisible : null,
         gameMasterOnly: !!option.gameMasterOnly,
-        submenu: hasSubmenu ? option.submenu.map((sub) => ({
-          id: sub.id,
-          label: String(sub.label || sub.id),
-          onClick: sub.onClick,
-        })) : null,
+        submenu: typeof option.submenu === "function" ? option.submenu : (
+          Array.isArray(option.submenu) ? option.submenu.map((sub) => ({
+            id: sub.id,
+            label: String(sub.label || sub.id),
+            onClick: sub.onClick,
+          })) : null
+        ),
       };
 
       this._options.set(normalized.id, normalized);
@@ -332,7 +335,18 @@
             `<div class='n21-canvas-dropdown-submenu' role='menu'></div>`,
           );
 
-          option.submenu.forEach((subOption) => {
+          // Resolve submenu: if it's a function, call it with context; otherwise use it directly
+          let submenuItems = option.submenu;
+          if (typeof option.submenu === "function") {
+            try {
+              submenuItems = option.submenu(context) || [];
+            } catch (error) {
+              console.warn(`[CanvasDropdownManager] Error resolving dynamic submenu \"${option.id}\":`, error);
+              submenuItems = [];
+            }
+          }
+
+          (Array.isArray(submenuItems) ? submenuItems : []).forEach((subOption) => {
             const $subButton = $(
               `<button type='button' class='n21-canvas-dropdown-item' role='menuitem'>${this._escapeHtml(
                 subOption.label,

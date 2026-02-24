@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.3.7",
+  "version": "1.3.8",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -48,7 +48,7 @@
         "src/core/chat-ui-manager.js",
         "src/core/tooltip-manager.js",
         "src/core/html-manager.js",
-        "src/core/token-description-manager.js",
+        "src/core/edit-token-ui-manager.js",
         "src/core/canvas-dropdown-manager.js",
         "src/core/main-menu-ui-manager.js",
         "src/core/quick-menu-ui-manager.js",
@@ -68,6 +68,7 @@
         "src/features/settings-panel.js",
         "src/features/token-drag-speed.js",
         "src/features/token-notes.js",
+        "src/features/assign-tokens-to-players.js",
         "src/features/center-camera-here.js",
         "src/features/ping-map.js",
         "src/features/straighten-camera.js"

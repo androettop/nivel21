@@ -262,6 +262,20 @@ Permite agregar notas descriptivas a los tokens que se pueden compartir con los 
 
 ---
 
+### Asignar tokens a jugadores
+
+Permite que los DMs asignen tokens a jugadores específicos. Los jugadores asignados podrán ver y controlar estos tokens aunque estén ocultos o bloqueados para los demás.
+
+- **Click derecho en token (DM)** - Menú "Asignar a"
+- **Seleccionar jugador** - El token será visible solo para ese jugador
+- **Asignar a "Nadie"** - Elimina la asignación del token
+
+<a id="assign-tokens-to-players">
+ <img src="popup/img/assign-tokens-to-players.png" alt="Asignar tokens a jugadores" />
+</a>
+
+---
+
 ### Utilidades de cámara
 
 Herramientas para los DMs que permiten controlar la cámara del mapa mediante el menú contextual.

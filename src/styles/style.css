@@ -105,6 +105,7 @@
 .n21-canvas-dropdown-item.n21-has-submenu::after {
 	content: "›";
 	position: absolute;
+	top: 5px;
 	right: 10px;
 	font-size: 16px;
 	font-weight: bold;
