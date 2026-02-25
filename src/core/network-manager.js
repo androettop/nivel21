@@ -3,8 +3,8 @@
        NetworkManager - Network events abstraction
     ======================= */
 
-  const { getNativeManager } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
+  const { loadManagers } = window._n21_ || {};
 
   /**
    * NetworkManager provides a unified interface for network events
@@ -15,6 +15,7 @@
       super();
       this._listeners = new Map(); // event -> Set of callbacks
       this._hookInstalled = false;
+      this._appRootManager = null;
     }
 
     /**
@@ -22,7 +23,32 @@
      * @returns {Object|null} The native networkManager or null if not available
      */
     _getNative() {
-      return getNativeManager("networkManager");
+      return this._appRootManager?.getNativeManager("networkManager") || null;
+    }
+
+    /**
+     * Initialize the manager - wait for AppRootManager to be ready
+     */
+    async init() {
+      await super.init();
+
+      // Wait for AppRootManager to be ready
+      try {
+        const [appRootManager] = await loadManagers("AppRootManager");
+        this._appRootManager = appRootManager;
+      } catch (error) {
+        console.warn("N21: Failed to load AppRootManager:", error);
+      }
+
+      // Try to install hook with polling
+      const hookCheckInterval = setInterval(() => {
+        if (this._installHook()) {
+          clearInterval(hookCheckInterval);
+        }
+      }, 500);
+
+      // Stop trying after 15 seconds
+      setTimeout(() => clearInterval(hookCheckInterval), 15000);
     }
 
     /**
@@ -33,10 +59,11 @@
     _installHook() {
       if (this._hookInstalled) return true;
 
-      const root = window.camera?.app?.root || window.players?.app?.root
+      const app = this._appRootManager?.getAppObject();
+      const root = app?.root;
       if (!root || typeof root.find !== "function") return false;
 
-      const native = this._getNative();
+      const native = this._appRootManager?.getNativeManager("networkManager") || null;
 
       const found = root.find((e) => e && e.name === "Game Manager");
       const gameManager = Array.isArray(found) ? found[0] : found;
@@ -101,23 +128,6 @@
           }
         }
       };
-    }
-
-    /**
-     * Initialize the manager - tries to install hook with retry
-     */
-    init() {
-      super.init();
-
-      // Try to install hook with polling
-      const hookCheckInterval = setInterval(() => {
-        if (this._installHook()) {
-          clearInterval(hookCheckInterval);
-        }
-      }, 500);
-
-      // Stop trying after 15 seconds
-      setTimeout(() => clearInterval(hookCheckInterval), 15000);
     }
 
     /**

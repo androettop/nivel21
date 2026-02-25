@@ -3,20 +3,38 @@
        TokenManager - Global token abstraction
     ======================= */
 
-  const { getNativeManager } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
+  const { loadManagers } = window._n21_ || {};
 
   /**
    * TokenManager provides a unified interface for managing tokens
    * Abstracts the native tokenManager from nivel20
    */
   class TokenManager extends BaseManager {
+    constructor() {
+      super();
+      this._appRootManager = null;
+    }
+
+    /**
+     * Initialize the manager - wait for AppRootManager to be ready
+     */
+    async init() {
+      super.init();
+      try {
+        const [appRootManager] = await loadManagers("AppRootManager");
+        this._appRootManager = appRootManager;
+      } catch (error) {
+        console.warn("N21: Failed to load AppRootManager:", error);
+      }
+    }
+
     /**
      * Get the native tokenManager instance
      * @returns {Object|null} The native tokenManager or null if not available
      */
     _getNative() {
-      return getNativeManager("tokenManager");
+      return this._appRootManager?.getNativeManager("tokenManager") || null;
     }
 
     /**

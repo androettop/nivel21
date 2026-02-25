@@ -10,24 +10,6 @@
   };
 
   /**
-   * Get a manager from Game Manager script by name
-   * Used internally by manager abstractions (TokenManager, etc.)
-   * @param {string} managerName - The name of the manager to retrieve
-   * @returns {Object|null} The manager instance or null if not available
-   */
-  function getNativeManager(managerName) {
-    if (!managerName) return null;
-
-    const root = window.camera?.app?.root || window.players?.app?.root;
-    if (!root || typeof root.find !== "function") return null;
-
-    const found = root.find((c) => c && c.script?.[managerName]);
-    if (!found?.[0]) return null;
-
-    return found?.[0]?.script?.[managerName] || null;
-  }
-
-  /**
    * Load managers by name, waiting until they are ready
    * @param {...string} managerNames - Names of managers to load (e.g., 'ChatManager', 'TokenManager')
    * @param {Object} options - Optional configuration { timeout: number, checkInterval: number }
@@ -143,7 +125,6 @@
 
   // Expose utility for manager abstractions
 
-  window._n21_.utils.getNativeManager = getNativeManager;
   window._n21_.utils.uuid = uuid;
   window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.getEmojiImageUrl = getEmojiImageUrl;

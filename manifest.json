@@ -33,6 +33,7 @@
         "src/injected/jquery-checker.js",
         "src/core/utils.js",
         "src/core/base-manager.js",
+        "src/core/app-root-manager.js",
         "src/core/settings-manager.js",
         "src/core/key-modifiers-manager.js",
         "src/core/chat-manager.js",

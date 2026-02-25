@@ -33,6 +33,7 @@
     // 3. Load managers and features in parallel
     await Promise.all([
       // Managers
+      injectScript("src/core/app-root-manager.js"),
       injectScript("src/core/settings-manager.js"),
       injectScript("src/core/main-menu-ui-manager.js"),
       injectScript("src/core/quick-menu-ui-manager.js"),

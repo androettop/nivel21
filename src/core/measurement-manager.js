@@ -3,20 +3,38 @@
        MeasurementManager - Global measurement abstraction
     ======================= */
 
-  const { getNativeManager } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
+  const { loadManagers } = window._n21_ || {};
 
   /**
    * MeasurementManager provides a unified interface for managing measurements
    * Abstracts the native measurementManager from nivel20
    */
   class MeasurementManager extends BaseManager {
+    constructor() {
+      super();
+      this._appRootManager = null;
+    }
+
+    /**
+     * Initialize the manager - wait for AppRootManager to be ready
+     */
+    async init() {
+      super.init();
+      try {
+        const [appRootManager] = await loadManagers("AppRootManager");
+        this._appRootManager = appRootManager;
+      } catch (error) {
+        console.warn("N21: Failed to load AppRootManager:", error);
+      }
+    }
+
     /**
      * Get the native measurementManager instance
      * @returns {Object|null} The native measurementManager or null if not available
      */
     _getNative() {
-      return getNativeManager("measurementManager");
+      return this._appRootManager?.getNativeManager("measurementManager") || null;
     }
 
     /**

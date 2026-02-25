@@ -3,20 +3,38 @@
        CameraManager - Camera utilities abstraction
     ======================= */
 
-  const { getNativeManager } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
+  const { loadManagers } = window._n21_ || {};
 
   /**
    * CameraManager provides access to camera coordinate transformations
    * Abstracts the native camera from nivel20
    */
   class CameraManager extends BaseManager {
+    constructor() {
+      super();
+      this._appRootManager = null;
+    }
+
+    /**
+     * Initialize the manager - wait for AppRootManager to be ready
+     */
+    async init() {
+      super.init();
+      try {
+        const [appRootManager] = await loadManagers("AppRootManager");
+        this._appRootManager = appRootManager;
+      } catch (error) {
+        console.warn("N21: Failed to load AppRootManager:", error);
+      }
+    }
+
     /**
      * Get the native cameraManager from nivel20
      * @returns {Object|null} The native cameraManager or null if not available
      */
     _getNativeManager() {
-      return getNativeManager("cameraManager");
+      return this._appRootManager?.getNativeManager("cameraManager") || null;
     }
 
     /**
@@ -25,7 +43,8 @@
      * @returns {Object|null} The Main Camera entity or null if not available
      */
     _getMainCameraEntity() {
-      const root = window.camera?.app?.root || window.players?.app?.root;
+      const app = this._appRootManager?.getAppObject();
+      const root = app?.root;
       if (!root || typeof root.find !== "function") return null;
 
       const found = root.find((e) => e && e.name === "Main Camera");

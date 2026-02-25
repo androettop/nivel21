@@ -3,20 +3,38 @@
        PlayerManager - Global player abstraction
     ======================= */
 
-  const { getNativeManager } = window._n21_?.utils || {};
   const { BaseManager } = window._n21_?.managers || {};
+  const { loadManagers } = window._n21_ || {};
 
   /**
    * PlayerManager provides a unified interface for accessing player information
    * Abstracts the native playerService from nivel20
    */
   class PlayerManager extends BaseManager {
+    constructor() {
+      super();
+      this._appRootManager = null;
+    }
+
+    /**
+     * Initialize the manager - wait for AppRootManager to be ready
+     */
+    async init() {
+      super.init();
+      try {
+        const [appRootManager] = await loadManagers("AppRootManager");
+        this._appRootManager = appRootManager;
+      } catch (error) {
+        console.warn("N21: Failed to load AppRootManager:", error);
+      }
+    }
+
     /**
      * Get the native playerService instance
      * @returns {Object|null} The native playerService or null if not available
      */
     _getNative() {
-      return getNativeManager("playerService");
+      return this._appRootManager?.getNativeManager("playerService") || null;
     }
 
     /**
