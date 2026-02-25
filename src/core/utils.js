@@ -18,7 +18,7 @@
   function getNativeManager(managerName) {
     if (!managerName) return null;
 
-    const root = window.app?.root;
+    const root = window.camera?.app?.root || window.players?.app?.root;
     if (!root || typeof root.find !== "function") return null;
 
     const found = root.find((c) => c && c.script?.[managerName]);

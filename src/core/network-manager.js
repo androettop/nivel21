@@ -33,7 +33,7 @@
     _installHook() {
       if (this._hookInstalled) return true;
 
-      const root = window.app?.root;
+      const root = window.camera?.app?.root || window.players?.app?.root
       if (!root || typeof root.find !== "function") return false;
 
       const native = this._getNative();

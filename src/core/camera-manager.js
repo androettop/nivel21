@@ -25,7 +25,7 @@
      * @returns {Object|null} The Main Camera entity or null if not available
      */
     _getMainCameraEntity() {
-      const root = window.app?.root;
+      const root = window.camera?.app?.root || window.players?.app?.root;
       if (!root || typeof root.find !== "function") return null;
 
       const found = root.find((e) => e && e.name === "Main Camera");
