@@ -83,7 +83,7 @@ jobs:
           path: .
 
       - name: Release firefox add-on
-        uses: androettop/release-firefox-addon@v1.0.0
+        uses: androettop/release-firefox-addon@v1.0.1
         with:
           addon-id: "nivel21"
           addon-path: n21ext.zip
