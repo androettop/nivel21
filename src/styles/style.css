@@ -26,6 +26,14 @@
 	flex-direction: column-reverse;
 }
 
+.n21-folder {
+	flex-wrap: wrap;
+}
+
+.n21-folder + .n21-folder {
+	border-bottom: 1px solid #999;
+}
+
 .n21-ambient-fx-overlay {
 	width: 100%;
 	height: 100%;

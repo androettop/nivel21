@@ -240,7 +240,7 @@
         $baseElement.empty();
 
         const $rootContainer = $("<div>")
-          .addClass("folder-root d-flex justify-content-center")
+          .addClass("folder-root n21-folder d-flex justify-content-center")
           .attr("data-folder-depth", 0);
         $baseElement.append($rootContainer);
 
@@ -258,7 +258,7 @@
 
         // Create sibling container for this folder
         const $childContainer = $("<div>")
-          .addClass(`folder-${parentItem.id} d-flex justify-content-center`)
+          .addClass(`folder-${parentItem.id} n21-folder d-flex justify-content-center`)
           .attr("data-folder-depth", depth);
         $baseElement.append($childContainer);
 

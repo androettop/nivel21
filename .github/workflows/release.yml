@@ -83,12 +83,14 @@ jobs:
           path: .
 
       - name: Release firefox add-on
-        uses: browser-actions/release-firefox-addon@latest
+        uses: androettop/release-firefox-addon@v1.0.2
         with:
           addon-id: "nivel21"
           addon-path: n21ext.zip
           auth-api-issuer: ${{ secrets.AUTH_API_ISSUER }}
           auth-api-secret: ${{ secrets.AUTH_API_SECRET }}
+          compatibility-android: true
+          compatibility-android-min: "120.0"
           release-note: "Release ${{ env.RELEASE_TAG }}"
 
   notify-discord:
