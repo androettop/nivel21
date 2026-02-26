@@ -90,6 +90,7 @@ jobs:
           auth-api-issuer: ${{ secrets.AUTH_API_ISSUER }}
           auth-api-secret: ${{ secrets.AUTH_API_SECRET }}
           compatibility-android: true
+          compatibility-android-min: "120.0"
           release-note: "Release ${{ env.RELEASE_TAG }}"
 
   notify-discord:
