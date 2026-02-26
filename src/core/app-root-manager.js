@@ -80,6 +80,40 @@
      * @private
      */
     async _getApp() {
+      // If already cached, return it
+      if (this._app) {
+        return this._app;
+      }
+
+      // Check if app is available synchronously through known properties
+      const knownProperties = [
+        "callbacks",
+        "camera",
+        "dices",
+        "fogOfWar",
+        "gameModes",
+        "keyboard",
+        "layers",
+        "map",
+        "players",
+        "room",
+        "scenes",
+        "screenshot",
+        "settings",
+        "sprites",
+        "tokens",
+        "measurements"
+      ];
+
+      for (const prop of knownProperties) {
+        const app = window[prop]?.app;
+        if (app != null) {
+          this._app = app;
+          return app;
+        }
+      }
+
+      // Fallback to hook approach
       const promise = this._appPromise || this._setupAppHook();
       return promise;
     }
