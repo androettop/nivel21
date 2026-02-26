@@ -7,6 +7,9 @@
 
   const RIGHT_CLICK_MAX_DURATION_MS = 250;
   const RIGHT_CLICK_MAX_MOVE_PX = 4;
+  const LONG_PRESS_DURATION_MS = 500;
+  const LONG_PRESS_MAX_MOVE_PX = 10;
+  const TOUCH_CONTEXTMENU_SUPPRESS_MS = 1200;
 
   class CanvasDropdownManager extends BaseManager {
     constructor() {
@@ -18,6 +21,9 @@
       this._playerManager = null;
       this._rightClickState = null;
       this._rightClickStateTimeout = null;
+      this._touchLongPressState = null;
+      this._touchLongPressTimer = null;
+      this._touchMenuOpenedAt = 0;
     }
 
     async init() {
@@ -126,11 +132,10 @@
       });
 
       $(document).on("contextmenu.n21CanvasDropdown", "canvas", (event) => {
-        if (!this._rightClickState) {
-          return;
-        }
+        const rightClickQualified = this._rightClickState && this._isQualifiedRightClick(event);
+        const touchMenuRecentlyOpened = Date.now() - this._touchMenuOpenedAt < TOUCH_CONTEXTMENU_SUPPRESS_MS;
 
-        if (this._isQualifiedRightClick(event)) {
+        if (rightClickQualified || touchMenuRecentlyOpened) {
           event.preventDefault();
         }
       });
@@ -145,17 +150,11 @@
           return;
         }
 
-        const context = this._buildContext(event);
-        const options = this._getVisibleOptions(context);
-
-        if (!options.length) {
-          this.hide();
-          this._clearRightClickState();
-          return;
+        const opened = this._openMenuAt(event.currentTarget, event.clientX, event.clientY);
+        if (opened) {
+          event.preventDefault();
         }
 
-        event.preventDefault();
-        this._showAt(event.clientX, event.clientY, options, context);
         this._clearRightClickState();
       });
 
@@ -165,7 +164,33 @@
         }
       });
 
+      $(document).on("touchstart.n21CanvasDropdown", "canvas", (event) => {
+        const touch = event.originalEvent?.touches?.[0];
+        if (!touch || event.originalEvent?.touches?.length !== 1) {
+          this._clearTouchLongPressState();
+          return;
+        }
+
+        this._setTouchLongPressState(event.currentTarget, touch);
+      });
+
+      $(document).on("touchmove.n21CanvasDropdown", (event) => {
+        this._updateTouchLongPressMovement(event);
+      });
+
+      $(document).on("touchend.n21CanvasDropdown touchcancel.n21CanvasDropdown", () => {
+        this._clearTouchLongPressState();
+      });
+
       $(document).on("mousedown.n21CanvasDropdown", (event) => {
+        if (!this._$menu?.length || !this._$menu.is(":visible")) return;
+
+        if (this._$menu[0].contains(event.target)) return;
+
+        this.hide();
+      });
+
+      $(document).on("touchstart.n21CanvasDropdown", (event) => {
         if (!this._$menu?.length || !this._$menu.is(":visible")) return;
 
         if (this._$menu[0].contains(event.target)) return;
@@ -182,6 +207,7 @@
       $(window).on("blur.n21CanvasDropdown resize.n21CanvasDropdown", () => {
         this.hide();
         this._clearRightClickState();
+        this._clearTouchLongPressState();
       });
     }
 
@@ -227,6 +253,67 @@
       return distance <= RIGHT_CLICK_MAX_MOVE_PX;
     }
 
+    _setTouchLongPressState(canvas, touch) {
+      this._clearTouchLongPressState();
+
+      this._touchLongPressState = {
+        canvas,
+        touchId: touch.identifier,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        currentX: touch.clientX,
+        currentY: touch.clientY,
+      };
+
+      this._touchLongPressTimer = setTimeout(() => {
+        const state = this._touchLongPressState;
+        if (!state) return;
+
+        const opened = this._openMenuAt(state.canvas, state.currentX, state.currentY);
+        if (opened) {
+          this._touchMenuOpenedAt = Date.now();
+        }
+
+        this._clearTouchLongPressState();
+      }, LONG_PRESS_DURATION_MS);
+    }
+
+    _updateTouchLongPressMovement(event) {
+      const state = this._touchLongPressState;
+      if (!state) return;
+
+      const touch = this._findTouchById(event.originalEvent?.touches, state.touchId)
+        || this._findTouchById(event.originalEvent?.changedTouches, state.touchId);
+
+      if (!touch) {
+        this._clearTouchLongPressState();
+        return;
+      }
+
+      state.currentX = touch.clientX;
+      state.currentY = touch.clientY;
+
+      const deltaX = state.currentX - state.startX;
+      const deltaY = state.currentY - state.startY;
+      const distance = Math.hypot(deltaX, deltaY);
+
+      if (distance > LONG_PRESS_MAX_MOVE_PX) {
+        this._clearTouchLongPressState();
+      }
+    }
+
+    _findTouchById(touchList, touchId) {
+      if (!touchList || typeof touchId !== "number") return null;
+
+      for (let index = 0; index < touchList.length; index += 1) {
+        if (touchList[index].identifier === touchId) {
+          return touchList[index];
+        }
+      }
+
+      return null;
+    }
+
     _clearRightClickState() {
       if (this._rightClickStateTimeout) {
         clearTimeout(this._rightClickStateTimeout);
@@ -234,6 +321,15 @@
       }
 
       this._rightClickState = null;
+    }
+
+    _clearTouchLongPressState() {
+      if (this._touchLongPressTimer) {
+        clearTimeout(this._touchLongPressTimer);
+        this._touchLongPressTimer = null;
+      }
+
+      this._touchLongPressState = null;
     }
 
     _buildContext(event) {
@@ -262,6 +358,24 @@
         canvas,
         canvasCoords,
       };
+    }
+
+    _openMenuAt(canvas, clientX, clientY) {
+      const context = this._buildContext({
+        currentTarget: canvas,
+        clientX,
+        clientY,
+      });
+
+      const options = this._getVisibleOptions(context);
+
+      if (!options.length) {
+        this.hide();
+        return false;
+      }
+
+      this._showAt(clientX, clientY, options, context);
+      return true;
     }
 
     _getTokenNetworkId(tokenEntity) {
