@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.3.10",
+  "version": "1.3.11",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -70,7 +70,8 @@
         "src/features/assign-tokens-to-players.js",
         "src/features/center-camera-here.js",
         "src/features/ping-map.js",
-        "src/features/straighten-camera.js"
+        "src/features/straighten-camera.js",
+        "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]
     }

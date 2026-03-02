@@ -161,6 +161,6 @@
       }
     });
   } catch (error) {
-    console.warn("N21: Error en feature Token Hotkeys:", error.message);
+    window._n21_.utils.registerFeatureError("Token Hotkeys", error);
   }
 })();

@@ -102,6 +102,6 @@
       },
     );
   } catch (error) {
-    console.warn("N21: Error en feature Notes Panel:", error.message);
+    window._n21_.utils.registerFeatureError("Notes Panel", error);
   }
 })();

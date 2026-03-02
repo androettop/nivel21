@@ -24,7 +24,7 @@
     const PANEL_COLOR = "#822020";
     const PANEL_CLASS = "n21-settings-panel";
     const PANEL_STYLE =
-      "min-width: 540px; min-height: 620px; width: 540px; height: 620px;";
+      "min-height: 620px; width: 540px; height: 620px;";
     const RELOAD_NOTICE_TEXT =
       "Uno o más cambios requieren <a href='#' onclick='location.reload()'>recargar la página</a> para aplicarse.";
 
@@ -666,6 +666,6 @@
       }
     );
   } catch (error) {
-    console.warn("N21: Error en feature Settings Panel:", error.message);
+    window._n21_.utils.registerFeatureError("Settings Panel", error);
   }
 })();

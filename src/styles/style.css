@@ -266,10 +266,6 @@
 }
 
 /* Settings Panel Styles */
-.n21-settings-panel .floating-block {
-	background: rgba(8, 8, 10, 0.55);
-}
-
 .n21-settings-panel-body {
 	padding: 16px 18px 20px;
 	overflow-y: auto;
@@ -403,6 +399,7 @@
 	color: #ffe082;
 	background: rgba(255, 193, 7, 0.16);
 	border: 1px solid rgba(255, 193, 7, 0.45);
+	flex-shrink: 0;
 }
 
 .n21-setting-checkbox {

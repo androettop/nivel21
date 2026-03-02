@@ -99,6 +99,6 @@
       updateTokenHeights(delta);
     });
   } catch (error) {
-    console.warn("N21: Error en feature Token Height Order:", error.message);
+    window._n21_.utils.registerFeatureError("Token Height Order", error);
   }
 })();

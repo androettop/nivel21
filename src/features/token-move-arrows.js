@@ -114,6 +114,6 @@
       }
     });
   } catch (error) {
-    console.warn("N21: Error en feature Token Move Arrows:", error.message);
+    window._n21_.utils.registerFeatureError("Token Move Arrows", error);
   }
 })();

@@ -456,6 +456,6 @@
       return true;
     });
   } catch (error) {
-    console.warn("N21: Error en feature Ping Map:", error.message);
+    window._n21_.utils.registerFeatureError("Ping Map", error);
   }
 })();

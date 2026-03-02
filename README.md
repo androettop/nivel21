@@ -219,6 +219,16 @@ Centraliza todas las configuraciones de Nivel21 en un panel de ajustes.
 
 ---
 
+### Informe de Errores
+
+Muestra un informe de errores cuando alguna función no se carga correctamente para que puedas copiarlo y compartirlo con nosotros. Esto nos ayuda a identificar y solucionar problemas de compatibilidad con futuras actualizaciones de Nivel20.
+
+<a id="error-report">
+ <img src="popup/img/error-report.png" alt="Informe de Errores" />
+</a>
+
+---
+
 ### Carpetas anidadas
 
 Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa. Organiza acciones en carpetas usando el separador " > " en el nombre. La barra se convierte en carpetas anidadas automáticamente.

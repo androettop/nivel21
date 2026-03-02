@@ -73,6 +73,7 @@
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
       injectScript("src/features/straighten-camera.js"),
+      injectScript("src/features/error-report.js"),
     ]);
   });
 })();

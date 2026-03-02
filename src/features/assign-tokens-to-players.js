@@ -214,6 +214,6 @@
       submenu: buildSubmenu,
     });
   } catch (error) {
-    console.warn("N21: Error en feature Assign Tokens to Players:", error.message);
+    window._n21_.utils.registerFeatureError("Assign Tokens to Players", error);
   }
 })();

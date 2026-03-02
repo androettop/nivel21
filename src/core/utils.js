@@ -7,6 +7,10 @@
   window._n21_ = {
     managers: {},
     utils: {},
+    errors: {
+      managers: new Map(), // Map<managerName, errorMessage>
+      features: new Map(), // Map<featureName, errorMessage>
+    },
   };
 
   /**
@@ -133,12 +137,29 @@
    * @param {class} ManagerClass - The manager class to instantiate
    * @returns {Object} The instantiated manager
    */
-  function registerManager(name, ManagerClass) {
-    const manager = new ManagerClass();
-    manager.init();
+  async function registerManager(name, ManagerClass) {
+    try {
+      const manager = new ManagerClass();
+      await manager.init();
 
-    window._n21_.managers[name] = manager;
-    return manager;
+      window._n21_.managers[name] = manager;
+      return manager;
+    } catch (error) {
+      console.error(`N21: Error al cargar manager ${name}:`, error);
+      window._n21_.errors.managers.set(name, error.message || String(error));
+      throw error;
+    }
+  }
+
+  /**
+   * Register a feature error
+   * @param {string} featureName - The name of the feature that failed
+   * @param {Error|string} error - The error that occurred
+   */
+  function registerFeatureError(featureName, error) {
+    const errorMessage = error?.message || String(error);
+    window._n21_.errors.features.set(featureName, errorMessage);
+    console.error(`N21: Error al cargar feature ${featureName}:`, errorMessage);
   }
 
   // Expose utility for manager abstractions
@@ -148,6 +169,7 @@
   window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.getEmojiImageUrl = getEmojiImageUrl;
   window._n21_.utils.registerManager = registerManager;
+  window._n21_.utils.registerFeatureError = registerFeatureError;
 
   // Expose loadManagers globally for features
   window._n21_.loadManagers = loadManagers;

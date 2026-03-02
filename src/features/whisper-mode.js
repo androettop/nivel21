@@ -164,6 +164,6 @@
 
     subscribeToWhisperMessages();
   } catch (error) {
-    console.warn("[Whisper Mode] Error:", error);
+    window._n21_.utils.registerFeatureError("Whisper Mode", error);
   }
 })();
