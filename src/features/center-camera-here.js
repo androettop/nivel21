@@ -65,6 +65,6 @@
       },
     });
   } catch (error) {
-    console.warn("N21: Error en feature Center Camera Here:", error.message);
+    window._n21_.utils.registerFeatureError("Center Camera Here", error);
   }
 })();

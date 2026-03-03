@@ -508,6 +508,6 @@
 
     initPanelActionsObserver();
   } catch (error) {
-    console.warn("[Multi-level Action Bar] Error:", error);
+    window._n21_.utils.registerFeatureError("Multi-level Action Bar", error);
   }
 })();

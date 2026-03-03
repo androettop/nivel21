@@ -117,6 +117,6 @@
     // Intentar agregar el botón inicialmente
     setupPersistenceButton();
   } catch (error) {
-    console.warn("N21: Error en feature Multi Measurement:", error.message);
+    window._n21_.utils.registerFeatureError("Multi Measurement", error);
   }
 })();

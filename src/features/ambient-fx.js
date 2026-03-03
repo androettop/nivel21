@@ -776,6 +776,6 @@
       },
     );
   } catch (error) {
-    console.warn("[Ambient FX] Error:", error);
+    window._n21_.utils.registerFeatureError("Ambient FX", error);
   }
 })();

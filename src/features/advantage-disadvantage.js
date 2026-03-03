@@ -131,9 +131,6 @@
       { priority: 100 },
     );
   } catch (error) {
-    console.warn(
-      "N21: Error en feature Advantage/Disadvantage:",
-      error.message,
-    );
+    window._n21_.utils.registerFeatureError("Advantage/Disadvantage", error);
   }
 })();

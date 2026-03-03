@@ -205,6 +205,6 @@
 
     ChatUIManager.processExistingMessages();
   } catch (error) {
-    console.warn("N21: Error en feature Token Notes:", error.message);
+    window._n21_.utils.registerFeatureError("Token Notes", error);
   }
 })();

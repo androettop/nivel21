@@ -196,6 +196,6 @@
       previousShapeConfig = null;
     });
   } catch (error) {
-    console.warn("N21: Error en feature Token Drag Measurement:", error.message);
+    window._n21_.utils.registerFeatureError("Token Drag Measurement", error);
   }
 })();

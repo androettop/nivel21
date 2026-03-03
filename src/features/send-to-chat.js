@@ -232,6 +232,6 @@
       { priority: 100 },
     );
   } catch (error) {
-    console.warn("N21: Error en feature Send to Chat:", error.message);
+    window._n21_.utils.registerFeatureError("Send to Chat", error);
   }
 })();

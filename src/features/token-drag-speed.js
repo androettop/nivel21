@@ -35,6 +35,6 @@
       updateDragSpeed();
     });
   } catch (error) {
-    console.warn("Error in Token Drag Speed feature:", error);
+    window._n21_.utils.registerFeatureError("Token Drag Speed", error);
   }
 })();

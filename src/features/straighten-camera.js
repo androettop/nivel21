@@ -26,6 +26,6 @@
       },
     });
   } catch (error) {
-    console.warn("N21: Error en feature Straighten Camera:", error.message);
+    window._n21_.utils.registerFeatureError("Straighten Camera", error);
   }
 })();

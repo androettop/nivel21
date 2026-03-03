@@ -136,6 +136,6 @@
     // Process existing messages on page load
     ChatUIManager.processExistingMessages();
   } catch (error) {
-    console.warn("N21: Error en feature Parse Chat Links:", error.message);
+    window._n21_.utils.registerFeatureError("Parse Chat Links", error);
   }
 })();
