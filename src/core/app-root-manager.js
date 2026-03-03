@@ -19,27 +19,24 @@
     }
 
     /**
-     * Setup the Object.assign hook to capture the app object
+     * Setup a temporary Function.prototype.call hook to capture the app object
      * @private
      */
     _setupAppHook() {
       if (this._appPromise !== null) return this._appPromise;
 
       this._appPromise = new Promise((resolve, reject) => {
-        // Fast path - try sync access first
-        const syncApp = window.camera?.app || window.players?.app;
-        if (syncApp != null) {
-          resolve(syncApp);
-          return;
-        }
+        const originalCall = Function.prototype.call;
+        const originalApply = Reflect.apply;
 
-        const originalAssign = Object.assign;
+        let hooked = true;
         let done = false;
         let timeoutId;
 
         const cleanup = () => {
-          if (Object.assign === hookedAssign) {
-            Object.assign = originalAssign;
+          if (hooked) {
+            Function.prototype.call = originalCall;
+            hooked = false;
           }
           if (timeoutId) clearTimeout(timeoutId);
         };
@@ -51,23 +48,27 @@
           ok ? resolve(value) : reject(value);
         };
 
-        const hookedAssign = (target, ...sources) => {
-          for (const s of sources) {
-            const app = s?.camera?.app;
-            if (app != null) {
-              finish(true, app);
-              break;
-            }
+        Function.prototype.call = function (thisArg, ...args) {
+          if (!hooked) {
+            return originalApply(originalCall, this, [thisArg, ...args]);
           }
-          return originalAssign.call(Object, target, ...sources);
-        };
 
-        Object.assign = hookedAssign;
+          try {
+            const param = args[0];
+            const app = param?._app;
+
+            if (app?.root && app.root === app.root.root) {
+              finish(true, app);
+            }
+          } catch (_) {}
+
+          return originalApply(originalCall, this, [thisArg, ...args]);
+        };
 
         timeoutId = setTimeout(() => {
           finish(
             false,
-            new Error(`Timeout: no llegó {camera:{app}} en 10000ms`)
+            new Error("Timeout: no se pudo capturar app via Function.prototype.call con validación de root en 10000ms")
           );
         }, 10000);
       });
@@ -83,34 +84,6 @@
       // If already cached, return it
       if (this._app) {
         return this._app;
-      }
-
-      // Check if app is available synchronously through known properties
-      const knownProperties = [
-        "callbacks",
-        "camera",
-        "dices",
-        "fogOfWar",
-        "gameModes",
-        "keyboard",
-        "layers",
-        "map",
-        "players",
-        "room",
-        "scenes",
-        "screenshot",
-        "settings",
-        "sprites",
-        "tokens",
-        "measurements"
-      ];
-
-      for (const prop of knownProperties) {
-        const app = window[prop]?.app;
-        if (app != null) {
-          this._app = app;
-          return app;
-        }
       }
 
       // Fallback to hook approach
