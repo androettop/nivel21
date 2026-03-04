@@ -21,8 +21,6 @@
 
     const isCurrentUserGameMaster = PlayerManager.isGameMaster();
 
-    const USER_MARKER_REGEX = /\[user:\s*"([^"]+)"\s*\]/i;
-
     function toText(value) {
       if (value === undefined || value === null) return "";
       return String(value).trim();
@@ -39,13 +37,7 @@
     }
 
     function getUserNameFromDescription(description) {
-      const text = toText(description);
-      if (!text) return null;
-
-      const match = USER_MARKER_REGEX.exec(text);
-      if (!match || !match[1]) return null;
-
-      return toText(match[1]);
+      return window._n21_.utils.parseTokenTag(description, "user");
     }
 
     function setTokenMasterFlag(networkId, enabled) {
@@ -192,7 +184,7 @@
 
             // Only assign if not already assigned to this user
             if (!isAlreadyAssignedToThisUser) {
-              await EditTokenUIManager.openTokenEditForm(networkId, player.userName);
+              await EditTokenUIManager.setTokenUserMarker(networkId, player.userName);
             }
           },
         })),

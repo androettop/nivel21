@@ -87,7 +87,6 @@
 
               for (const candidate of candidatos) {
                 if (candidate && typeof candidate === "object") {
-                  console.log("[N21] 🔥 App encontrada en thisArg:", candidate);
                   finish(true, candidate);
                   return originalApply(originalCall, this, [thisArg, ...args]);
                 }

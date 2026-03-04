@@ -59,7 +59,7 @@
       injectScript("src/features/send-to-chat.js"),
       injectScript("src/features/parse-chat-links.js"),
       injectScript("src/features/token-hotkeys.js"),
-      injectScript("src/features/token-height-order.js"),
+      injectScript("src/features/token-layers.js"),
       injectScript("src/features/token-move-arrows.js"),
       injectScript("src/features/token-drag-measurement.js"),
       injectScript("src/features/token-drag-speed.js"),

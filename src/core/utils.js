@@ -146,11 +146,101 @@
 
   // Expose utility for manager abstractions
 
+  /**
+   * Determine if a tag value needs quotes
+   * Values need quotes if they contain spaces, colons, brackets, or quotes
+   * @param {*} value - The value to check
+   * @returns {boolean} True if value needs quotes
+   */
+  function needsQuotes(value) {
+    const str = String(value || "").trim();
+    // Needs quotes if it contains spaces, special chars, or is empty
+    return /[\s:\[\]"]/.test(str) || str === "";
+  }
+
+  /**
+   * Format a tag value with quotes only if necessary
+   * @param {*} value - The value to format
+   * @returns {string} The formatted value
+   */
+  function formatTagValue(value) {
+    const str = String(value || "").trim();
+    if (!needsQuotes(str)) {
+      return str;
+    }
+    // Escape any quotes in the value and wrap in quotes
+    const escaped = str.replace(/"/g, '\\"');
+    return `"${escaped}"`;
+  }
+
+  /**
+   * Parse a tag from description text
+   * @param {string} description - The description text to search
+   * @param {string} key - The tag key to look for (e.g., 'user', 'l')
+   * @returns {string|null} The tag value or null if not found
+   */
+  function parseTokenTag(description, key) {
+    if (!description || !key) return null;
+
+    const text = String(description).trim();
+    // Match [key:value] where value can be quoted or unquoted
+    const pattern = new RegExp(`\\[${key}:\\s*(?:"([^"]*)"|([^\\]\\s]+))\\s*\\]`, "i");
+    const match = pattern.exec(text);
+
+    if (!match) return null;
+    // Return either the quoted part (match[1]) or unquoted part (match[2])
+    return match[1] !== undefined ? match[1] : match[2];
+  }
+
+  /**
+   * Set or update a tag in description text
+   * @param {string} description - The original description text
+   * @param {string} key - The tag key (e.g., 'user', 'l')
+   * @param {*} value - The tag value
+   * @returns {string} The updated description
+   */
+  function setTokenTag(description, key, value) {
+    if (!key) return description || "";
+
+    const text = String(description || "").trim();
+    const formattedValue = formatTagValue(value);
+    const newTag = `[${key}:${formattedValue}]`;
+
+    // Pattern to find and replace existing tag
+    const pattern = new RegExp(`\\[${key}:\\s*(?:"[^"]*"|[^\\]\\s]+)\\s*\\]`, "gi");
+    if (pattern.test(text)) {
+      return text.replace(pattern, newTag);
+    }
+
+    // If tag doesn't exist, append it
+    return text ? `${text} ${newTag}` : newTag;
+  }
+
+  /**
+   * Remove a tag from description text
+   * @param {string} description - The original description text
+   * @param {string} key - The tag key to remove (e.g., 'user', 'l')
+   * @returns {string} The description without the tag
+   */
+  function removeTokenTag(description, key) {
+    if (!description || !key) return description || "";
+
+    const text = String(description).trim();
+    // Pattern to find and remove tag
+    const pattern = new RegExp(`\\s*\\[${key}:\\s*(?:"[^"]*"|[^\\]\\s]+)\\s*\\]\\s*`, "gi");
+    return text.replace(pattern, " ").trim();
+  }
+
   window._n21_.utils.uuid = uuid;
   window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.getEmojiImageUrl = getEmojiImageUrl;
   window._n21_.utils.registerManager = registerManager;
   window._n21_.utils.registerFeatureError = registerFeatureError;
+  window._n21_.utils.needsQuotes = needsQuotes;
+  window._n21_.utils.formatTagValue = formatTagValue;
+  window._n21_.utils.parseTokenTag = parseTokenTag;
+  window._n21_.utils.setTokenTag = setTokenTag;
+  window._n21_.utils.removeTokenTag = removeTokenTag;
 
   // Expose loadManagers globally for features
   window._n21_.loadManagers = loadManagers;

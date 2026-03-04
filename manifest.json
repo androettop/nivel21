@@ -57,7 +57,7 @@
         "src/features/send-to-chat.js",
         "src/features/parse-chat-links.js",
         "src/features/token-hotkeys.js",
-        "src/features/token-height-order.js",
+        "src/features/token-layers.js",
         "src/features/token-move-arrows.js",
         "src/features/token-drag-measurement.js",
         "src/features/multi-measurement.js",

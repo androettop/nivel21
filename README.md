@@ -143,13 +143,6 @@ Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos e
 
 | Tecla         | Acción                      |
 | ------------- | --------------------------- |
-| **Page Up**   | Subir altura del token (+1) |
-| **Page Down** | Bajar altura del token (-1) |
-
-<a id="token-height-order">
- <img src="popup/img/token-height-order.png" alt="Altura de Tokens" />
-</a>
-
 ---
 
 ### Mover Tokens con el Teclado
