@@ -56,6 +56,20 @@ Modifica automáticamente tus tiradas de dados manteniendo presionadas las tecla
 
 ---
 
+### Capas de Tokens
+
+Sistema de capas para organizar y posicionar tokens en profundidad. Permite que los DMs asignen capas a los tokens para crear efectos visuales de profundidad y ordena automáticamente la visualización en z-order.
+
+- **Click derecho en token (DM)** - Menú "Capa"
+- **Seleccionar capa** - El token se posiciona según la capa asignada
+- **Capas predefinidas** - 🧱 Fondo, 🕳️ Efectos de área, 🔮 Aura, 🧙 Personajes, ⚡ Efectos
+
+<a id="token-layers">
+ <img src="popup/img/token-layers.png" alt="Capas de Tokens" />
+</a>
+
+---
+
 ### Mediciones Persistentes
 
 Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.
@@ -135,14 +149,6 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
  <img src="popup/img/token-hotkeys.png" alt="Atajos para Tokens" />
 </a>
 
----
-
-### Altura de Tokens
-
-Permite ajustar la altura de uno o varios tokens seleccionados para colocarlos encima o debajo de otros.
-
-| Tecla         | Acción                      |
-| ------------- | --------------------------- |
 ---
 
 ### Mover Tokens con el Teclado
@@ -263,6 +269,7 @@ Permite que los DMs asignen tokens a jugadores específicos. Los jugadores asign
 </a>
 
 ---
+
 
 ### Utilidades de cámara
 

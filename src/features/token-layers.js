@@ -6,11 +6,10 @@
 
     const { loadManagers } = window._n21_;
 
-    const [CanvasDropdownManager, EditTokenUIManager, FloatingPanelManager, PlayerManager, SettingsManager, TokenManager] =
+    const [CanvasDropdownManager, EditTokenUIManager, PlayerManager, SettingsManager, TokenManager] =
       await loadManagers(
         "CanvasDropdownManager",
         "EditTokenUIManager",
-        "FloatingPanelManager",
         "PlayerManager",
         "SettingsManager",
         "TokenManager",
@@ -26,7 +25,7 @@
       { name: "🕳️ Efectos de área" },
       { name: "🔮 Aura" },
       { name: "🧙 Personajes" },
-      { name: "⚡ Efecto superior" },
+      { name: "⚡ Efectos" },
     ];
 
     const LAYER_HEIGHT = 0.05; // Z offset per layer (adjust as needed)
