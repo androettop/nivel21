@@ -19,7 +19,8 @@
       return;
     }
 
-    const LAYER_MARKER_REGEX = /\[l:\s*(\d+)\s*\]/i;
+    // Store original z values for tokens to preserve them across layer changes
+    const originalTokenZValues = new Map(); // Map<networkId, Map<childIndex, originalZ>>
 
     function toText(value) {
       if (value === undefined || value === null) return "";
@@ -38,10 +39,61 @@
 
     function getLayerFromDescription(description) {
       const layer = window._n21_.utils.parseTokenTag(description, "l");
-      if (!layer) return null;
+      if (!layer) return 0; // Default to 0 if no layer
       const num = parseInt(layer, 10);
-      if (num < 1 || num > 6) return null;
+      if (num < 1 || num > 6) return 0;
       return num;
+    }
+
+    /**
+     * Save original z values from a token's children
+     * @param {string} networkId - The network ID of the token
+     */
+    function saveOriginalZValues(networkId) {
+      const token = TokenManager.getToken(networkId);
+      if (!token || !token.children) return;
+
+      if (!originalTokenZValues.has(networkId)) {
+        const childZValues = new Map();
+        token.children.forEach((child, index) => {
+          if (child && child.localPosition) {
+            childZValues.set(index, child.localPosition.z);
+          }
+        });
+        originalTokenZValues.set(networkId, childZValues);
+      }
+    }
+
+    /**
+     * Apply layer offset to token's children
+     * @param {string} networkId - The network ID of the token
+     * @param {number} layer - The layer number (0 if no layer assigned)
+     */
+    function applyLayerOffset(networkId, layer) {
+      const token = TokenManager.getToken(networkId);
+      if (!token || !token.children) {
+        return;
+      }
+
+      // Ensure we have original z values saved
+      saveOriginalZValues(networkId);
+
+      const childZValues = originalTokenZValues.get(networkId);
+      if (!childZValues) {
+        return;
+      }
+
+      // Apply layer offset to each child
+      token.children.forEach((child, index) => {
+        if (!child || !child.localPosition) return;
+
+        const originalZ = childZValues.get(index);
+        if (originalZ === undefined) return;
+
+        // New Z = original Z - layer number
+        const newZ = originalZ - layer;
+        child.setLocalPosition(child.localPosition.x, child.localPosition.y, newZ);
+      });
     }
 
     function updateTokenLayerFromMetadata(networkId, metadataString) {
@@ -49,7 +101,8 @@
       const description = toText(parsedMetadata.description);
       const layer = getLayerFromDescription(description);
 
-      console.log(`[Token Layers] Token ${networkId} - Layer detected: ${layer}`);
+      // Apply the layer offset to the token's children
+      applyLayerOffset(networkId, layer);
     }
 
     // Setup metadata listeners for all players
@@ -61,14 +114,14 @@
 
     function buildSubmenu(context) {
       const networkId = toText(context?.tokenNetworkId);
-      const currentLayer = networkId ? getTokenLayerFromSchema(networkId) : null;
+      const currentLayer = networkId ? getTokenLayerFromSchema(networkId) : 0;
 
       const layers = [1, 2, 3, 4, 5, 6];
 
       return [
         {
           id: "n21-layer-none",
-          label: `Sin capa${currentLayer === null ? CHECK_MARK : ""}`,
+          label: `Sin capa${currentLayer === 0 ? CHECK_MARK : ""}`,
           onClick: async (context) => {
             if (!PlayerManager.isGameMaster()) return;
 
@@ -101,13 +154,13 @@
 
     function getTokenLayerFromSchema(networkId) {
       const schema = TokenManager.getTokenSchema(networkId);
-      if (!schema) return null;
+      if (!schema) return 0;
 
       const metadataString = typeof schema.metadata === "string" ? schema.metadata : "{}";
       const parsedMetadata = safeJsonParse(metadataString) || {};
       const description = toText(parsedMetadata.description);
 
-      return getLayerFromDescription(description);
+      return getLayerFromDescription(description); // Returns 0 if no layer
     }
 
     // Register option with dynamic submenu
