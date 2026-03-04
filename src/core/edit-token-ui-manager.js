@@ -31,15 +31,19 @@
     }
 
     /**
-     * Set or update a generic token tag in description
+     * Open token edit form, transform description, and submit (single modal interaction)
      * @param {string} networkId - The network ID of the token to edit
-     * @param {string} tagKey - The tag key (e.g., 'user', 'l')
-     * @param {*} tagValue - The tag value
-     * @returns {Promise<boolean>} True if successfully set and saved
+     * @param {Function} transformDescription - Function(currentDescription) => newDescription
+     * @returns {Promise<boolean>} True if successfully updated and saved
      */
-    async setTokenTag(networkId, tagKey, tagValue) {
+    async updateTokenDescription(networkId, transformDescription) {
       if (!this._tokenManager) {
         console.warn("[EditTokenUIManager] TokenManager not available");
+        return false;
+      }
+
+      if (typeof transformDescription !== "function") {
+        console.warn("[EditTokenUIManager] transformDescription must be a function");
         return false;
       }
 
@@ -49,7 +53,6 @@
         return false;
       }
 
-      // Build the metadata object to pass to editOfflineAsset
       let metadata = {};
       try {
         const metadataString = typeof schema.metadata === "string" ? schema.metadata : "{}";
@@ -62,7 +65,6 @@
       metadata.locked = schema.locked || false;
       metadata.clears_fog = (schema.fogLightRadius || 0) > 0;
 
-      // Open the form
       if (typeof window.editOfflineAsset !== "function") {
         console.warn("[EditTokenUIManager] editOfflineAsset function not available");
         return false;
@@ -70,18 +72,17 @@
 
       window.editOfflineAsset(metadata);
 
-      // Wait for the form and set the tag
       return new Promise((resolve) => {
         let attempts = 0;
         const maxAttempts = 50;
 
-        const checkAndSet = () => {
+        const checkAndUpdate = () => {
           attempts += 1;
 
           const $description = $("#tabletop_asset_description");
           if (!$description.length || !$description.is(":visible")) {
             if (attempts < maxAttempts) {
-              setTimeout(checkAndSet, 100);
+              setTimeout(checkAndUpdate, 100);
             } else {
               console.warn("[EditTokenUIManager] Form description field did not appear");
               resolve(false);
@@ -91,13 +92,10 @@
 
           try {
             const currentValue = $description.val() || "";
-            // Use generic tag utility to set the tag
-            const newValue = window._n21_.utils.setTokenTag(currentValue, tagKey, tagValue);
+            const newValue = transformDescription(currentValue);
 
-            // Set the description
             $description.val(newValue);
 
-            // Submit the form
             const $form = $("#TabletopTokenForm");
             if ($form.length) {
               $form.submit();
@@ -107,12 +105,50 @@
               resolve(false);
             }
           } catch (error) {
-            console.warn("[EditTokenUIManager] Error setting tag:", error);
+            console.warn("[EditTokenUIManager] Error updating description:", error);
             resolve(false);
           }
         };
 
-        checkAndSet();
+        checkAndUpdate();
+      });
+    }
+
+    /**
+     * Update multiple tags in one single modal edit.
+     * @param {string} networkId - The network ID of the token to edit
+     * @param {string[]} tagsToRemove - Tag keys to remove first
+     * @param {string|null} tagToSet - Tag key to set after removals
+     * @param {*} tagValue - Tag value for tagToSet
+     * @returns {Promise<boolean>} True if successfully updated and saved
+     */
+    async updateTokenTags(networkId, tagsToRemove = [], tagToSet = null, tagValue = null) {
+      return this.updateTokenDescription(networkId, (currentDescription) => {
+        let nextDescription = String(currentDescription || "");
+
+        const uniqueTagsToRemove = Array.from(new Set((tagsToRemove || []).filter(Boolean)));
+        uniqueTagsToRemove.forEach((tagKey) => {
+          nextDescription = window._n21_.utils.removeTokenTag(nextDescription, tagKey);
+        });
+
+        if (tagToSet) {
+          nextDescription = window._n21_.utils.setTokenTag(nextDescription, tagToSet, tagValue);
+        }
+
+        return nextDescription;
+      });
+    }
+
+    /**
+     * Set or update a generic token tag in description
+     * @param {string} networkId - The network ID of the token to edit
+     * @param {string} tagKey - The tag key (e.g., 'user', 'l')
+     * @param {*} tagValue - The tag value
+     * @returns {Promise<boolean>} True if successfully set and saved
+     */
+    async setTokenTag(networkId, tagKey, tagValue) {
+      return this.updateTokenDescription(networkId, (currentDescription) => {
+        return window._n21_.utils.setTokenTag(currentDescription, tagKey, tagValue);
       });
     }
 
@@ -123,81 +159,8 @@
      * @returns {Promise<boolean>} True if successfully removed and saved
      */
     async removeTokenTag(networkId, tagKey) {
-      if (!this._tokenManager) {
-        console.warn("[EditTokenUIManager] TokenManager not available");
-        return false;
-      }
-
-      const schema = this._tokenManager.getTokenSchema(networkId);
-      if (!schema) {
-        console.warn("[EditTokenUIManager] Token schema not found");
-        return false;
-      }
-
-      // Build the metadata object to pass to editOfflineAsset
-      let metadata = {};
-      try {
-        const metadataString = typeof schema.metadata === "string" ? schema.metadata : "{}";
-        metadata = JSON.parse(metadataString);
-      } catch (error) {
-        metadata = {};
-      }
-
-      metadata.invisible = schema.invisible || false;
-      metadata.locked = schema.locked || false;
-      metadata.clears_fog = (schema.fogLightRadius || 0) > 0;
-
-      // Open the form
-      if (typeof window.editOfflineAsset !== "function") {
-        console.warn("[EditTokenUIManager] editOfflineAsset function not available");
-        return false;
-      }
-
-      window.editOfflineAsset(metadata);
-
-      // Wait for the form and remove the tag
-      return new Promise((resolve) => {
-        let attempts = 0;
-        const maxAttempts = 50;
-
-        const checkAndRemove = () => {
-          attempts += 1;
-
-          const $description = $("#tabletop_asset_description");
-          if (!$description.length || !$description.is(":visible")) {
-            if (attempts < maxAttempts) {
-              setTimeout(checkAndRemove, 100);
-            } else {
-              console.warn("[EditTokenUIManager] Form description field did not appear");
-              resolve(false);
-            }
-            return;
-          }
-
-          try {
-            const currentValue = $description.val() || "";
-            // Use generic tag utility to remove the tag
-            const newValue = window._n21_.utils.removeTokenTag(currentValue, tagKey);
-
-            // Set the description
-            $description.val(newValue);
-
-            // Submit the form
-            const $form = $("#TabletopTokenForm");
-            if ($form.length) {
-              $form.submit();
-              resolve(true);
-            } else {
-              console.warn("[EditTokenUIManager] Token form not found");
-              resolve(false);
-            }
-          } catch (error) {
-            console.warn("[EditTokenUIManager] Error removing tag:", error);
-            resolve(false);
-          }
-        };
-
-        checkAndRemove();
+      return this.updateTokenDescription(networkId, (currentDescription) => {
+        return window._n21_.utils.removeTokenTag(currentDescription, tagKey);
       });
     }
 
@@ -218,25 +181,6 @@
      */
     async clearTokenLayerMarkers(networkId) {
       return this.removeTokenTag(networkId, "l");
-    }
-
-    /**
-     * Convenience method: Remove all user markers from token description
-     * @param {string} networkId - The network ID of the token to edit
-     * @returns {Promise<boolean>} True if successfully removed and saved
-     */
-    async clearTokenUserMarkers(networkId) {
-      return this.removeTokenTag(networkId, "user");
-    }
-
-    /**
-     * Set a user marker on token description (for assign to players)
-     * @param {string} networkId - The network ID of the token to edit
-     * @param {string} userName - The user name to assign
-     * @returns {Promise<boolean>} True if successfully set and saved
-     */
-    async setTokenUserMarker(networkId, userName) {
-      return this.setTokenTag(networkId, "user", userName);
     }
   }
 
