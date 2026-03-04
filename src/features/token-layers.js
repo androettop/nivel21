@@ -6,10 +6,11 @@
 
     const { loadManagers } = window._n21_;
 
-    const [CanvasDropdownManager, EditTokenUIManager, PlayerManager, SettingsManager, TokenManager] =
+    const [CanvasDropdownManager, EditTokenUIManager, FloatingPanelManager, PlayerManager, SettingsManager, TokenManager] =
       await loadManagers(
         "CanvasDropdownManager",
         "EditTokenUIManager",
+        "FloatingPanelManager",
         "PlayerManager",
         "SettingsManager",
         "TokenManager",
@@ -18,6 +19,19 @@
     if (!SettingsManager.get("feature.token-layers.enabled")) {
       return;
     }
+
+    // Default layers
+    const DEFAULT_LAYERS = [
+      { name: "🧱 Fondo" },
+      { name: "🕳️ Efectos de área" },
+      { name: "🔮 Aura" },
+      { name: "🧙 Personajes" },
+      { name: "⚡ Efecto superior" },
+    ];
+
+    const LAYER_HEIGHT = 0.05; // Z offset per layer (adjust as needed)
+
+    const STORAGE_KEY = "n21_token_layers";
 
     // Store original z values for tokens to preserve them across layer changes
     const originalTokenZValues = new Map(); // Map<networkId, Map<childIndex, originalZ>>
@@ -37,11 +51,45 @@
       }
     }
 
+    /**
+     * Get layers from localStorage or return default
+     * @returns {Array} Array of layer objects with { name }
+     */
+    function getLayers() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored && stored.trim()) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (error) {
+        console.error("[Token Layers] Error reading layers from localStorage:", error);
+      }
+      return DEFAULT_LAYERS;
+    }
+
+    /**
+     * Save layers to localStorage
+     * @param {Array} layers - Array of layer objects
+     */
+    function saveLayers(layers) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(layers));
+        // Notify that layers changed - update UI
+        window.dispatchEvent(new CustomEvent("n21_layers_changed"));
+      } catch (error) {
+        console.error("[Token Layers] Error saving layers to localStorage:", error);
+      }
+    }
+
     function getLayerFromDescription(description) {
       const layer = window._n21_.utils.parseTokenTag(description, "l");
-      if (!layer) return 0; // Default to 0 if no layer
+      if (!layer) return 0; // Default to 0 (Sin capa) if no layer tag
       const num = parseInt(layer, 10);
-      if (num < 1 || num > 6) return 0;
+      const maxLayer = getLayers().length - 1; // Max valid layer index (excluding "Sin capa")
+      if (num < 1 || num > maxLayer) return 0;
       return num;
     }
 
@@ -67,7 +115,7 @@
     /**
      * Apply layer offset to token's children
      * @param {string} networkId - The network ID of the token
-     * @param {number} layer - The layer number (0 if no layer assigned)
+     * @param {number} layer - The layer number (0 = Sin capa, 1+ = actual layer)
      */
     function applyLayerOffset(networkId, layer) {
       const token = TokenManager.getToken(networkId);
@@ -83,15 +131,17 @@
         return;
       }
 
-      // Apply layer offset to each child
+      // Apply layer offset to each child (only if layer > 0)
       token.children.forEach((child, index) => {
         if (!child || !child.localPosition) return;
 
         const originalZ = childZValues.get(index);
         if (originalZ === undefined) return;
 
-        // New Z = original Z - layer number
-        const newZ = originalZ - layer;
+        const zScale = token.localScale.z;
+
+        // If layer is 0 (Sin capa), keep original Z; otherwise apply offset
+        const newZ = layer === 0 ? originalZ : originalZ - (layer / zScale * LAYER_HEIGHT);
         child.setLocalPosition(child.localPosition.x, child.localPosition.y, newZ);
       });
     }
@@ -112,46 +162,6 @@
 
     const CHECK_MARK = " ✓";
 
-    function buildSubmenu(context) {
-      const networkId = toText(context?.tokenNetworkId);
-      const currentLayer = networkId ? getTokenLayerFromSchema(networkId) : 0;
-
-      const layers = [1, 2, 3, 4, 5, 6];
-
-      return [
-        {
-          id: "n21-layer-none",
-          label: `Sin capa${currentLayer === 0 ? CHECK_MARK : ""}`,
-          onClick: async (context) => {
-            if (!PlayerManager.isGameMaster()) return;
-
-            const networkId = toText(context?.tokenNetworkId);
-            if (!networkId) return;
-
-            await EditTokenUIManager.clearTokenLayerMarkers(networkId);
-          },
-        },
-        ...layers.map((layer) => ({
-          id: `n21-layer-${layer}`,
-          label: `Capa ${layer}${currentLayer === layer ? CHECK_MARK : ""}`,
-          onClick: async (context) => {
-            if (!PlayerManager.isGameMaster()) return;
-
-            const networkId = toText(context?.tokenNetworkId);
-            if (!networkId) return;
-
-            // Get current layer
-            const currentLayer = getTokenLayerFromSchema(networkId);
-
-            // Only update if not already on this layer
-            if (currentLayer !== layer) {
-              await EditTokenUIManager.setTokenLayerMarker(networkId, layer);
-            }
-          },
-        })),
-      ];
-    }
-
     function getTokenLayerFromSchema(networkId) {
       const schema = TokenManager.getTokenSchema(networkId);
       if (!schema) return 0;
@@ -162,6 +172,39 @@
 
       return getLayerFromDescription(description); // Returns 0 if no layer
     }
+
+    function buildSubmenu(context) {
+      const networkId = toText(context?.tokenNetworkId);
+      const currentLayer = networkId ? getTokenLayerFromSchema(networkId) : 0;
+      const layers = getLayers();
+
+      return layers.map((layer, index) => ({
+        id: `n21-layer-${index}`,
+        label: `${layer.name}${currentLayer === index ? CHECK_MARK : ""}`,
+        onClick: async (context) => {
+          if (!PlayerManager.isGameMaster()) return;
+
+          const networkId = toText(context?.tokenNetworkId);
+          if (!networkId) return;
+
+          // Get current layer
+          const currentLayer = getTokenLayerFromSchema(networkId);
+
+          // Only update if not already on this layer
+          if (currentLayer !== index) {
+            if (index === 0) {
+              // Sin capa - clear the layer marker
+              await EditTokenUIManager.clearTokenLayerMarkers(networkId);
+            } else {
+              // Set the layer marker
+              await EditTokenUIManager.setTokenLayerMarker(networkId, index);
+            }
+          }
+        },
+      }));
+    }
+
+
 
     // Register option with dynamic submenu
     CanvasDropdownManager.registerOption({
@@ -181,3 +224,4 @@
     window._n21_.utils.registerFeatureError("Token Layers", error);
   }
 })();
+
