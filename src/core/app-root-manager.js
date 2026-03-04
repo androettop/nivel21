@@ -54,11 +54,44 @@
           }
 
           try {
-            const param = args[0];
-            const app = param?._app;
+            // Revisar todos los parámetros
+            for (const param of args) {
+              if (!param || typeof param !== "object") continue;
 
-            if (app?.root && app.root === app.root.root) {
-              finish(true, app);
+              // Búsqueda múltiple en diferentes ubicaciones
+              const candidatos = [
+                param._app,           // Directo
+                param?.entity?._app,  // entity._app
+                param?.system?.app,   // system.app
+                param?.root?._app,    // root._app
+                param?.xr?.app,       // xr.app
+              ];
+
+              for (const candidate of candidatos) {
+                if (candidate && typeof candidate === "object") {
+                  finish(true, candidate);
+                  return originalApply(originalCall, this, [thisArg, ...args]);
+                }
+              }
+            }
+
+            // También revisar thisArg
+            if (thisArg && typeof thisArg === "object") {
+              const candidatos = [
+                thisArg._app,
+                thisArg?.entity?._app,
+                thisArg?.system?.app,
+                thisArg?.root?._app,
+                thisArg?.xr?.app,
+              ];
+
+              for (const candidate of candidatos) {
+                if (candidate && typeof candidate === "object") {
+                  console.log("[N21] 🔥 App encontrada en thisArg:", candidate);
+                  finish(true, candidate);
+                  return originalApply(originalCall, this, [thisArg, ...args]);
+                }
+              }
             }
           } catch (_) {}
 
