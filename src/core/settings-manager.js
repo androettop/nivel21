@@ -192,8 +192,8 @@
       });
 
       this.registerSetting({
-        name: "feature.assign-tokens-to-players.enabled",
-        label: "Asignar Tokens a Jugadores",
+        name: "feature.token-show-hide-only.enabled",
+        label: "Mostrar/Ocultar Tokens por Jugador",
         type: "boolean",
         defaultValue: true,
         category: "features",
