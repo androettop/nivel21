@@ -192,14 +192,6 @@
       });
 
       this.registerSetting({
-        name: "feature.assign-tokens-to-players.enabled",
-        label: "Asignar Tokens a Jugadores",
-        type: "boolean",
-        defaultValue: true,
-        category: "features",
-      });
-
-      this.registerSetting({
         name: "feature.token-layers.enabled",
         label: "Capas de Tokens",
         type: "boolean",
