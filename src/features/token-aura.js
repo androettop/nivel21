@@ -28,16 +28,16 @@
       return;
     }
 
-    // Define colors with single-letter keys
+    // Define colors with single-letter keys (rgb + alpha)
     const AURA_COLORS = {
-      w: { name: "Blanco", rgb: [1, 1, 1] },
-      b: { name: "Negro", rgb: [0, 0, 0] },
-      r: { name: "Rojo", rgb: [1, 0, 0] },
-      g: { name: "Verde", rgb: [0, 1, 0] },
-      a: { name: "Azul", rgb: [0, 0, 1] },
-      y: { name: "Amarillo", rgb: [1, 1, 0] },
-      o: { name: "Naranja", rgb: [1, 0.5, 0] },
-      p: { name: "Púrpura", rgb: [0.5, 0, 1] },
+      w: { name: "Blanco", rgb: [1, 1, 1], alpha: 0.2 },
+      b: { name: "Negro", rgb: [0, 0, 0], alpha: 0.4 },
+      r: { name: "Rojo", rgb: [1, 0, 0], alpha: 0.2 },
+      g: { name: "Verde", rgb: [0, 1, 0], alpha: 0.1 },
+      a: { name: "Azul", rgb: [0, 0, 1], alpha: 0.2 },
+      y: { name: "Amarillo", rgb: [1, 1, 0], alpha: 0.2 },
+      o: { name: "Naranja", rgb: [1, 0.5, 0], alpha: 0.2 },
+      p: { name: "Púrpura", rgb: [0.5, 0, 1], alpha: 0.2 },
     };
 
     function toText(value) {
@@ -169,17 +169,19 @@
       // Apply aura configuration
       const size = radius * 2;
       const [r, g, b] = colorConfig.rgb;
+      const fillAlpha = colorConfig.alpha;
+      const borderAlpha = Math.min(fillAlpha + 0.2, 1.0);
 
       // Configure material parameters
       shape.render.material.setParameter("uAngle", 360);
       shape.render.material.setParameter("uBorderPx", 2 / size);
       shape.render.material.setParameter("uFigureSize", [63.9, 63.9]);
 
-      // Set border color (based on color with opacity 0.8)
-      shape.render.material.setParameter("uGeomBorderColor", [r, g, b, 0.8]);
+      // Set border color (fill alpha + 0.2, capped at 1.0)
+      shape.render.material.setParameter("uGeomBorderColor", [r, g, b, borderAlpha]);
 
-      // Set fill color (based on color with opacity 0.6)
-      shape.render.material.setParameter("uGeomFillColor", [r, g, b, 0.6]);
+      // Set fill color (using color's alpha)
+      shape.render.material.setParameter("uGeomFillColor", [r, g, b, fillAlpha]);
 
       // Set size
       shape.setLocalScale(size, size, size);
