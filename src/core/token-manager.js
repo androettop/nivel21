@@ -139,6 +139,70 @@
     isReady() {
       return this._getNative() !== null;
     }
+
+    /**
+     * Get a child from a token by name
+     * @param {string} networkId - The network ID of the token
+     * @param {string} childName - The name of the child to find
+     * @returns {Object|null} The child entity or null if not found
+     */
+    getTokenChildByName(networkId, childName) {
+      const token = this.getToken(networkId);
+      if (!token || !token.children || !token.children.length) return null;
+
+      for (let child of token.children) {
+        if (child && child.name === childName) {
+          return child;
+        }
+      }
+      return null;
+    }
+
+    /**
+     * Add a child entity to a token
+     * @param {string} networkId - The network ID of the token
+     * @param {Object} childEntity - The entity to add as a child
+     * @returns {boolean} True if the child was added successfully
+     */
+    addChildToToken(networkId, childEntity) {
+      const token = this.getToken(networkId);
+      if (!token || !childEntity) return false;
+      if (typeof token.addChild !== "function") return false;
+
+      token.addChild(childEntity);
+      return true;
+    }
+
+    /**
+     * Remove a child entity from a token
+     * @param {string} networkId - The network ID of the token
+     * @param {Object} childEntity - The entity to remove
+     * @returns {boolean} True if the child was removed successfully
+     */
+    removeChildFromToken(networkId, childEntity) {
+      const token = this.getToken(networkId);
+      if (!token || !childEntity) return false;
+      if (typeof token.removeChild !== "function") return false;
+
+      token.removeChild(childEntity);
+      return true;
+    }
+
+    /**
+     * Get the position of a token
+     * @param {string} networkId - The network ID of the token
+     * @returns {Object|null} The position {x, y, z} or null if not found
+     */
+    getTokenPosition(networkId) {
+      const token = this.getToken(networkId);
+      if (!token || !token.position) return null;
+
+      return {
+        x: token.position.x,
+        y: token.position.y,
+        z: token.position.z,
+      };
+    }
   }
 
   // Register TokenManager

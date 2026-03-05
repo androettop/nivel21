@@ -169,6 +169,97 @@
         return null;
       }
     }
+
+    /**
+     * Set the position of a shape
+     * @param {Object} shape - The shape entity
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @param {number} z - Z coordinate
+     * @returns {boolean} True if position was set successfully
+     */
+    setShapePosition(shape, x, y, z) {
+      if (!shape || typeof shape.setPosition !== "function") return false;
+      
+      try {
+        shape.setPosition(x, y, z);
+        return true;
+      } catch (error) {
+        console.warn("[MeasurementManager] Error setting shape position:", error);
+        return false;
+      }
+    }
+
+    /**
+     * Set the local scale of a shape
+     * @param {Object} shape - The shape entity
+     * @param {number} x - X scale
+     * @param {number} y - Y scale
+     * @param {number} z - Z scale
+     * @returns {boolean} True if scale was set successfully
+     */
+    setShapeScale(shape, x, y, z) {
+      if (!shape || typeof shape.setLocalScale !== "function") return false;
+      
+      try {
+        shape.setLocalScale(x, y, z);
+        return true;
+      } catch (error) {
+        console.warn("[MeasurementManager] Error setting shape scale:", error);
+        return false;
+      }
+    }
+
+    /**
+     * Configure aura material parameters on a shape
+     * @param {Object} shape - The shape entity
+     * @param {Object} config - Configuration object
+     * @param {number} config.radius - The radius of the aura
+     * @param {Array<number>} config.borderColor - [r, g, b, a] for border
+     * @param {Array<number>} config.fillColor - [r, g, b, a] for fill
+     * @returns {boolean} True if material was configured successfully
+     */
+    configureAuraMaterial(shape, config) {
+      if (!shape || !shape.render || !shape.render.material) return false;
+      if (!config || typeof config.radius !== "number") return false;
+
+      try {
+        const material = shape.render.material;
+        const size = config.radius * 2;
+
+        material.setParameter("uAngle", 360);
+        material.setParameter("uBorderPx", 2 / size);
+        material.setParameter("uFigureSize", [63.9, 63.9]);
+
+        if (config.borderColor && Array.isArray(config.borderColor)) {
+          material.setParameter("uGeomBorderColor", config.borderColor);
+        }
+
+        if (config.fillColor && Array.isArray(config.fillColor)) {
+          material.setParameter("uGeomFillColor", config.fillColor);
+        }
+
+        return true;
+      } catch (error) {
+        console.warn("[MeasurementManager] Error configuring aura material:", error);
+        return false;
+      }
+    }
+
+    /**
+     * Get the current position of a shape
+     * @param {Object} shape - The shape entity
+     * @returns {Object|null} Position {x, y, z} or null if unavailable
+     */
+    getShapePosition(shape) {
+      if (!shape || !shape.position) return null;
+
+      return {
+        x: shape.position.x,
+        y: shape.position.y,
+        z: shape.position.z,
+      };
+    }
   }
 
   // Register MeasurementManager

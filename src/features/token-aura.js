@@ -100,16 +100,11 @@
     /**
      * Get or create TokenAura shape on the token
      */
-    function getOrCreateAuraShape(token) {
-      if (!token) return null;
-
+    function getOrCreateAuraShape(networkId) {
       // Find existing TokenAura child
-      if (token.children && token.children.length > 0) {
-        for (let child of token.children) {
-          if (child && child.name === "TokenAura") {
-            return child;
-          }
-        }
+      const existingAura = TokenManager.getTokenChildByName(networkId, "TokenAura");
+      if (existingAura) {
+        return existingAura;
       }
 
       // Create new aura shape using MeasurementManager
@@ -119,12 +114,27 @@
         return null;
       }
 
-      // Set position to token's position (absolute) before adding as child
-      shape.setPosition(shape.position.x, token.position.y, shape.position.z);
+      // Get token position
+      const tokenPosition = TokenManager.getTokenPosition(networkId);
+      if (!tokenPosition) {
+        console.warn("[Token Aura] Could not get token position");
+        return null;
+      }
 
-      // Add to token as child (after setting position/rotation, further changes will be relative)
-      if (token.addChild) {
-        token.addChild(shape);
+      // Get current shape position
+      const shapePosition = MeasurementManager.getShapePosition(shape);
+      if (!shapePosition) {
+        console.warn("[Token Aura] Could not get shape position");
+        return null;
+      }
+
+      // Set position to token's Y level (keep shape's X and Z)
+      MeasurementManager.setShapePosition(shape, shapePosition.x, tokenPosition.y, shapePosition.z);
+
+      // Add to token as child
+      if (!TokenManager.addChildToToken(networkId, shape)) {
+        console.warn("[Token Aura] Failed to add child to token");
+        return null;
       }
 
       return shape;
@@ -143,19 +153,17 @@
 
       // If radius is 0, remove the aura
       if (radius === 0) {
-        if (token.children && token.children.length > 0) {
-          const auraShape = token.children.find((child) => child && child.name === "TokenAura");
-          if (auraShape) {
-            token.removeChild(auraShape);
-          }
+        const auraShape = TokenManager.getTokenChildByName(networkId, "TokenAura");
+        if (auraShape) {
+          TokenManager.removeChildFromToken(networkId, auraShape);
         }
         return;
       }
 
       // Get or create the aura shape
-      const shape = getOrCreateAuraShape(token);
+      const shape = getOrCreateAuraShape(networkId);
       if (!shape) {
-        console.warn("[Token Aura] Failed to create aura shape");
+        console.warn("[Token Aura] Failed to get or create aura shape");
         return;
       }
 
@@ -166,25 +174,21 @@
         return;
       }
 
-      // Apply aura configuration
-      const size = radius * 2;
+      // Prepare color values
       const [r, g, b] = colorConfig.rgb;
       const fillAlpha = colorConfig.alpha;
       const borderAlpha = Math.min(fillAlpha + 0.2, 1.0);
 
-      // Configure material parameters
-      shape.render.material.setParameter("uAngle", 360);
-      shape.render.material.setParameter("uBorderPx", 2 / size);
-      shape.render.material.setParameter("uFigureSize", [63.9, 63.9]);
-
-      // Set border color (fill alpha + 0.2, capped at 1.0)
-      shape.render.material.setParameter("uGeomBorderColor", [r, g, b, borderAlpha]);
-
-      // Set fill color (using color's alpha)
-      shape.render.material.setParameter("uGeomFillColor", [r, g, b, fillAlpha]);
+      // Configure material using MeasurementManager
+      MeasurementManager.configureAuraMaterial(shape, {
+        radius: radius,
+        borderColor: [r, g, b, borderAlpha],
+        fillColor: [r, g, b, fillAlpha],
+      });
 
       // Set size
-      shape.setLocalScale(size, size, size);
+      const size = radius * 2;
+      MeasurementManager.setShapeScale(shape, size, size, size);
     }
 
     /**
@@ -280,13 +284,13 @@
         const radius = parseFloat($radiusInput.val());
 
         if (!color || isNaN(radius) || radius < 0) {
-          alert("[Token Aura] Radio inválido");
+          alert("El valor de radio no es valido. Ingresa un numero mayor o igual a 0.");
           return;
         }
 
         const token = TokenManager.getToken(networkId);
         if (!token) {
-          alert(`[Token Aura] El token no se encuentra (ID: ${networkId})`);
+          alert("No se encontro el token seleccionado. Cierra este panel y vuelve a intentarlo desde el token.");
           return;
         }
 
@@ -302,7 +306,7 @@
       $removeBtn.on("click", async () => {
         const token = TokenManager.getToken(networkId);
         if (!token) {
-          alert(`[Token Aura] El token no se encuentra (ID: ${networkId})`);
+          alert("No se encontro el token seleccionado. Cierra este panel y vuelve a intentarlo desde el token.");
           return;
         }
 
