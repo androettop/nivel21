@@ -200,6 +200,14 @@
       });
 
       this.registerSetting({
+        name: "feature.token-aura.enabled",
+        label: "Auras de Tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ping-map.enabled",
         label: "Ping en Mapa",
         type: "boolean",

@@ -136,10 +136,10 @@
 .n21-canvas-dropdown-submenu::before {
 	content: "";
 	position: absolute;
-	left: -4px;
+	left: -8px;
 	top: 0;
 	bottom: 0;
-	width: 4px;
+	width: 10px;
 }
 
 .n21-canvas-dropdown-item-wrapper:hover > .n21-canvas-dropdown-submenu {

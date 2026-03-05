@@ -147,6 +147,28 @@
       native.removeOwnedMeasurements();
       return 1;
     }
+
+    /**
+     * Create an aura shape using the cone template
+     * @returns {Object|null} The aura shape entity or null if creation failed
+     */
+    createAuraShape() {
+      const native = this._getNative();
+      if (!native || !native.shapeTemplate || !native.shapeTemplate.coneTemplate || !native.app) {
+        console.warn("[MeasurementManager] Cannot create aura: missing shapeTemplate, coneTemplate, or app");
+        return null;
+      }
+
+      try {
+        const shape = native.shapeTemplate.coneTemplate.instantiateEntity(native.app);
+        shape.setName("TokenAura");
+        shape.setLocalEulerAngles(90, 0, 0);
+        return shape;
+      } catch (error) {
+        console.warn("[MeasurementManager] Error creating aura shape:", error);
+        return null;
+      }
+    }
   }
 
   // Register MeasurementManager

@@ -60,6 +60,7 @@
       injectScript("src/features/parse-chat-links.js"),
       injectScript("src/features/token-hotkeys.js"),
       injectScript("src/features/token-layers.js"),
+      injectScript("src/features/token-aura.js"),
       injectScript("src/features/token-move-arrows.js"),
       injectScript("src/features/token-drag-measurement.js"),
       injectScript("src/features/token-drag-speed.js"),
