@@ -245,21 +245,15 @@
             token.on("hidden", (hidden, translucent) => {
               try {
                 callback(networkId, !!hidden, !!translucent);
-              } catch (error) {
-                console.warn("[TokenManager] Visibility listener error:", error);
-              }
+              } catch (_error) {}
             });
-          } catch (error) {
-            console.warn("[TokenManager] Failed to subscribe token hidden event:", error);
-          }
+          } catch (_error) {}
         }
 
         // Emit initial visibility state for newly tracked tokens
         try {
           callback(networkId, !!token?.hidden, !!token?.translucent);
-        } catch (error) {
-          console.warn("[TokenManager] Visibility listener error:", error);
-        }
+        } catch (_error) {}
       });
 
       return () => {};

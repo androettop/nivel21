@@ -64,7 +64,7 @@
       if (!tag) return null;
 
       // Pattern: color key (one or more letters) + dash + radius (integers or decimals)
-      const match = /^([a-z]+)-?([\d.]+)$/.exec(tag);
+      const match = /^([a-z]+)-([\d.]+)$/.exec(tag);
       if (!match) return null;
 
       const radius = parseFloat(match[2]);
@@ -109,26 +109,10 @@
 
       // Create new aura shape using MeasurementManager
       const shape = MeasurementManager.createAuraShape();
-      if (!shape) {
-        console.warn("[Token Aura] Failed to create aura shape");
-        return null;
-      }
-
-      // Get current shape position
-      const shapePosition = MeasurementManager.getShapePosition(shape);
-      if (!shapePosition) {
-        console.warn("[Token Aura] Could not get shape position");
-        return null;
-      }
-
-      // Set position to token's Y level (keep shape's X and Z)
-      MeasurementManager.setShapePosition(shape, shapePosition.x, shapePosition.y, shapePosition.z);
+      if (!shape) return null;
 
       // Add to token as child
-      if (!TokenManager.addChildToToken(networkId, shape)) {
-        console.warn("[Token Aura] Failed to add child to token");
-        return null;
-      }
+      if (!TokenManager.addChildToToken(networkId, shape)) return null;
 
       return shape;
     }
@@ -137,12 +121,9 @@
      * Apply aura configuration to token
      * If radius is 0, removes the aura
      */
-    async function applyAuraToToken(networkId, color, radius) {
+    function applyAuraToToken(networkId, color, radius) {
       const token = TokenManager.getToken(networkId);
-      if (!token) {
-        console.warn("[Token Aura] Token not found:", networkId);
-        return;
-      }
+      if (!token) return;
 
       // If radius is 0, remove the aura
       if (radius === 0) {
@@ -155,17 +136,11 @@
 
       // Get or create the aura shape
       const shape = getOrCreateAuraShape(networkId);
-      if (!shape) {
-        console.warn("[Token Aura] Failed to get or create aura shape");
-        return;
-      }
+      if (!shape) return;
 
       // Get color configuration
       const colorConfig = AURA_COLORS[color];
-      if (!colorConfig) {
-        console.warn("[Token Aura] Invalid color key:", color);
-        return;
-      }
+      if (!colorConfig) return;
 
       // Prepare color values
       const [r, g, b] = colorConfig.rgb;
@@ -264,10 +239,7 @@
         "min-width: 320px; min-height: 292px; max-width: 320px; max-height: 292px;",
       );
 
-      if (!$panel || !$panel.length) {
-        console.warn("[Token Aura] Failed to create floating panel");
-        return;
-      }
+      if (!$panel || !$panel.length) return;
 
       // Track selected color
       let selectedColor = currentColor;
@@ -346,10 +318,7 @@
         if (!PlayerManager.isGameMaster()) return;
 
         const networkId = toText(context?.tokenNetworkId);
-        if (!networkId) {
-          console.warn("[Token Aura] No token network ID provided");
-          return;
-        }
+        if (!networkId) return;
 
         openAuraPanel(networkId);
       },

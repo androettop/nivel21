@@ -155,7 +155,6 @@
     createAuraShape() {
       const native = this._getNative();
       if (!native || !native.shapeTemplate || !native.shapeTemplate.coneTemplate || !native.app) {
-        console.warn("[MeasurementManager] Cannot create aura: missing shapeTemplate, coneTemplate, or app");
         return null;
       }
 
@@ -165,28 +164,7 @@
         shape.setLocalEulerAngles(90, 0, 0);
         return shape;
       } catch (error) {
-        console.warn("[MeasurementManager] Error creating aura shape:", error);
         return null;
-      }
-    }
-
-    /**
-     * Set the position of a shape
-     * @param {Object} shape - The shape entity
-     * @param {number} x - X coordinate
-     * @param {number} y - Y coordinate
-     * @param {number} z - Z coordinate
-     * @returns {boolean} True if position was set successfully
-     */
-    setShapePosition(shape, x, y, z) {
-      if (!shape || typeof shape.setPosition !== "function") return false;
-      
-      try {
-        shape.setPosition(x, y, z);
-        return true;
-      } catch (error) {
-        console.warn("[MeasurementManager] Error setting shape position:", error);
-        return false;
       }
     }
 
@@ -205,7 +183,6 @@
         shape.setLocalScale(x, y, z);
         return true;
       } catch (error) {
-        console.warn("[MeasurementManager] Error setting shape scale:", error);
         return false;
       }
     }
@@ -241,25 +218,10 @@
 
         return true;
       } catch (error) {
-        console.warn("[MeasurementManager] Error configuring aura material:", error);
         return false;
       }
     }
 
-    /**
-     * Get the current position of a shape
-     * @param {Object} shape - The shape entity
-     * @returns {Object|null} Position {x, y, z} or null if unavailable
-     */
-    getShapePosition(shape) {
-      if (!shape || !shape.position) return null;
-
-      return {
-        x: shape.position.x,
-        y: shape.position.y,
-        z: shape.position.z,
-      };
-    }
   }
 
   // Register MeasurementManager
