@@ -114,13 +114,6 @@
         return null;
       }
 
-      // Get token position
-      const tokenPosition = TokenManager.getTokenPosition(networkId);
-      if (!tokenPosition) {
-        console.warn("[Token Aura] Could not get token position");
-        return null;
-      }
-
       // Get current shape position
       const shapePosition = MeasurementManager.getShapePosition(shape);
       if (!shapePosition) {
@@ -129,7 +122,7 @@
       }
 
       // Set position to token's Y level (keep shape's X and Z)
-      MeasurementManager.setShapePosition(shape, shapePosition.x, tokenPosition.y, shapePosition.z);
+      MeasurementManager.setShapePosition(shape, shapePosition.x, shapePosition.y, shapePosition.z);
 
       // Add to token as child
       if (!TokenManager.addChildToToken(networkId, shape)) {
@@ -189,6 +182,25 @@
       // Set size
       const size = radius * 2;
       MeasurementManager.setShapeScale(shape, size, size, size);
+    }
+
+    /**
+     * Apply aura based on token visibility and current aura tag
+     * Hidden and non-translucent tokens should not display aura.
+     */
+    function syncAuraWithVisibility(networkId, hidden, translucent) {
+      const aura = getAuraFromToken(networkId);
+      if (!aura || aura.radius <= 0) {
+        applyAuraToToken(networkId, "b", 0);
+        return;
+      }
+
+      if (hidden && !translucent) {
+        applyAuraToToken(networkId, "b", 0);
+        return;
+      }
+
+      applyAuraToToken(networkId, aura.color, aura.radius);
     }
 
     /**
@@ -345,15 +357,17 @@
 
     // Apply or remove aura on token metadata change
     TokenManager.onTokenMetadataChange((networkId) => {
-      const aura = getAuraFromToken(networkId);
-      
-      if (aura && aura.radius > 0) {
-        // Apply aura if tag exists and radius > 0
-        applyAuraToToken(networkId, aura.color, aura.radius);
-      } else {
-        // Remove aura if no tag or radius is 0
-        applyAuraToToken(networkId, "b", 0);
-      }
+      const visibility = TokenManager.getTokenVisibility(networkId) || {
+        hidden: false,
+        translucent: false,
+      };
+
+      syncAuraWithVisibility(networkId, visibility.hidden, visibility.translucent);
+    });
+
+    // Hide/show aura when token visibility changes
+    TokenManager.onTokenVisibilityChange((networkId, hidden, translucent) => {
+      syncAuraWithVisibility(networkId, hidden, translucent);
     });
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Aura", error);

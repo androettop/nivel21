@@ -203,6 +203,67 @@
         z: token.position.z,
       };
     }
+
+    /**
+     * Get token visibility state
+     * @param {string} networkId - The network ID of the token
+     * @returns {{hidden: boolean, translucent: boolean}|null} Visibility state or null if token not found
+     */
+    getTokenVisibility(networkId) {
+      const token = this.getToken(networkId);
+      if (!token) return null;
+
+      return {
+        hidden: !!token.hidden,
+        translucent: !!token.translucent,
+      };
+    }
+
+    /**
+     * Subscribe to token visibility changes
+     * Callback receives (networkId, hidden, translucent)
+     * @param {Function} callback - Visibility callback
+     * @returns {Function} Unsubscribe function (best effort)
+     */
+    onTokenVisibilityChange(callback) {
+      if (typeof callback !== "function") return () => {};
+
+      const entityManager = this._getEntityManager();
+      const schemaRoot = entityManager?.schema?.();
+
+      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+        return () => {};
+      }
+
+      schemaRoot.onAdd((schema, networkId) => {
+        if (!schema || !networkId) return;
+
+        const token = this.getToken(networkId);
+
+        if (token && typeof token.on === "function") {
+          try {
+            token.on("hidden", (hidden, translucent) => {
+              try {
+                callback(networkId, !!hidden, !!translucent);
+              } catch (error) {
+                console.warn("[TokenManager] Visibility listener error:", error);
+              }
+            });
+          } catch (error) {
+            console.warn("[TokenManager] Failed to subscribe token hidden event:", error);
+          }
+        }
+
+        // Emit initial visibility state for newly tracked tokens
+        try {
+          callback(networkId, !!token?.hidden, !!token?.translucent);
+        } catch (error) {
+          console.warn("[TokenManager] Visibility listener error:", error);
+        }
+      });
+
+      return () => {};
+    }
   }
 
   // Register TokenManager
