@@ -203,7 +203,7 @@
       try {
         const material = shape.render.material;
         const size = config.radius * 2;
-
+        shape.render.castShadows = false;
         material.setParameter("uAngle", 360);
         material.setParameter("uBorderPx", 2 / size);
         material.setParameter("uFigureSize", [63.9, 63.9]);
