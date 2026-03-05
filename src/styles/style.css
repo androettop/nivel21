@@ -469,86 +469,60 @@
 }
 
 /* Token Aura Panel Styles */
-.n21-aura-floating-panel {
-	font-family: Arial, sans-serif;
-}
-
 .n21-aura-panel-content {
 	padding: 16px;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 16px;
 }
 
-.n21-aura-panel-row {
+.n21-aura-panel-section {
 	display: flex;
-	align-items: center;
-	gap: 10px;
+	flex-direction: column;
+	gap: 8px;
 }
 
-.n21-aura-panel-row label {
-	width: 60px;
+.n21-aura-section-label {
 	font-weight: 600;
 	font-size: 13px;
-	color: #ccc;
+	margin-bottom: 4px;
 }
 
-.n21-aura-color-select,
-.n21-aura-radius-input {
-	flex: 1;
-	padding: 6px 8px;
-	border: 1px solid #555;
-	border-radius: 4px;
-	background: #2a2a2a;
-	color: #fff;
-	font-size: 13px;
+.n21-aura-color-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 8px;
 }
 
-.n21-aura-radius-input {
-	min-width: 80px;
+.n21-aura-color-swatch {
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: 6px;
+	cursor: pointer;
+	border: 3px solid transparent;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.n21-aura-color-select:focus,
-.n21-aura-radius-input:focus {
-	outline: none;
-	border-color: #888;
-	background: #333;
+.n21-aura-color-swatch:hover {
+	transform: scale(1.1);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.n21-aura-color-swatch.n21-aura-color-selected {
+	border-color: #fff;
+	box-shadow: 0 0 0 1px #333, 0 4px 8px rgba(0, 0, 0, 0.4);
+	transform: scale(1.05);
 }
 
 .n21-aura-panel-buttons {
 	display: flex;
 	gap: 8px;
-	margin-top: 8px;
+	margin-top: 4px;
 }
 
-.n21-aura-apply-btn,
-.n21-aura-remove-btn {
+.n21-aura-panel-buttons .btn {
 	flex: 1;
-	padding: 8px 12px;
-	border: none;
-	border-radius: 4px;
-	font-size: 13px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: all 0.2s ease;
-}
-
-.n21-aura-apply-btn {
-	background: #4a7c4e;
-	color: #fff;
-}
-
-.n21-aura-apply-btn:hover {
-	background: #5a9c5e;
-}
-
-.n21-aura-remove-btn {
-	background: #6b3d3d;
-	color: #fff;
-}
-
-.n21-aura-remove-btn:hover {
-	background: #8b5d5d;
 }
 
 span[n21-h] {

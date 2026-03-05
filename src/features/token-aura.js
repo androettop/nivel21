@@ -195,36 +195,45 @@
       const currentColor = currentAura?.color || "b";
       const currentRadius = currentAura?.radius || 1;
 
-      // Build color options HTML
-      const colorOptionsHtml = Object.entries(AURA_COLORS)
-        .map(
-          ([key, config]) =>
-            `<option value="${key}" ${key === currentColor ? "selected" : ""}>${config.name}</option>`,
-        )
+      // Build color swatches HTML
+      const colorSwatchesHtml = Object.entries(AURA_COLORS)
+        .map(([key, config]) => {
+          const [r, g, b] = config.rgb;
+          const rgbStr = `rgb(${r * 255}, ${g * 255}, ${b * 255})`;
+          const isSelected = key === currentColor ? "n21-aura-color-selected" : "";
+          return `
+            <div 
+              class="n21-aura-color-swatch ${isSelected}" 
+              data-color-key="${key}" 
+              style="background-color: ${rgbStr};"
+              title="${config.name}"
+            ></div>
+          `;
+        })
         .join("");
 
       const html = `
         <div class="n21-aura-panel-content">
-          <div class="n21-aura-panel-row">
-            <label for="n21-aura-color">Color:</label>
-            <select id="n21-aura-color" class="n21-aura-color-select">
-              ${colorOptionsHtml}
-            </select>
+          <div class="n21-aura-panel-section">
+            <label class="n21-aura-section-label">Color:</label>
+            <div class="n21-aura-color-grid">
+              ${colorSwatchesHtml}
+            </div>
           </div>
-          <div class="n21-aura-panel-row">
-            <label for="n21-aura-radius">Radio:</label>
+          <div class="n21-aura-panel-section">
+            <label for="n21-aura-radius" class="n21-aura-section-label">Radio:</label>
             <input 
               type="number" 
               id="n21-aura-radius" 
-              class="n21-aura-radius-input" 
+              class="form-control" 
               value="${currentRadius}" 
               min="0" 
               step="0.5"
             />
           </div>
           <div class="n21-aura-panel-buttons">
-            <button id="n21-aura-apply-btn" class="n21-aura-apply-btn">Aplicar</button>
-            <button id="n21-aura-remove-btn" class="n21-aura-remove-btn">Eliminar</button>
+            <button id="n21-aura-apply-btn" class="btn btn-success">Aplicar</button>
+            <button id="n21-aura-remove-btn" class="btn btn-danger">Eliminar</button>
           </div>
         </div>
       `;
@@ -233,10 +242,10 @@
       const $panel = FloatingPanelManager.openStaticPanelWithHtml(
         panelTitle,
         "ft-circle",
-        "#6b3d3d",
+        "#822020",
         html,
         "n21-aura-floating-panel n21-fixed-panel",
-        "min-width: 320px; min-height: 224px; max-width: 320px; max-height: 224px;",
+        "min-width: 320px; min-height: 292px; max-width: 320px; max-height: 292px;",
       );
 
       if (!$panel || !$panel.length) {
@@ -244,15 +253,30 @@
         return;
       }
 
+      // Track selected color
+      let selectedColor = currentColor;
+
       // Get form elements
-      const $colorSelect = $panel.find("#n21-aura-color");
+      const $colorSwatches = $panel.find(".n21-aura-color-swatch");
       const $radiusInput = $panel.find("#n21-aura-radius");
       const $applyBtn = $panel.find("#n21-aura-apply-btn");
       const $removeBtn = $panel.find("#n21-aura-remove-btn");
 
+      // Color swatch click handler
+      $colorSwatches.on("click", function () {
+        // Remove selection from all swatches
+        $colorSwatches.removeClass("n21-aura-color-selected");
+        
+        // Add selection to clicked swatch
+        $(this).addClass("n21-aura-color-selected");
+        
+        // Update selected color
+        selectedColor = $(this).attr("data-color-key");
+      });
+
       // Apply button handler
       $applyBtn.on("click", async () => {
-        const color = $colorSelect.val();
+        const color = selectedColor;
         const radius = parseFloat($radiusInput.val());
 
         if (!color || isNaN(radius) || radius < 0) {
