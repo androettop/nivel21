@@ -13,6 +13,7 @@
       PlayerManager,
       SettingsManager,
       MeasurementManager,
+      FloatingPanelManager,
     ] = await loadManagers(
       "TokenManager",
       "CanvasDropdownManager",
@@ -20,6 +21,7 @@
       "PlayerManager",
       "SettingsManager",
       "MeasurementManager",
+      "FloatingPanelManager",
     );
 
     if (!SettingsManager.get("feature.token-aura.enabled")) {
@@ -38,11 +40,6 @@
       p: { name: "Púrpura", rgb: [0.5, 0, 1] },
     };
 
-    // Aura radii from 0 to 12
-    const AURA_RADII = Array.from({ length: 13 }, (_, i) => i);
-
-    const CHECK_MARK = " ✓";
-
     function toText(value) {
       if (value === undefined || value === null) return "";
       return String(value).trim();
@@ -58,28 +55,32 @@
     }
 
     /**
-     * Parse aura tag from description: [a:colorKeyRadius]
+     * Parse aura tag from description: [a:colorKey-radius]
      * Returns { color, radius } or null
+     * Supports decimal radii (e.g., b-1.5, r-2.25)
      */
     function parseAuraFromDescription(description) {
       const tag = window._n21_.utils.parseTokenTag(description, "a");
       if (!tag) return null;
 
-      // Pattern: color key (one or more letters) + radius (one or more digits)
-      const match = /^([a-z]+)(\d+)$/.exec(tag);
+      // Pattern: color key (one or more letters) + dash + radius (integers or decimals)
+      const match = /^([a-z]+)-?([\d.]+)$/.exec(tag);
       if (!match) return null;
+
+      const radius = parseFloat(match[2]);
+      if (isNaN(radius) || radius < 0) return null;
 
       return {
         color: match[1],
-        radius: parseInt(match[2], 10),
+        radius: radius,
       };
     }
 
     /**
-     * Format aura config for tag storage: colorKeyRadius
+     * Format aura config for tag storage: colorKey-radius
      */
     function formatAuraTag(color, radius) {
-      return `${color}${radius}`;
+      return `${color}-${radius}`;
     }
 
     /**
@@ -185,71 +186,112 @@
     }
 
     /**
-     * Build radius submenu
+     * Open aura configuration panel for a specific token
      */
-    function buildRadiusSubmenu(context) {
-      const networkId = toText(context?.tokenNetworkId);
-      const currentAura = networkId ? getAuraFromToken(networkId) : null;
-      const currentRadius = currentAura?.radius || 0;
-
-      return AURA_RADII.map((radius) => ({
-        id: `n21-aura-radius-${radius}`,
-        label: `Radio ${radius}${currentRadius === radius ? CHECK_MARK : ""}`,
-        onClick: async (context) => {
-          if (!PlayerManager.isGameMaster()) return;
-
-          const networkId = toText(context?.tokenNetworkId);
-          if (!networkId) return;
-
-          const currentAura = getAuraFromToken(networkId);
-          const color = currentAura?.color || "b"; // Default to black
-
-          // Save to description
-          if (radius === 0) {
-            await EditTokenUIManager.removeTokenTag(networkId, "a");
-          } else {
-            await EditTokenUIManager.setTokenTag(networkId, "a", formatAuraTag(color, radius));
-          }
-
-          // Apply visual change
-          await applyAuraToToken(networkId, color, radius);
-        },
-      }));
-    }
-
-    /**
-     * Build color submenu
-     */
-    function buildColorSubmenu(context) {
-      const networkId = toText(context?.tokenNetworkId);
-      const currentAura = networkId ? getAuraFromToken(networkId) : null;
+    function openAuraPanel(networkId) {
+      const currentAura = getAuraFromToken(networkId);
       const currentColor = currentAura?.color || "b";
+      const currentRadius = currentAura?.radius || 1;
 
-      return Object.entries(AURA_COLORS).map(([key, config]) => ({
-        id: `n21-aura-color-${key}`,
-        label: `${config.name}${currentColor === key ? CHECK_MARK : ""}`,
-        onClick: async (context) => {
-          if (!PlayerManager.isGameMaster()) return;
+      // Build color options HTML
+      const colorOptionsHtml = Object.entries(AURA_COLORS)
+        .map(
+          ([key, config]) =>
+            `<option value="${key}" ${key === currentColor ? "selected" : ""}>${config.name}</option>`,
+        )
+        .join("");
 
-          const networkId = toText(context?.tokenNetworkId);
-          if (!networkId) return;
+      const html = `
+        <div class="n21-aura-panel-content">
+          <div class="n21-aura-panel-row">
+            <label for="n21-aura-color">Color:</label>
+            <select id="n21-aura-color" class="n21-aura-color-select">
+              ${colorOptionsHtml}
+            </select>
+          </div>
+          <div class="n21-aura-panel-row">
+            <label for="n21-aura-radius">Radio:</label>
+            <input 
+              type="number" 
+              id="n21-aura-radius" 
+              class="n21-aura-radius-input" 
+              value="${currentRadius}" 
+              min="0" 
+              step="0.5"
+            />
+          </div>
+          <div class="n21-aura-panel-buttons">
+            <button id="n21-aura-apply-btn" class="n21-aura-apply-btn">Aplicar</button>
+            <button id="n21-aura-remove-btn" class="n21-aura-remove-btn">Eliminar</button>
+          </div>
+        </div>
+      `;
+      const tokenSchema = TokenManager.getTokenSchema(networkId);
+      const panelTitle = `Aura de ${tokenSchema.name} <span n21-h>${networkId}</span>`;
+      const $panel = FloatingPanelManager.openStaticPanelWithHtml(
+        panelTitle,
+        "ft-circle",
+        "#6b3d3d",
+        html,
+        "n21-aura-floating-panel n21-fixed-panel",
+        "min-width: 320px; min-height: 224px; max-width: 320px; max-height: 224px;",
+      );
 
-          const currentAura = getAuraFromToken(networkId);
-          const radius = currentAura?.radius || 1; // Default to radius 1
+      if (!$panel || !$panel.length) {
+        console.warn("[Token Aura] Failed to create floating panel");
+        return;
+      }
 
-          // Save to description
-          await EditTokenUIManager.setTokenTag(networkId, "a", formatAuraTag(key, radius));
+      // Get form elements
+      const $colorSelect = $panel.find("#n21-aura-color");
+      const $radiusInput = $panel.find("#n21-aura-radius");
+      const $applyBtn = $panel.find("#n21-aura-apply-btn");
+      const $removeBtn = $panel.find("#n21-aura-remove-btn");
 
-          // Apply visual change
-          await applyAuraToToken(networkId, key, radius);
-        },
-      }));
+      // Apply button handler
+      $applyBtn.on("click", async () => {
+        const color = $colorSelect.val();
+        const radius = parseFloat($radiusInput.val());
+
+        if (!color || isNaN(radius) || radius < 0) {
+          alert("[Token Aura] Radio inválido");
+          return;
+        }
+
+        const token = TokenManager.getToken(networkId);
+        if (!token) {
+          alert(`[Token Aura] El token no se encuentra (ID: ${networkId})`);
+          return;
+        }
+
+        // Only modify tag - the metadata change listener will apply the visual changes
+        if (radius === 0) {
+          await EditTokenUIManager.removeTokenTag(networkId, "a");
+        } else {
+          await EditTokenUIManager.setTokenTag(networkId, "a", formatAuraTag(color, radius));
+        }
+      });
+
+      // Remove button handler
+      $removeBtn.on("click", async () => {
+        const token = TokenManager.getToken(networkId);
+        if (!token) {
+          alert(`[Token Aura] El token no se encuentra (ID: ${networkId})`);
+          return;
+        }
+
+        // Only remove tag - the metadata change listener will remove the visual aura
+        await EditTokenUIManager.removeTokenTag(networkId, "a");
+        
+        // Reset form
+        $radiusInput.val(0);
+      });
     }
 
-    // Register radius option
+    // Register aura option in canvas dropdown
     CanvasDropdownManager.registerOption({
-      id: "n21-token-aura-radius",
-      label: "Radio de Aura",
+      id: "n21-token-aura",
+      label: "Aura",
       showOn: ["token"],
       order: 59,
       gameMasterOnly: true,
@@ -258,29 +300,29 @@
         if (!context?.tokenNetworkId) return false;
         return true;
       },
-      submenu: buildRadiusSubmenu,
-    });
+      onClick: (context) => {
+        if (!PlayerManager.isGameMaster()) return;
 
-    // Register color option
-    CanvasDropdownManager.registerOption({
-      id: "n21-token-aura-color",
-      label: "Color de Aura",
-      showOn: ["token"],
-      order: 60,
-      gameMasterOnly: true,
-      isVisible: (context) => {
-        if (!PlayerManager.isGameMaster()) return false;
-        if (!context?.tokenNetworkId) return false;
-        return true;
+        const networkId = toText(context?.tokenNetworkId);
+        if (!networkId) {
+          console.warn("[Token Aura] No token network ID provided");
+          return;
+        }
+
+        openAuraPanel(networkId);
       },
-      submenu: buildColorSubmenu,
     });
 
-    // Apply aura on token metadata change
+    // Apply or remove aura on token metadata change
     TokenManager.onTokenMetadataChange((networkId) => {
       const aura = getAuraFromToken(networkId);
-      if (aura) {
+      
+      if (aura && aura.radius > 0) {
+        // Apply aura if tag exists and radius > 0
         applyAuraToToken(networkId, aura.color, aura.radius);
+      } else {
+        // Remove aura if no tag or radius is 0
+        applyAuraToToken(networkId, "b", 0);
       }
     });
   } catch (error) {

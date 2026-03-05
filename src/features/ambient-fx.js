@@ -554,7 +554,7 @@
         "ft-sun",
         "#822020",
         html,
-        "n21-ambient-fx-panel",
+        "n21-ambient-fx-panel n21-fixed-panel",
         "width: 300px; height: 352px; min-width: 300px; min-height: 352px; max-width: 300px; max-height: 352px;",
       );
 
