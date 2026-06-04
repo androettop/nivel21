@@ -72,6 +72,9 @@
 
       if (!$panel || !$panel.length) return;
 
+      // Let the editor grow with the panel height.
+      $panel.find(".floating-block").addClass("n21-notes-block");
+
       const textarea = $panel.find("textarea.n21-notes-textarea")[0];
       if (!textarea) return;
 

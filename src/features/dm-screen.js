@@ -149,7 +149,7 @@
     function buildReadCard(card) {
       const bodyHtml = MarkdownEditorManager.render(card.content || "");
       return (
-        `<div class="n21-dm-card" data-id="${escapeHtml(card.id)}">` +
+        `<div class="n21-dm-card" data-id="${escapeHtml(card.id)}" draggable="true">` +
         `<div class="n21-dm-card-actions">` +
         `<button type="button" class="n21-dm-icon-btn n21-dm-card-edit" title="Editar"><i class="fa fa-pencil"></i></button>` +
         `<button type="button" class="n21-dm-icon-btn n21-dm-card-delete" title="Borrar"><i class="ft-trash-2"></i></button>` +
@@ -286,7 +286,97 @@
       renderGrid($panel);
     }
 
+    function reorderCards(sourceId, targetId, after) {
+      if (!sourceId || !targetId || sourceId === targetId) return;
+
+      const cards = getCards();
+      const fromIdx = cards.findIndex((c) => c.id === sourceId);
+      if (fromIdx === -1) return;
+
+      const [moved] = cards.splice(fromIdx, 1);
+
+      let toIdx = cards.findIndex((c) => c.id === targetId);
+      if (toIdx === -1) {
+        cards.push(moved);
+      } else {
+        cards.splice(after ? toIdx + 1 : toIdx, 0, moved);
+      }
+
+      saveCards(cards);
+    }
+
+    function clearDropMarkers($panel) {
+      $panel
+        .find(".n21-dm-drop-before, .n21-dm-drop-after")
+        .removeClass("n21-dm-drop-before n21-dm-drop-after");
+    }
+
+    function bindDragEvents($panel) {
+      let draggedId = null;
+
+      $panel.on("dragstart", ".n21-dm-card", function (e) {
+        const $card = $(this);
+        // Don't drag the card while it's being edited.
+        if ($card.hasClass("n21-dm-card-editing")) {
+          e.preventDefault();
+          return;
+        }
+        draggedId = $card.attr("data-id");
+        $card.addClass("n21-dm-dragging");
+        const dt = e.originalEvent.dataTransfer;
+        if (dt) {
+          dt.effectAllowed = "move";
+          try {
+            dt.setData("text/plain", draggedId);
+          } catch (error) {
+            /* some browsers require setData; ignore failures */
+          }
+        }
+      });
+
+      $panel.on("dragend", ".n21-dm-card", function () {
+        draggedId = null;
+        $panel.find(".n21-dm-dragging").removeClass("n21-dm-dragging");
+        clearDropMarkers($panel);
+      });
+
+      $panel.on("dragover", ".n21-dm-card", function (e) {
+        if (!draggedId) return;
+        const $card = $(this);
+        if ($card.attr("data-id") === draggedId) return;
+        e.preventDefault();
+        const oe = e.originalEvent;
+        if (oe.dataTransfer) oe.dataTransfer.dropEffect = "move";
+        const rect = this.getBoundingClientRect();
+        const after = oe.clientX > rect.left + rect.width / 2;
+        clearDropMarkers($panel);
+        $card.addClass(after ? "n21-dm-drop-after" : "n21-dm-drop-before");
+      });
+
+      $panel.on("dragleave", ".n21-dm-card", function () {
+        $(this).removeClass("n21-dm-drop-before n21-dm-drop-after");
+      });
+
+      $panel.on("drop", ".n21-dm-card", function (e) {
+        if (!draggedId) return;
+        e.preventDefault();
+        const $target = $(this);
+        const targetId = $target.attr("data-id");
+        if (!targetId || targetId === draggedId) {
+          clearDropMarkers($panel);
+          return;
+        }
+        const rect = this.getBoundingClientRect();
+        const after = e.originalEvent.clientX > rect.left + rect.width / 2;
+        reorderCards(draggedId, targetId, after);
+        draggedId = null;
+        renderGrid($panel);
+      });
+    }
+
     function bindPanelEvents($panel) {
+      bindDragEvents($panel);
+
       // Add a new card.
       $panel.on("click", ".n21-dm-add-card", () => {
         editingId = NEW_CARD_ID;
