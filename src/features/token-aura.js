@@ -14,6 +14,7 @@
       SettingsManager,
       MeasurementManager,
       FloatingPanelManager,
+      NetworkManager,
     ] = await loadManagers(
       "TokenManager",
       "CanvasDropdownManager",
@@ -22,6 +23,7 @@
       "SettingsManager",
       "MeasurementManager",
       "FloatingPanelManager",
+      "NetworkManager",
     );
 
     if (!SettingsManager.get("feature.token-aura.enabled")) {
@@ -154,9 +156,17 @@
         fillColor: [r, g, b, fillAlpha],
       });
 
-      // Set size
+      // Set size. The aura is a child of the token, so its world scale is
+      // multiplied by the token's scale. Divide by the token scale so the aura
+      // stays relative to the world rather than growing/shrinking with the token.
       const size = radius * 2;
-      MeasurementManager.setShapeScale(shape, size, size, size);
+      const tokenScale = TokenManager.getTokenScale(networkId) || { x: 1, y: 1, z: 1 };
+      MeasurementManager.setShapeScale(
+        shape,
+        size / (tokenScale.x || 1),
+        size / (tokenScale.y || 1),
+        size / (tokenScale.z || 1)
+      );
     }
 
     /**
@@ -176,6 +186,19 @@
       }
 
       applyAuraToToken(networkId, aura.color, aura.radius);
+    }
+
+    /**
+     * Recompute the aura for a token using its current visibility state.
+     * Used when the token transform (e.g. scale) changes so the aura stays
+     * relative to the world.
+     */
+    function recomputeAura(networkId) {
+      const visibility = TokenManager.getTokenVisibility(networkId) || {
+        hidden: false,
+        translucent: false,
+      };
+      syncAuraWithVisibility(networkId, visibility.hidden, visibility.translucent);
     }
 
     /**
@@ -305,7 +328,7 @@
     // Register aura option in canvas dropdown
     CanvasDropdownManager.registerOption({
       id: "n21-token-aura",
-      label: "Aura",
+      label: "Modificar Aura",
       showOn: ["token"],
       order: 59,
       gameMasterOnly: true,
@@ -337,6 +360,31 @@
     // Hide/show aura when token visibility changes
     TokenManager.onTokenVisibilityChange((networkId, hidden, translucent) => {
       syncAuraWithVisibility(networkId, hidden, translucent);
+    });
+
+    // Recompute aura when a token is scaled so it stays relative to the world.
+    // transform:update fires for position too, so only recompute when the
+    // token's scale actually changed.
+    const lastScaleByToken = new Map();
+    NetworkManager.on("transform:update", (data) => {
+      const networkId = data?.networkId;
+      if (!networkId || !networkId.includes("TOKEN")) return;
+
+      const scale = TokenManager.getTokenScale(networkId);
+      if (!scale) return;
+
+      const last = lastScaleByToken.get(networkId);
+      if (
+        last &&
+        last.x === scale.x &&
+        last.y === scale.y &&
+        last.z === scale.z
+      ) {
+        return;
+      }
+
+      lastScaleByToken.set(networkId, scale);
+      recomputeAura(networkId);
     });
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Aura", error);

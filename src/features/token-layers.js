@@ -21,11 +21,12 @@
 
     // Default layers
     const DEFAULT_LAYERS = [
-      { name: "🧱 Fondo" },
-      { name: "🕳️ Efectos de área" },
-      { name: "🔮 Aura" },
-      { name: "🧙 Personajes" },
-      { name: "⚡ Efectos" },
+      { name: "0 - Fondo" },
+      { name: "1 - Capa 1" },
+      { name: "2 - Capa 2" },
+      { name: "3 - Capa 3" },
+      { name: "4 - Capa 4" },
+      { name: "5 - Capa 5" },
     ];
 
     const LAYER_HEIGHT = 0.05; // Z offset per layer (adjust as needed)

@@ -205,6 +205,21 @@
     }
 
     /**
+     * Get the local scale of a token
+     * @param {string} networkId - The network ID of the token
+     * @returns {Object|null} The scale {x, y, z} or null if not found
+     */
+    getTokenScale(networkId) {
+      const token = this.getToken(networkId);
+      if (!token || typeof token.getLocalScale !== "function") return null;
+
+      const scale = token.getLocalScale();
+      if (!scale) return null;
+
+      return { x: scale.x, y: scale.y, z: scale.z };
+    }
+
+    /**
      * Get token visibility state
      * @param {string} networkId - The network ID of the token
      * @returns {{hidden: boolean, translucent: boolean}|null} Visibility state or null if token not found
