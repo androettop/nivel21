@@ -7,10 +7,11 @@
     const { loadManagers } = window._n21_;
     const { uuid } = window._n21_?.utils || {};
 
-    const [MainMenuUIManager, FloatingPanelManager, SettingsManager] = await loadManagers(
+    const [MainMenuUIManager, FloatingPanelManager, SettingsManager, MarkdownEditorManager] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
       "SettingsManager",
+      "MarkdownEditorManager",
     );
 
     // Check if feature is enabled
@@ -74,13 +75,28 @@
       const textarea = $panel.find("textarea.n21-notes-textarea")[0];
       if (!textarea) return;
 
-      textarea.addEventListener("input", () => {
-        storeContent(textarea.value);
-      });
+      // Avoid re-attaching the editor if the panel was already open.
+      if ($panel.data("n21NotesBound")) return;
+      $panel.data("n21NotesBound", true);
 
-      textarea.addEventListener("change", () => {
-        storeContent(textarea.value);
-      });
+      // The textarea already holds the stored content, which EasyMDE picks up
+      // as its initial value when attaching.
+      const editor = MarkdownEditorManager
+        ? MarkdownEditorManager.attach(textarea)
+        : null;
+
+      if (editor) {
+        MarkdownEditorManager.onChange(editor, textarea, (value) => {
+          storeContent(value);
+        });
+      } else {
+        textarea.addEventListener("input", () => {
+          storeContent(textarea.value);
+        });
+        textarea.addEventListener("change", () => {
+          storeContent(textarea.value);
+        });
+      }
     }
 
     const header = await MainMenuUIManager.addHeader("Nivel 21", {

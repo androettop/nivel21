@@ -528,3 +528,216 @@
 span[n21-h] {
 	display: none;
 }
+
+/* DM Screen Styles */
+.n21-dm-screen {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.n21-dm-toolbar {
+	display: flex;
+	gap: 8px;
+	padding: 10px 12px;
+	flex: 0 0 auto;
+}
+
+.n21-dm-btn {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.04);
+	color: inherit;
+	padding: 6px 12px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.2;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+	outline: none !important;
+}
+
+.n21-dm-btn:hover {
+	border-color: rgba(255, 255, 255, 0.24);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.n21-dm-add-card,
+.n21-dm-restore {
+	border-color: rgba(130, 32, 32, 0.8);
+	background: rgba(130, 32, 32, 0.3);
+}
+
+.n21-dm-add-card:hover,
+.n21-dm-restore:hover {
+	border-color: rgba(130, 32, 32, 1);
+	background: rgba(130, 32, 32, 0.5);
+}
+
+.n21-dm-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 12px;
+	padding: 0 12px 14px;
+	overflow-y: auto;
+	flex: 1 1 auto;
+	min-height: 0;
+	align-content: start;
+}
+
+.n21-dm-grid::-webkit-scrollbar {
+	width: 8px;
+}
+
+.n21-dm-grid::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 999px;
+}
+
+.n21-dm-card {
+	position: relative;
+	border-radius: 10px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(20, 22, 30, 0.55);
+	padding: 16px 16px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.n21-dm-card-title {
+	text-align: center;
+	font-weight: 700;
+	font-size: 16px;
+	color: #d96b6b;
+	line-height: 1.2;
+}
+
+.n21-dm-card-body {
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.n21-dm-card-body > *:first-child {
+	margin-top: 0;
+}
+
+.n21-dm-card-body > *:last-child {
+	margin-bottom: 0;
+}
+
+.n21-dm-card-body table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.n21-dm-card-body th,
+.n21-dm-card-body td {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	vertical-align: top;
+}
+
+.n21-dm-card-body thead th {
+	font-weight: 600;
+	opacity: 0.75;
+	border-bottom-color: rgba(255, 255, 255, 0.16);
+}
+
+.n21-dm-card-body tbody tr:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.n21-dm-card-body ul,
+.n21-dm-card-body ol {
+	margin: 0;
+	padding-left: 20px;
+}
+
+.n21-dm-card-body a {
+	color: #d96b6b;
+}
+
+/* Edit/delete controls (shown on card hover) */
+.n21-dm-card-actions {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: none;
+	gap: 4px;
+	z-index: 1;
+}
+
+.n21-dm-card:hover .n21-dm-card-actions {
+	display: flex;
+}
+
+.n21-dm-icon-btn {
+	width: 26px;
+	height: 26px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	background: rgba(0, 0, 0, 0.45);
+	color: #fff;
+	cursor: pointer;
+	font-size: 12px;
+	padding: 0;
+	outline: none !important;
+}
+
+.n21-dm-icon-btn:hover {
+	background: rgba(130, 32, 32, 0.6);
+	border-color: rgba(255, 255, 255, 0.32);
+}
+
+/* Edit form */
+.n21-dm-card-editing {
+	gap: 8px;
+}
+
+.n21-dm-title-input {
+	width: 100%;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: inherit;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-size: 14px;
+	font-weight: 600;
+	outline: none;
+}
+
+.n21-dm-title-input:focus {
+	border-color: rgba(130, 32, 32, 0.8);
+}
+
+.n21-dm-content-input {
+	width: 100%;
+	min-height: 120px;
+	background: rgba(0, 0, 0, 0.35);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	color: inherit;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-size: 13px;
+	outline: none;
+}
+
+.n21-dm-edit-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.n21-dm-edit-actions .n21-dm-btn {
+	flex: 1;
+}
+
+.n21-dm-save {
+	border-color: rgba(130, 32, 32, 0.8);
+	background: rgba(130, 32, 32, 0.3);
+}

@@ -53,6 +53,7 @@
       injectScript("src/core/html-manager.js"),
       injectScript("src/core/edit-token-ui-manager.js"),
       injectScript("src/core/canvas-dropdown-manager.js"),
+      injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
       injectScript("src/features/advantage-disadvantage.js"),
@@ -69,6 +70,7 @@
       injectScript("src/features/multi-level-action-bar.js"),
       injectScript("src/features/ambient-fx.js"),
       injectScript("src/features/notes-panel.js"),
+      injectScript("src/features/dm-screen.js"),
       injectScript("src/features/settings-panel.js"),
       injectScript("src/features/token-notes.js"),
       injectScript("src/features/center-camera-here.js"),

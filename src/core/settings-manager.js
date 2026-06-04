@@ -160,6 +160,14 @@
       });
 
       this.registerSetting({
+        name: "feature.dm-screen.enabled",
+        label: "Pantalla de DM",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.token-drag-measurement.enabled",
         label: "Medición de Distancias al Arrastrar",
         type: "boolean",
