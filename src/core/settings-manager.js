@@ -200,6 +200,14 @@
       });
 
       this.registerSetting({
+        name: "feature.turn-order.enabled",
+        label: "Orden de Turnos",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.token-layers.enabled",
         label: "Capas de Tokens",
         type: "boolean",

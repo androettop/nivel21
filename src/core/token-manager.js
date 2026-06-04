@@ -56,6 +56,16 @@
     }
 
     /**
+     * Get the network IDs of all known token instances
+     * @returns {string[]} Array of networkId strings (empty if none)
+     */
+    getAllTokenIds() {
+      const instances = this._getEntityManager()?.instances;
+      if (!instances || typeof instances.keys !== "function") return [];
+      return Array.from(instances.keys());
+    }
+
+    /**
      * Update a token's position
      * @param {string} networkId - The network ID of the token
      * @param {Object} position - The new position { x, y, z }

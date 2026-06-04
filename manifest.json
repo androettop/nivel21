@@ -68,6 +68,7 @@
         "src/features/ambient-fx.js",
         "src/features/notes-panel.js",
         "src/features/dm-screen.js",
+        "src/features/turn-order.js",
         "src/features/settings-panel.js",
         "src/features/token-drag-speed.js",
         "src/features/token-notes.js",
