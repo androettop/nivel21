@@ -1,5 +1,25 @@
-// Acordeón de características: colapsadas por defecto, solo una abierta a la vez.
 document.addEventListener("DOMContentLoaded", () => {
+  // Navegación por tabs entre la vista principal y la de características.
+  const viewHome = document.getElementById("view-home");
+  const viewFeatures = document.getElementById("view-features");
+  const tabs = Array.from(document.querySelectorAll(".tab"));
+
+  const showView = (view) => {
+    viewHome.hidden = view !== "home";
+    viewFeatures.hidden = view !== "features";
+    tabs.forEach((tab) => {
+      const isActive = tab.dataset.tab === view;
+      tab.classList.toggle("is-active", isActive);
+      tab.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    window.scrollTo(0, 0);
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => showView(tab.dataset.tab));
+  });
+
+  // Acordeón de características: colapsadas por defecto, solo una abierta a la vez.
   const features = Array.from(document.querySelectorAll(".feature"));
 
   const collapse = (feature) => {

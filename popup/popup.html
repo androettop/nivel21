@@ -16,8 +16,31 @@
       <img src="img/logo.png" alt="Nivel21 Logo" height="60px" class="logo" />
     </div>
 
-    <!-- Página principal / Acerca de -->
-    <div class="intro">
+    <!-- Tabs de navegación -->
+    <div class="tabs" role="tablist">
+      <button
+        class="tab is-active"
+        type="button"
+        role="tab"
+        data-tab="home"
+        aria-selected="true"
+      >
+        Inicio
+      </button>
+      <button
+        class="tab"
+        type="button"
+        role="tab"
+        data-tab="features"
+        aria-selected="false"
+      >
+        Características
+      </button>
+    </div>
+
+    <!-- Vista principal / Acerca de -->
+    <div class="view view-home" id="view-home">
+      <div class="intro">
       <div class="intro-title">Mejora tu experiencia en Nivel20</div>
       <div class="intro-description">
         Nivel21 es una extensión que automatiza y suma herramientas al tablero
@@ -56,11 +79,11 @@
           <img src="img/kofi.png" alt="Ko-fi" class="kofi-img" />
         </a>
       </div>
+      </div>
     </div>
 
-    <!-- Sección de Características -->
-    <div class="features-heading">Características</div>
-
+    <!-- Vista de Características -->
+    <div class="view view-features" id="view-features" hidden>
     <div class="content">
       <!-- Ventaja/Desventaja -->
       <div class="feature">
@@ -576,13 +599,14 @@
           />
         </div>
       </div>
+      </div>
     </div>
 
     <div class="footer">
       <div class="version">Nivel21 v1.3.16</div>
       <div style="margin-top: 8px; color: #777777; font-size: 11px">
-        Aviso: Estas características dependen del funcionamiento interno del
-        tablero y pueden dejar de funcionar con futuras actualizaciones.
+        Aviso: Estas características dependen del funcionamiento interno de
+        Nivel20 y pueden dejar de funcionar con futuras actualizaciones.
       </div>
     </div>
 
