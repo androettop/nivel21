@@ -62,10 +62,25 @@ Sistema de capas para organizar y posicionar tokens en profundidad. Permite que 
 
 - **Click derecho en token (DM)** - Menú "Capa"
 - **Seleccionar capa** - El token se posiciona según la capa asignada
-- **Capas predefinidas** - 🧱 Fondo, 🕳️ Efectos de área, 🔮 Aura, 🧙 Personajes, ⚡ Efectos
+- **Capas predefinidas** Fondo, Capa 1, Capa 2, Capa 3, Capa 4, Capa 5
 
 <a id="token-layers">
  <img src="popup/img/token-layers.png" alt="Capas de Tokens" />
+</a>
+
+---
+
+### Auras de Token
+
+Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados. El aura se dibuja a nivel del suelo y mantiene su tamaño relativo al mundo, sin escalar junto con el token.
+
+- **Click derecho en token (DM)** - Opción "Modificar Aura"
+- **Color** - Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja o Púrpura
+- **Radio** - Define el tamaño del aura en celdas (admite decimales)
+- **Radio 0** - Elimina el aura del token
+
+<a id="token-aura">
+ <img src="popup/img/token-aura.png" alt="Auras de Token" />
 </a>
 
 ---

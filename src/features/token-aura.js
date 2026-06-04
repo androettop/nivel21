@@ -14,7 +14,6 @@
       SettingsManager,
       MeasurementManager,
       FloatingPanelManager,
-      NetworkManager,
     ] = await loadManagers(
       "TokenManager",
       "CanvasDropdownManager",
@@ -23,7 +22,6 @@
       "SettingsManager",
       "MeasurementManager",
       "FloatingPanelManager",
-      "NetworkManager",
     );
 
     if (!SettingsManager.get("feature.token-aura.enabled")) {
@@ -41,6 +39,14 @@
       o: { name: "Naranja", rgb: [1, 0.5, 0], alpha: 0.2 },
       p: { name: "Púrpura", rgb: [0.5, 0, 1], alpha: 0.2 },
     };
+
+    // Tokens with an active aura, keyed by networkId.
+    // Value holds the desired world size and the last token scale applied, so
+    // the per-frame loop only re-scales the aura when the token scale changes.
+    // This keeps the aura world-relative regardless of who resizes the token
+    // (local, network, animation, etc.).
+    const activeAuras = new Map(); // networkId -> { size, lastScale: {x,y,z} }
+    let auraSyncFrame = null;
 
     function toText(value) {
       if (value === undefined || value === null) return "";
@@ -133,6 +139,7 @@
         if (auraShape) {
           TokenManager.removeChildFromToken(networkId, auraShape);
         }
+        activeAuras.delete(networkId);
         return;
       }
 
@@ -156,17 +163,73 @@
         fillColor: [r, g, b, fillAlpha],
       });
 
-      // Set size. The aura is a child of the token, so its world scale is
-      // multiplied by the token's scale. Divide by the token scale so the aura
-      // stays relative to the world rather than growing/shrinking with the token.
+      // The aura is a child of the token, so its world scale is multiplied by
+      // the token's scale. Track it and let the per-frame loop keep it
+      // counter-scaled so it stays relative to the world.
       const size = radius * 2;
-      const tokenScale = TokenManager.getTokenScale(networkId) || { x: 1, y: 1, z: 1 };
+      activeAuras.set(networkId, { size, lastScale: null });
+      applyWorldScale(networkId, shape, size);
+      startAuraScaleSync();
+    }
+
+    /**
+     * Counter-scale the aura shape against the token's current scale so the
+     * aura keeps a constant world size. Returns false if the token/shape is
+     * gone (so the caller can stop tracking it).
+     */
+    function applyWorldScale(networkId, shape, size) {
+      const tokenScale = TokenManager.getTokenScale(networkId);
+      if (!tokenScale) return false;
+
+      const entry = activeAuras.get(networkId);
+      const last = entry && entry.lastScale;
+      if (
+        last &&
+        last.x === tokenScale.x &&
+        last.y === tokenScale.y &&
+        last.z === tokenScale.z
+      ) {
+        return true; // No scale change, nothing to do this frame
+      }
+
       MeasurementManager.setShapeScale(
         shape,
         size / (tokenScale.x || 1),
         size / (tokenScale.y || 1),
         size / (tokenScale.z || 1)
       );
+
+      if (entry) entry.lastScale = tokenScale;
+      return true;
+    }
+
+    /**
+     * Per-frame loop that keeps every active aura counter-scaled against its
+     * token. Robust to resizes from any source (including other players),
+     * since it reads the live entity scale rather than relying on an event.
+     * Idle work is minimal: it only re-scales when a token's scale changed.
+     */
+    function startAuraScaleSync() {
+      if (auraSyncFrame !== null) return;
+
+      const sync = () => {
+        for (const [networkId, entry] of activeAuras.entries()) {
+          const shape = TokenManager.getTokenChildByName(networkId, "TokenAura");
+          if (!shape || !applyWorldScale(networkId, shape, entry.size)) {
+            // Token or aura shape is gone; stop tracking it.
+            activeAuras.delete(networkId);
+          }
+        }
+
+        if (activeAuras.size > 0) {
+          auraSyncFrame = requestAnimationFrame(sync);
+          return;
+        }
+
+        auraSyncFrame = null;
+      };
+
+      auraSyncFrame = requestAnimationFrame(sync);
     }
 
     /**
@@ -186,19 +249,6 @@
       }
 
       applyAuraToToken(networkId, aura.color, aura.radius);
-    }
-
-    /**
-     * Recompute the aura for a token using its current visibility state.
-     * Used when the token transform (e.g. scale) changes so the aura stays
-     * relative to the world.
-     */
-    function recomputeAura(networkId) {
-      const visibility = TokenManager.getTokenVisibility(networkId) || {
-        hidden: false,
-        translucent: false,
-      };
-      syncAuraWithVisibility(networkId, visibility.hidden, visibility.translucent);
     }
 
     /**
@@ -360,31 +410,6 @@
     // Hide/show aura when token visibility changes
     TokenManager.onTokenVisibilityChange((networkId, hidden, translucent) => {
       syncAuraWithVisibility(networkId, hidden, translucent);
-    });
-
-    // Recompute aura when a token is scaled so it stays relative to the world.
-    // transform:update fires for position too, so only recompute when the
-    // token's scale actually changed.
-    const lastScaleByToken = new Map();
-    NetworkManager.on("transform:update", (data) => {
-      const networkId = data?.networkId;
-      if (!networkId || !networkId.includes("TOKEN")) return;
-
-      const scale = TokenManager.getTokenScale(networkId);
-      if (!scale) return;
-
-      const last = lastScaleByToken.get(networkId);
-      if (
-        last &&
-        last.x === scale.x &&
-        last.y === scale.y &&
-        last.z === scale.z
-      ) {
-        return;
-      }
-
-      lastScaleByToken.set(networkId, scale);
-      recomputeAura(networkId);
     });
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Aura", error);
