@@ -614,6 +614,7 @@ span[n21-h] {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+	min-height: 260px;
 }
 
 .n21-dm-card[draggable="true"] {
