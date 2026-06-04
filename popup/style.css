@@ -28,13 +28,83 @@
         color: #ffffff;
       }
 
-      .content {
+      /* Página principal / Acerca de */
+      .intro {
         padding: 20px;
+        border-bottom: 1px solid #444444;
+        text-align: center;
+      }
+
+      .intro-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ffffff;
+        margin-bottom: 12px;
+      }
+
+      .intro-description {
+        font-size: 13px;
+        color: #b0b0b0;
+        line-height: 1.5;
+        margin-bottom: 10px;
+      }
+
+      .intro-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .discord-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background-color: #5865f2;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: bold;
+        text-decoration: none;
+        padding: 10px 18px;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+      }
+
+      .discord-button:hover {
+        background-color: #4752c4;
+      }
+
+      .discord-icon {
+        width: 18px;
+        height: 18px;
+      }
+
+      .kofi-button {
+        display: inline-block;
+      }
+
+      .kofi-img {
+        height: 40px;
+        cursor: pointer;
+      }
+
+      /* Encabezado de la sección de características */
+      .features-heading {
+        padding: 16px 20px 4px 20px;
+        font-size: 13px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #888888;
+      }
+
+      .content {
+        padding: 0 20px 20px 20px;
       }
 
       .feature {
-        margin-bottom: 25px;
-        padding-bottom: 20px;
         border-bottom: 1px solid #444444;
       }
 
@@ -42,11 +112,30 @@
         border-bottom: none;
       }
 
+      /* Cabecera colapsable */
+      .feature-header {
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 16px 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: inherit;
+        text-align: left;
+        color: inherit;
+      }
+
+      .feature-header:hover .feature-title {
+        color: #ffffff;
+      }
+
       .feature-title {
+        flex: 1;
         font-size: 16px;
         font-weight: bold;
         color: #ffffff;
-        margin-bottom: 10px;
         display: flex;
         align-items: center;
       }
@@ -55,6 +144,38 @@
         content: "✓";
         margin-right: 8px;
         font-weight: bold;
+      }
+
+      /* Flecha indicadora */
+      .feature-chevron {
+        flex: 0 0 auto;
+        width: 8px;
+        height: 8px;
+        border-right: 2px solid #888888;
+        border-bottom: 2px solid #888888;
+        transform: rotate(-45deg);
+        transition: transform 0.2s ease;
+        margin-right: 2px;
+      }
+
+      .feature.open .feature-chevron {
+        transform: rotate(45deg);
+        border-color: #af090b;
+      }
+
+      .feature.open .feature-title::before {
+        color: #af090b;
+      }
+
+      /* Cuerpo colapsable */
+      .feature-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease;
+      }
+
+      .feature.open .feature-body {
+        padding-bottom: 20px;
       }
 
       .feature-description {

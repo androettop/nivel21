@@ -16,420 +16,565 @@
       <img src="img/logo.png" alt="Nivel21 Logo" height="60px" class="logo" />
     </div>
 
+    <!-- Página principal / Acerca de -->
+    <div class="intro">
+      <div class="intro-title">Mejora tu experiencia en Nivel20</div>
+      <div class="intro-description">
+        Nivel21 es una extensión que automatiza y suma herramientas al tablero
+        de Nivel20: atajos de teclado, mediciones persistentes, auras de token,
+        utilidades para el DM y mucho más. Todo desde un mismo lugar y sin
+        complicaciones.
+      </div>
+      <div class="intro-description">
+        Explorá todas las características disponibles más abajo.
+      </div>
+      <div class="intro-actions">
+        <a
+          class="discord-button"
+          href="https://discord.gg/KRHJm8x6rp"
+          target="_blank"
+          title="Únete a la comunidad de Discord"
+        >
+          <svg
+            class="discord-icon"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+          >
+            <path
+              d="M20.317 4.369A19.79 19.79 0 0 0 15.432 3a13.6 13.6 0 0 0-.617 1.27 18.27 18.27 0 0 0-5.633 0A13.6 13.6 0 0 0 8.565 3a19.74 19.74 0 0 0-4.885 1.37C.533 9.046-.32 13.58.099 18.057a19.9 19.9 0 0 0 6.057 3.058 14.6 14.6 0 0 0 1.226-1.994 12.9 12.9 0 0 1-1.932-.93c.162-.119.321-.243.475-.371a14.2 14.2 0 0 0 12.15 0c.156.13.315.254.475.371-.617.366-1.265.678-1.934.93a14.4 14.4 0 0 0 1.226 1.994 19.8 19.8 0 0 0 6.061-3.057c.5-5.177-.838-9.674-3.512-13.688ZM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.334-.956 2.419-2.157 2.419Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.418 2.157-2.418 1.21 0 2.176 1.094 2.157 2.418 0 1.334-.946 2.419-2.157 2.419Z"
+            />
+          </svg>
+          Únete a la comunidad
+        </a>
+        <a
+          class="kofi-button"
+          href="https://ko-fi.com/androettop"
+          target="_blank"
+          title="Apoya el proyecto en Ko-fi"
+        >
+          <img src="img/kofi.png" alt="Ko-fi" class="kofi-img" />
+        </a>
+      </div>
+    </div>
+
+    <!-- Sección de Características -->
+    <div class="features-heading">Características</div>
+
     <div class="content">
       <!-- Ventaja/Desventaja -->
       <div class="feature">
-        <div class="feature-title">Tiradas con Ventaja/Desventaja</div>
-        <div class="feature-description">
-          Modifica automáticamente tus tiradas de dados manteniendo presionadas
-          las teclas especiales mientras haces clic en un botón de tirada.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Tiradas con Ventaja/Desventaja</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Modifica automáticamente tus tiradas de dados manteniendo presionadas
+            las teclas especiales mientras haces clic en un botón de tirada.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Shift</span>
+            <span class="hotkey-description">Tirada con Ventaja</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Alt</span>
+            <span class="hotkey-description">Tirada con Desventaja</span>
+          </div>
+          <img
+            src="img/advantage-disadvantage.png"
+            alt="Tiradas con Ventaja/Desventaja"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift</span>
-          <span class="hotkey-description">Tirada con Ventaja</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Alt</span>
-          <span class="hotkey-description">Tirada con Desventaja</span>
-        </div>
-        <img
-          src="img/advantage-disadvantage.png"
-          alt="Tiradas con Ventaja/Desventaja"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Capas de Tokens -->
       <div class="feature">
-        <div class="feature-title">Capas de Tokens</div>
-        <div class="feature-description">
-          Sistema de capas para organizar y posicionar tokens en profundidad. Los DMs pueden asignar capas a tokens para crear efectos visuales de profundidad.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Capas de Tokens</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Sistema de capas para organizar y posicionar tokens en profundidad. Los DMs pueden asignar capas a tokens para crear efectos visuales de profundidad.
+          </div>
+          <div class="feature-description">
+            <b>Click derecho en token (DM):</b> Menú "Capa" para seleccionar entre capas predefinidas (0 - Fondo, 1 - Capa 1, 2 - Capa 2, 3 - Capa 3, 4 - Capa 4, 5 - Capa 5).
+          </div>
+          <img
+            src="img/token-layers.png"
+            alt="Capas de Tokens"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          <b>Click derecho en token (DM):</b> Menú "Capa" para seleccionar entre capas predefinidas (0 - Fondo, 1 - Capa 1, 2 - Capa 2, 3 - Capa 3, 4 - Capa 4, 5 - Capa 5).
-        </div>
-        <img
-          src="img/token-layers.png"
-          alt="Capas de Tokens"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Auras de Token -->
       <div class="feature">
-        <div class="feature-title">Auras de Token</div>
-        <div class="feature-description">
-          Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Auras de Token</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados.
+          </div>
+          <div class="feature-description">
+            <b>Click derecho en token (DM):</b> Opción "Modificar Aura" para elegir color (Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja, Púrpura) y radio. Un radio de 0 elimina el aura.
+          </div>
+          <img
+            src="img/token-aura.png"
+            alt="Auras de Token"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          <b>Click derecho en token (DM):</b> Opción "Modificar Aura" para elegir color (Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja, Púrpura) y radio. Un radio de 0 elimina el aura.
-        </div>
-        <img
-          src="img/token-aura.png"
-          alt="Auras de Token"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Mediciones Persistentes -->
       <div class="feature">
-        <div class="feature-title">Mediciones Persistentes</div>
-        <div class="feature-description">
-          Mantén tus mediciones en el mapa de forma persistente. Activa o
-          desactiva el modo de persistencia usando el botón de anclaje en el
-          panel de mediciones.
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key"
-            >Botón <i style="margin-left: 4px" class="fa fa-anchor"></i
-          ></span>
-          <span class="hotkey-description"
-            >Alternar persistencia de mediciones</span
-          >
-        </div>
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Mediciones Persistentes</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Mantén tus mediciones en el mapa de forma persistente. Activa o
+            desactiva el modo de persistencia usando el botón de anclaje en el
+            panel de mediciones.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key"
+              >Botón <i style="margin-left: 4px" class="fa fa-anchor"></i
+            ></span>
+            <span class="hotkey-description"
+              >Alternar persistencia de mediciones</span
+            >
+          </div>
 
-        <img
-          src="img/multi-measurement.png"
-          alt="Mediciones Persistentes"
-          class="feature-screenshot"
-        />
+          <img
+            src="img/multi-measurement.png"
+            alt="Mediciones Persistentes"
+            class="feature-screenshot"
+          />
+        </div>
       </div>
 
       <!-- Compartir Contenido al Chat -->
       <div class="feature">
-        <div class="feature-title">Compartir Contenido al Chat</div>
-        <div class="feature-description">
-          Comparte rápidamente conjuros, items, reglas y otros contenidos con tu
-          DM y compañeros. Los elementos se resaltan en azul cuando están listos
-          para compartir.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Compartir Contenido al Chat</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Comparte rápidamente conjuros, items, reglas y otros contenidos con tu
+            DM y compañeros. Los elementos se resaltan en azul cuando están listos
+            para compartir.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Shift + Click</span>
+            <span class="hotkey-description">Comparte el elemento al chat</span>
+          </div>
+          <img
+            src="img/send-to-chat.png"
+            alt="Compartir Contenido al Chat"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Shift + Click</span>
-          <span class="hotkey-description">Comparte el elemento al chat</span>
-        </div>
-        <img
-          src="img/send-to-chat.png"
-          alt="Compartir Contenido al Chat"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Enlaces en el Chat -->
       <div class="feature">
-        <div class="feature-title">Enlaces en Mensajes del Chat</div>
-        <div class="feature-description">
-          Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20
-          se detectan automáticamente en el chat y se abren en ventanas
-          internas.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Enlaces en Mensajes del Chat</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Los enlaces de reglas, objetos, conjuros y otros contenidos de Nivel20
+            se detectan automáticamente en el chat y se abren en ventanas
+            internas.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Auto</span>
+            <span class="hotkey-description"
+              >Los enlaces se convierten automáticamente al escribirlos</span
+            >
+          </div>
+          <img
+            src="img/parse-chat-links.png"
+            alt="Enlaces en Mensajes del Chat"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Auto</span>
-          <span class="hotkey-description"
-            >Los enlaces se convierten automáticamente al escribirlos</span
-          >
-        </div>
-        <img
-          src="img/parse-chat-links.png"
-          alt="Enlaces en Mensajes del Chat"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Susurrar en el Chat -->
       <div class="feature">
-        <div class="feature-title">Susurrar en el Chat</div>
-        <div class="feature-description">
-          Envía mensajes privados a otros jugadores escribiendo /w nombre. El
-          modo se cambia automáticamente a privado y solo el destinatario verá
-          el mensaje. Los susurros se destacan en verde en el chat.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Susurrar en el Chat</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Envía mensajes privados a otros jugadores escribiendo /w nombre. El
+            modo se cambia automáticamente a privado y solo el destinatario verá
+            el mensaje. Los susurros se destacan en verde en el chat.
+          </div>
+          <div class="feature-description">
+            <strong
+              >Los usuarios sin la extensión no podrán recibir susurros.</strong
+            >
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">/w nombre mensaje</span>
+            <span class="hotkey-description">Enviar susurro privado</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Tab</span>
+            <span class="hotkey-description"
+              >Autocompletar nombre de usuario conectado</span
+            >
+          </div>
+          <div class="feature-description">
+            <strong>Ejemplos:</strong>
+          </div>
+          <div class="feature-description">
+            • <code>/w Lucius hola, ¿estás listo?</code><br />
+            • <code>/w "Ana María" ¿puedes revisar la pista?</code>
+          </div>
+          <div class="feature-description">
+            <strong>Autocompletado con Tab:</strong>
+          </div>
+          <div class="feature-description">
+            • Escribe <code>/w</code> y presiona Tab para ciclar entre todos los
+            usuarios conectados<br />
+            • Escribe <code>/w Lu</code> y presiona Tab para autocompletar
+            usuarios que comienzan con "Lu"<br />
+            • Presiona Tab varias veces para ciclar entre todas las
+            coincidencias<br />
+            • Las comillas se agregan automáticamente para nombres con espacios
+          </div>
+          <img
+            src="img/whisper-mode.png"
+            alt="Susurrar en el Chat"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          <strong
-            >Los usuarios sin la extensión no podrán recibir susurros.</strong
-          >
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">/w nombre mensaje</span>
-          <span class="hotkey-description">Enviar susurro privado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Tab</span>
-          <span class="hotkey-description"
-            >Autocompletar nombre de usuario conectado</span
-          >
-        </div>
-        <div class="feature-description">
-          <strong>Ejemplos:</strong>
-        </div>
-        <div class="feature-description">
-          • <code>/w Lucius hola, ¿estás listo?</code><br />
-          • <code>/w "Ana María" ¿puedes revisar la pista?</code>
-        </div>
-        <div class="feature-description">
-          <strong>Autocompletado con Tab:</strong>
-        </div>
-        <div class="feature-description">
-          • Escribe <code>/w</code> y presiona Tab para ciclar entre todos los
-          usuarios conectados<br />
-          • Escribe <code>/w Lu</code> y presiona Tab para autocompletar
-          usuarios que comienzan con "Lu"<br />
-          • Presiona Tab varias veces para ciclar entre todas las
-          coincidencias<br />
-          • Las comillas se agregan automáticamente para nombres con espacios
-        </div>
-        <img
-          src="img/whisper-mode.png"
-          alt="Susurrar en el Chat"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Atajos para Tokens -->
       <div class="feature">
-        <div class="feature-title">Atajos para Tokens</div>
-        <div class="feature-description">
-          Controla rápidamente los tokens/fichas del mapa usando atajos de
-          teclado. Selecciona un token primero.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Atajos para Tokens</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Controla rápidamente los tokens/fichas del mapa usando atajos de
+            teclado. Selecciona un token primero.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Ctrl + H</span>
+            <span class="hotkey-description">Alternar visibilidad del token</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Ctrl + B</span>
+            <span class="hotkey-description">Bloquear/desbloquear el token</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Ctrl + E</span>
+            <span class="hotkey-description">Editar el token seleccionado</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Ctrl + D</span>
+            <span class="hotkey-description">Duplicar el token seleccionado</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Delete</span>
+            <span class="hotkey-description">Eliminar el token seleccionado</span>
+          </div>
+          <img
+            src="img/token-hotkeys.png"
+            alt="Atajos para Tokens"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + H</span>
-          <span class="hotkey-description">Alternar visibilidad del token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + B</span>
-          <span class="hotkey-description">Bloquear/desbloquear el token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + E</span>
-          <span class="hotkey-description">Editar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Ctrl + D</span>
-          <span class="hotkey-description">Duplicar el token seleccionado</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Delete</span>
-          <span class="hotkey-description">Eliminar el token seleccionado</span>
-        </div>
-        <img
-          src="img/token-hotkeys.png"
-          alt="Atajos para Tokens"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Mover Tokens con el Teclado -->
       <div class="feature">
-        <div class="feature-title">Mover Tokens con el Teclado</div>
-        <div class="feature-description">
-          Mueve uno o varios tokens seleccionados con las flechas del teclado.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Mover Tokens con el Teclado</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Mueve uno o varios tokens seleccionados con las flechas del teclado.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Flechas</span>
+            <span class="hotkey-description">Mover token una casilla</span>
+          </div>
+          <img
+            src="img/token-move-arrows.png"
+            alt="Mover Tokens con el Teclado"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Flechas</span>
-          <span class="hotkey-description">Mover token una casilla</span>
-        </div>
-        <img
-          src="img/token-move-arrows.png"
-          alt="Mover Tokens con el Teclado"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Distancia recorrida -->
       <div class="feature">
-        <div class="feature-title">Distancia recorrida</div>
-        <div class="feature-description">
-          Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Distancia recorrida</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
+          </div>
+          <img
+            src="img/token-drag-measurement.png"
+            alt="Distancia recorrida"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/token-drag-measurement.png"
-          alt="Distancia recorrida"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Velocidad de arrastre de tokens -->
       <div class="feature">
-        <div class="feature-title">Velocidad de arrastre de tokens</div>
-        <div class="feature-description">
-          Incrementa la velocidad de las animaciones al arrastrar tokens por el mapa. La velocidad es personalizable desde la configuración.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Velocidad de arrastre de tokens</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Incrementa la velocidad de las animaciones al arrastrar tokens por el mapa. La velocidad es personalizable desde la configuración.
+          </div>
+          <div class="feature-description">
+            Evita que los tokens se desacomoden al arrastrar varios a la vez por largas distancias.
+          </div>
+          <img
+            src="img/token-drag-speed.png"
+            alt="Velocidad de arrastre de tokens"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          Evita que los tokens se desacomoden al arrastrar varios a la vez por largas distancias.
-        </div>
-        <img
-          src="img/token-drag-speed.png"
-          alt="Velocidad de arrastre de tokens"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Efectos Ambientales -->
       <div class="feature">
-        <div class="feature-title">Efectos Ambientales</div>
-        <div class="feature-description">
-          Agrega una capa de color sobre el tablero para simular horas del día,
-          clima o eventos astronómicos. Puedes ajustar color, intensidad y modo
-          de fusión para ambientar cada escena.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Efectos Ambientales</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Agrega una capa de color sobre el tablero para simular horas del día,
+            clima o eventos astronómicos. Puedes ajustar color, intensidad y modo
+            de fusión para ambientar cada escena.
+          </div>
+          <img
+            src="img/ambient-fx.png"
+            alt="Efectos Ambientales"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/ambient-fx.png"
-          alt="Efectos Ambientales"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Panel de Notas -->
       <div class="feature">
-        <div class="feature-title">Panel de Notas</div>
-        <div class="feature-description">
-          Abre un panel flotante para tomar notas durante la partida. Las notas
-          se guardan automáticamente en el navegador y persisten entre sesiones.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Panel de Notas</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Abre un panel flotante para tomar notas durante la partida. Las notas
+            se guardan automáticamente en el navegador y persisten entre sesiones.
+          </div>
+          <img
+            src="img/notes-panel.png"
+            alt="Panel de Notas"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/notes-panel.png"
-          alt="Panel de Notas"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Pantalla de DM -->
       <div class="feature">
-        <div class="feature-title">Pantalla de DM</div>
-        <div class="feature-description">
-          Abre una ventana flotante con tarjetas de referencia rápida para el
-          DM (CDs, cobertura, severidad del daño, objetos y más). Incluye un set
-          de reglas de D&amp;D editable, permite crear tarjetas personalizadas,
-          reordenarlas con arrastrar y soltar, y restaurar las predeterminadas.
-          Disponible solo para el DM.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Pantalla de DM</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Abre una ventana flotante con tarjetas de referencia rápida para el
+            DM (CDs, cobertura, severidad del daño, objetos y más). Incluye un set
+            de reglas de D&amp;D editable, permite crear tarjetas personalizadas,
+            reordenarlas con arrastrar y soltar, y restaurar las predeterminadas.
+            Disponible solo para el DM.
+          </div>
+          <img
+            src="img/dm-screen.png"
+            alt="Pantalla de DM"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/dm-screen.png"
-          alt="Pantalla de DM"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Configuración -->
       <div class="feature">
-        <div class="feature-title">Panel de Configuración</div>
-        <div class="feature-description">
-          Centraliza todas las configuraciones de Nivel21 en un panel de
-          ajustes.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Panel de Configuración</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Centraliza todas las configuraciones de Nivel21 en un panel de
+            ajustes.
+          </div>
+          <img
+            src="img/settings-panel.png"
+            alt="Panel de Configuración"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/settings-panel.png"
-          alt="Panel de Configuración"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Informe de Errores -->
       <div class="feature">
-        <div class="feature-title">Informe de Errores</div>
-        <div class="feature-description">
-          Muestra un informe de errores cuando alguna función no se carga
-          correctamente para que puedas copiarlo y compartirlo con
-          nosotros. Esto nos ayuda a identificar y solucionar problemas
-          de compatibilidad con futuras actualizaciones de Nivel20.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Informe de Errores</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Muestra un informe de errores cuando alguna función no se carga
+            correctamente para que puedas copiarlo y compartirlo con
+            nosotros. Esto nos ayuda a identificar y solucionar problemas
+            de compatibilidad con futuras actualizaciones de Nivel20.
+          </div>
+          <img
+            src="img/error-report.png"
+            alt="Informe de Errores"
+            class="feature-screenshot"
+          />
         </div>
-        <img
-          src="img/error-report.png"
-          alt="Informe de Errores"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Carpetas anidadas -->
       <div class="feature">
-        <div class="feature-title">Carpetas anidadas</div>
-        <div class="feature-description">
-          Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa.
-          Organiza acciones en carpetas usando el separador " > " en el nombre.
-          La barra se convierte en carpetas anidadas automáticamente.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Carpetas anidadas</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Nivel20 aún no soporta carpetas dentro de carpetas de forma nativa.
+            Organiza acciones en carpetas usando el separador " > " en el nombre.
+            La barra se convierte en carpetas anidadas automáticamente.
+          </div>
+          <div class="feature-description">
+            <strong>Ejemplo:</strong>
+          </div>
+          <div class="feature-description">
+            Crea un item llamado "Ataques &gt; Espadas &gt; Estocada"
+          </div>
+          <div class="feature-description">
+            Si quieres elegir un icono en la carpeta "Espadas", crea una accion
+            "Carpeta" o "Sin acción" con nombre "Espadas", y seleccionar el icono
+            deseado.
+          </div>
+          <img
+            src="img/multi-level-action-bar.png"
+            alt="Carpetas anidadas"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          <strong>Ejemplo:</strong>
-        </div>
-        <div class="feature-description">
-          Crea un item llamado "Ataques &gt; Espadas &gt; Estocada"
-        </div>
-        <div class="feature-description">
-          Si quieres elegir un icono en la carpeta "Espadas", crea una accion
-          "Carpeta" o "Sin acción" con nombre "Espadas", y seleccionar el icono
-          deseado.
-        </div>
-        <img
-          src="img/multi-level-action-bar.png"
-          alt="Carpetas anidadas"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Enviar tokens al chat -->
       <div class="feature">
-        <div class="feature-title">Enviar tokens al chat</div>
-        <div class="feature-description">
-          Permite agregar notas descriptivas a los tokens que se pueden compartir
-          con los jugadores. Los DMs pueden hacer clic derecho en un token para
-          ver o enviar sus notas al chat.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Enviar tokens al chat</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Permite agregar notas descriptivas a los tokens que se pueden compartir
+            con los jugadores. Los DMs pueden hacer clic derecho en un token para
+            ver o enviar sus notas al chat.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Click derecho en token (DM)</span>
+            <span class="hotkey-description">Ver/enviar notas del token</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Notas visibles</span>
+            <span class="hotkey-description">Se muestran con formato enriquecido en el chat</span>
+          </div>
+          <img
+            src="img/token-notes.png"
+            alt="Enviar tokens al chat"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Click derecho en token (DM)</span>
-          <span class="hotkey-description">Ver/enviar notas del token</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Notas visibles</span>
-          <span class="hotkey-description">Se muestran con formato enriquecido en el chat</span>
-        </div>
-        <img
-          src="img/token-notes.png"
-          alt="Enviar tokens al chat"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Utilidades de cámara -->
       <div class="feature">
-        <div class="feature-title">Utilidades de cámara</div>
-        <div class="feature-description">
-          Herramientas para los DMs que permiten controlar la cámara del mapa
-          mediante el menú contextual.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Utilidades de cámara</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Herramientas para los DMs que permiten controlar la cámara del mapa
+            mediante el menú contextual.
+          </div>
+          <div class="feature-description">
+            <b>Centrar cámara a todos:</b> Centra la cámara de todos los jugadores en el punto del mapa donde se hizo clic, ideal para revelar nuevas áreas o enfocar la acción.
+          </div>
+          <div class="feature-description">
+            <b>Enderezar cámara:</b> Restablece la rotación de la cámara a 0 grados, proporcionando una vista ortogonal perfecta del mapa.
+          </div>
+          <img
+            src="img/camera-utilities.png"
+            alt="Utilidades de cámara"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="feature-description">
-          <b>Centrar cámara a todos:</b> Centra la cámara de todos los jugadores en el punto del mapa donde se hizo clic, ideal para revelar nuevas áreas o enfocar la acción.
-        </div>
-        <div class="feature-description">
-          <b>Enderezar cámara:</b> Restablece la rotación de la cámara a 0 grados, proporcionando una vista ortogonal perfecta del mapa.
-        </div>
-        <img
-          src="img/camera-utilities.png"
-          alt="Utilidades de cámara"
-          class="feature-screenshot"
-        />
       </div>
 
       <!-- Ping en el Mapa -->
       <div class="feature">
-        <div class="feature-title">Ping en el Mapa</div>
-        <div class="feature-description">
-          Sistema de marcadores visuales animados para señalar ubicaciones en el
-          mapa. Soporta múltiples presets con iconos animados y colores
-          personalizados.
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Ping en el Mapa</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Sistema de marcadores visuales animados para señalar ubicaciones en el
+            mapa. Soporta múltiples presets con iconos animados y colores
+            personalizados.
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Click derecho en mapa</span>
+            <span class="hotkey-description">Menú de ping</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">/ping x z [color] [icon]</span>
+            <span class="hotkey-description">Comando manual</span>
+          </div>
+          <img
+            src="img/ping-map.png"
+            alt="Ping en el Mapa"
+            class="feature-screenshot"
+          />
         </div>
-        <div class="hotkey">
-          <span class="hotkey-key">Click derecho en mapa</span>
-          <span class="hotkey-description">Menú de ping</span>
-        </div>
-        <div class="hotkey">
-          <span class="hotkey-key">/ping x z [color] [icon]</span>
-          <span class="hotkey-description">Comando manual</span>
-        </div>
-        <img
-          src="img/ping-map.png"
-          alt="Ping en el Mapa"
-          class="feature-screenshot"
-        />
       </div>
     </div>
 
@@ -439,22 +584,8 @@
         Aviso: Estas características dependen del funcionamiento interno del
         tablero y pueden dejar de funcionar con futuras actualizaciones.
       </div>
-      <div style="margin-top: 8px; color: #777777">
-        Hecho para mejorar tu experiencia en Nivel20
-      </div>
-      <div style="margin-top: 12px">
-        <a
-          href="https://ko-fi.com/androettop"
-          target="_blank"
-          title="Apoya el proyecto en Ko-fi"
-        >
-          <img
-            src="img/kofi.png"
-            alt="Ko-fi"
-            style="height: 36px; cursor: pointer"
-          />
-        </a>
-      </div>
     </div>
+
+    <script src="popup.js"></script>
   </body>
 </html>
