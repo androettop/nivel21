@@ -72,7 +72,7 @@ Sistema de capas para organizar y posicionar tokens en profundidad. Permite que 
 
 ### Auras de Token
 
-Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados. El aura se dibuja a nivel del suelo y mantiene su tamaño relativo al mundo, sin escalar junto con el token.
+Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados.
 
 - **Click derecho en token (DM)** - Opción "Modificar Aura"
 - **Color** - Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja o Púrpura
@@ -219,6 +219,22 @@ Abre un panel flotante para tomar notas durante la partida. Las notas se guardan
 
 <a id="notes-panel">
  <img src="popup/img/notes-panel.png" alt="Panel de Notas" />
+</a>
+
+---
+
+### Pantalla de DM
+
+Abre una ventana flotante con tarjetas de referencia rápida para el DM, sin salir del tablero. Incluye un set de reglas de D&D predefinidas (Establecer una CD, Cobertura, Severidad del daño, CA y PG de objetos, Saltos, Acciones en combate) y soporta contenido en Markdown.
+
+- **Solo DM** - El panel solo está disponible para el game master
+- **Tarjetas personalizadas** - Crea tus propias tarjetas con título y contenido en Markdown
+- **Editar/Eliminar** - Pasa el cursor sobre una tarjeta para editarla o borrarla
+- **Reordenar** - Arrastra y suelta las tarjetas para cambiar su orden
+- **Restaurar tarjetas** - Vuelve a las tarjetas predeterminadas en cualquier momento
+
+<a id="dm-screen">
+ <img src="popup/img/dm-screen.png" alt="Pantalla de DM" />
 </a>
 
 ---
