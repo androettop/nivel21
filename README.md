@@ -113,6 +113,21 @@ Tanto el DM como los jugadores deben tener la extensión instalada. Los jugadore
 
 ---
 
+### Orden de Turnos
+
+Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma la lista y avanza los turnos, y todos los jugadores ven en tiempo real de quién es el turno.
+
+- **Click derecho en token (DM)** - "Agregar turno" para sumar uno o varios tokens
+- **Iniciativa automática** - Si el token está asignado a un personaje, su iniciativa se completa sola (antes debes tirar iniciativa normalmente para que se registre el valor)
+- **Botón en el menú lateral** - Vuelve a abrir el panel cuando quieras, por si se cierra
+- **Tus tokens resaltados** - A cada jugador se le marcan sus propios tokens
+
+<a id="turn-order">
+ <img src="popup/img/turn-order.png" alt="Orden de Turnos" />
+</a>
+
+---
+
 ### Mediciones Persistentes
 
 Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.
