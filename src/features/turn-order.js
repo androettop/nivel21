@@ -460,6 +460,29 @@
       let currentTurn = 0; // 1-based; 0 = not started
       let dirty = false;
 
+      // Debounced chat sender: only the latest message per channel is sent after
+      // a short idle period, so rapid actions (stepping turns, re-updating the
+      // roster) don't spam the chat with /turno commands.
+      const CHAT_DEBOUNCE_MS = 400;
+      const chatTimers = new Map(); // channel -> timeoutId
+
+      function queueChat(channel, message) {
+        if (chatTimers.has(channel)) clearTimeout(chatTimers.get(channel));
+        chatTimers.set(
+          channel,
+          setTimeout(() => {
+            chatTimers.delete(channel);
+            ChatManager.send(message);
+          }, CHAT_DEBOUNCE_MS),
+        );
+      }
+
+      function cancelChat(channel) {
+        if (!chatTimers.has(channel)) return;
+        clearTimeout(chatTimers.get(channel));
+        chatTimers.delete(channel);
+      }
+
       function buildRosterCommand() {
         return (
           "/turno " +
@@ -506,10 +529,15 @@
           if (!id) return;
           if (roster.some((e) => e.networkId === id)) return;
 
-          roster.push({
-            networkId: id,
-            initiative: getInitiativeForToken(id),
-          });
+          const entry = { networkId: id, initiative: getInitiativeForToken(id) };
+
+          // Insert keeping the list sorted by initiative (descending), so a
+          // token with an initial initiative lands in the right spot. Ties keep
+          // insertion order (inserted after equal initiatives).
+          const at = roster.findIndex((e) => e.initiative < entry.initiative);
+          if (at === -1) roster.push(entry);
+          else roster.splice(at, 0, entry);
+
           added = true;
         });
 
@@ -538,7 +566,9 @@
 
       function sendRoster() {
         if (!roster.length) return;
-        ChatManager.send(buildRosterCommand());
+        // Each channel debounces independently, so a pending turn change is
+        // still sent (in the order it was made) instead of being dropped here.
+        queueChat("roster", buildRosterCommand());
         if (currentTurn < 1) currentTurn = 1;
         dirty = false;
         renderDm();
@@ -548,7 +578,7 @@
         if (!roster.length) return;
         const next = clampTurn(turn, roster.length);
         currentTurn = next;
-        ChatManager.send(`/turno ${next}`);
+        queueChat("turn", `/turno ${next}`);
         renderDm();
       }
 
@@ -562,7 +592,10 @@
       }
 
       function finalize() {
-        ChatManager.send("/turno fin");
+        // Ending combat supersedes any pending roster/turn updates.
+        cancelChat("roster");
+        cancelChat("turn");
+        queueChat("end", "/turno fin");
         roster = [];
         currentTurn = 0;
         dirty = false;
