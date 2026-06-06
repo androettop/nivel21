@@ -133,9 +133,20 @@
 
     /* ======================= Player side: selectable sync ======================= */
 
+    // Tokens whose "selectable" tag WE removed, so we can restore it when the
+    // assignment changes back to us (or is cleared). We only ever restore what
+    // we removed ourselves, never granting access to tokens we never touched.
+    const removedByUs = new Set();
+
     /**
-     * For non-DM players: remove the "selectable" tag from tokens assigned to a
-     * different player. Tokens without an assigned player are ignored.
+     * For non-DM players: keep the "selectable" tag in sync with the token's
+     * player assignment.
+     *  - Assigned to another player -> remove "selectable" (and remember it).
+     *  - Assigned to me / unassigned -> restore "selectable" if we removed it.
+     *
+     * This is idempotent and self-healing: the metadata update and Nivel20's
+     * automatic tag reset arrive as separate events in no guaranteed order, so
+     * re-running this on either event eventually converges to the correct state.
      * @param {string} networkId
      */
     function syncSelectableForToken(networkId) {
@@ -143,19 +154,31 @@
       // The DM keeps full control over every token.
       if (PlayerManager.isGameMaster()) return;
 
-      const assigned = getAssignedUserName(networkId);
-      // No player assigned -> ignore this token.
-      if (!assigned) return;
-
-      const myName = PlayerManager.getMyUserName();
-      // Assigned to me -> leave it selectable.
-      if (myName && assigned === myName) return;
-
       const token = TokenManager.getToken(networkId);
-      // Guard against re-entrancy: only remove (and thus re-fire the tags
-      // listener) when "selectable" is actually present.
-      if (token?.tags?.has?.("selectable")) {
-        token.tags.remove("selectable");
+      const tags = token?.tags;
+      if (!tags) return;
+
+      const assigned = getAssignedUserName(networkId);
+      const myName = PlayerManager.getMyUserName();
+      const belongsToOther = assigned && (!myName || assigned !== myName);
+
+      if (belongsToOther) {
+        // Guard against re-entrancy: only remove (and thus re-fire the tags
+        // listener) when "selectable" is actually present.
+        if (tags.has?.("selectable")) {
+          tags.remove("selectable");
+          removedByUs.add(networkId);
+        }
+        return;
+      }
+
+      // Assigned to me or unassigned: restore "selectable" only if we are the
+      // ones who removed it earlier.
+      if (removedByUs.has(networkId)) {
+        if (!tags.has?.("selectable")) {
+          tags.add?.("selectable");
+        }
+        removedByUs.delete(networkId);
       }
     }
 
@@ -166,10 +189,9 @@
     });
 
     // React to tag changes too: when a token's state changes (e.g. toggling
-    // visibility) Nivel20 may reset its tags and re-add "selectable". If the
-    // token is still assigned to another player, re-apply the removal.
+    // visibility) Nivel20 resets its tags and re-adds "selectable". Re-running
+    // the sync re-applies the correct state.
     TokenManager.onTokenTagsChange((networkId) => {
-      console.log(`[Token Assign Player] Tags changed for token ${networkId}, syncing...`);
       syncSelectableForToken(networkId);
     });
   } catch (error) {
