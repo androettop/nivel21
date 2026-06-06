@@ -569,6 +569,51 @@ span[n21-h] {
 	white-space: nowrap;
 }
 
+/* Buttons styled like the rest of the extension (see .n21-settings-tab). */
+.n21-turn-btn {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	background: rgba(255, 255, 255, 0.04);
+	color: inherit;
+	padding: 8px 12px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.2;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+	outline: none !important;
+}
+
+.n21-turn-btn:hover:not(:disabled) {
+	border-color: rgba(255, 255, 255, 0.24);
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.n21-turn-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.n21-turn-btn--primary {
+	border-color: rgba(130, 32, 32, 0.8);
+	background: rgba(130, 32, 32, 0.25);
+}
+
+.n21-turn-btn--primary:hover:not(:disabled) {
+	border-color: rgba(130, 32, 32, 1);
+	background: rgba(130, 32, 32, 0.4);
+}
+
+.n21-turn-btn--danger {
+	border-color: rgba(192, 57, 43, 0.6);
+	color: #e74c3c;
+}
+
+.n21-turn-btn--danger:hover:not(:disabled) {
+	border-color: rgba(192, 57, 43, 0.9);
+	background: rgba(192, 57, 43, 0.15);
+}
+
 .n21-turn-list {
 	flex: 1 1 auto;
 	min-height: 0;
@@ -602,14 +647,6 @@ span[n21-h] {
 	gap: 8px;
 	flex: 1 1 auto;
 	min-width: 0;
-}
-
-.n21-turn-main--clickable {
-	cursor: pointer;
-}
-
-.n21-turn-main--clickable:hover .n21-turn-name {
-	text-decoration: underline;
 }
 
 .n21-turn-pos {

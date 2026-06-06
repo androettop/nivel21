@@ -39,7 +39,7 @@
     // Narrow panel: a little horizontal room (min/max-width) and a resizable
     // height (min/max-height bound the vertical drag).
     const PANEL_STYLE =
-      "min-width: 180px; max-width: 260px; width: 200px; min-height: 240px; max-height: 90vh; height: 360px;";
+      "min-width: 180px; max-width: 260px; width: 260px; min-height: 240px; max-height: 90vh; height: 360px;";
 
     // Shown to players instead of the real name when a token has its name
     // hidden. Kept as a const in case it should later read e.g. "Nombre oculto".
@@ -246,11 +246,11 @@
       const topBar = editable
         ? `
           <div class="n21-turn-topbar">
-            <button type="button" class="btn btn-sm btn-secondary n21-turn-sort">
-              <i class="fas fa-sort-amount-down"></i> Ordenar por iniciativa
+            <button type="button" class="n21-turn-btn n21-turn-sort">
+              <i class="ft-bar-chart-2"></i> Ordenar por iniciativa
             </button>
-            <button type="button" class="btn btn-sm btn-danger n21-turn-end" title="Finalizar combate">
-              <i class="fas fa-flag-checkered"></i>
+            <button type="button" class="n21-turn-btn n21-turn-btn--danger n21-turn-end" title="Finalizar combate">
+              <i class="ft-flag"></i>
             </button>
           </div>`
         : "";
@@ -292,7 +292,7 @@
               <div class="n21-turn-row ${
                 isCurrent ? "n21-turn-row--current" : ""
               } ${entry.mine ? "n21-turn-row--mine" : ""}" data-index="${index}">
-                <div class="n21-turn-main ${editable ? "n21-turn-main--clickable" : ""}">
+                <div class="n21-turn-main">
                   <span class="n21-turn-pos">${index + 1}</span>
                   ${imgHtml}
                   <span class="n21-turn-name">${escapeHtml(displayName)}</span>
@@ -308,11 +308,15 @@
       const bottomBar = editable
         ? `
           <div class="n21-turn-bottombar">
-            <button type="button" class="btn btn-sm btn-secondary n21-turn-prev" title="Turno anterior">&larr;</button>
-            <button type="button" class="btn btn-sm btn-primary n21-turn-update ${
+            <button type="button" class="n21-turn-btn n21-turn-prev" title="Turno anterior" ${
+              dirty ? "disabled" : ""
+            }>&larr;</button>
+            <button type="button" class="n21-turn-btn n21-turn-btn--primary n21-turn-update ${
               dirty ? "n21-turn-update--dirty" : ""
             }">Actualizar</button>
-            <button type="button" class="btn btn-sm btn-secondary n21-turn-next" title="Turno siguiente">&rarr;</button>
+            <button type="button" class="n21-turn-btn n21-turn-next" title="Turno siguiente" ${
+              dirty ? "disabled" : ""
+            }>&rarr;</button>
           </div>`
         : "";
 
@@ -486,9 +490,13 @@
 
       function setDirty(value) {
         dirty = !!value;
-        getPanel()
+        const $panel = getPanel();
+        $panel
           .find(".n21-turn-update")
           .toggleClass("n21-turn-update--dirty", dirty);
+        // While there are unsent changes, block turn navigation so players never
+        // see a turn that differs from what the DM has applied.
+        $panel.find(".n21-turn-prev, .n21-turn-next").prop("disabled", dirty);
       }
 
       function addTokens(networkIds) {
@@ -575,12 +583,6 @@
           const index = Number($(this).closest(".n21-turn-row").data("index"));
           if (!Number.isFinite(index) || !roster[index]) return;
           removeTokens([roster[index].networkId]);
-        });
-
-        $panel.on("click.n21turn", ".n21-turn-main--clickable", function () {
-          const index = Number($(this).closest(".n21-turn-row").data("index"));
-          if (!Number.isFinite(index)) return;
-          goToTurn(index + 1);
         });
 
         $panel.on("input.n21turn", ".n21-turn-init", function () {
