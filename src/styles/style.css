@@ -573,7 +573,6 @@ span[n21-h] {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow-y: auto;
-	max-height: 50vh;
 	padding: 4px 0;
 }
 
@@ -593,8 +592,8 @@ span[n21-h] {
 }
 
 .n21-turn-row--current {
-	background: rgba(58, 74, 107, 0.18);
-	box-shadow: inset 3px 0 0 #3a4a6b;
+	background: rgba(130, 32, 32, 0.22);
+	box-shadow: inset 3px 0 0 #822020;
 }
 
 .n21-turn-main {
@@ -644,12 +643,42 @@ span[n21-h] {
 	font-size: 13px;
 }
 
+.n21-turn-row--mine {
+	background: rgba(76, 175, 80, 0.12);
+}
+
+.n21-turn-mine {
+	flex: 0 0 auto;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #4caf50;
+	box-shadow: 0 0 4px rgba(76, 175, 80, 0.8);
+}
+
 .n21-turn-init {
 	flex: 0 0 auto;
 	width: 40px;
+	height: 26px;
+	box-sizing: border-box;
 	text-align: center;
 	padding: 2px 4px;
-	height: auto;
+	font-size: 13px;
+	color: inherit;
+	background: rgba(0, 0, 0, 0.25);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	border-radius: 4px;
+}
+
+/* Hide the number input spinners to keep it compact. */
+.n21-turn-init::-webkit-outer-spin-button,
+.n21-turn-init::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.n21-turn-init[type="number"] {
+	-moz-appearance: textfield;
 }
 
 .n21-turn-init-ro {

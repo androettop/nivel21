@@ -13,6 +13,8 @@
       PlayerManager,
       TokenManager,
       FloatingPanelManager,
+      CharacterManager,
+      MainMenuUIManager,
       SettingsManager,
     ] = await loadManagers(
       "ChatManager",
@@ -21,6 +23,8 @@
       "PlayerManager",
       "TokenManager",
       "FloatingPanelManager",
+      "CharacterManager",
+      "MainMenuUIManager",
       "SettingsManager",
     );
 
@@ -29,11 +33,17 @@
     }
 
     const PANEL_TITLE = "Orden de turnos";
-    const PANEL_ICON = "fas fa-list-ol";
-    const PANEL_COLOR = "#3a4a6b";
-    const PANEL_CLASS = "n21-turn-panel n21-fixed-panel";
+    const PANEL_ICON = "ft-list";
+    const PANEL_COLOR = "#822020";
+    const PANEL_CLASS = "n21-turn-panel";
+    // Narrow panel: a little horizontal room (min/max-width) and a resizable
+    // height (min/max-height bound the vertical drag).
     const PANEL_STYLE =
-      "min-width: 300px; max-width: 360px; min-height: 240px;";
+      "min-width: 180px; max-width: 260px; width: 200px; min-height: 240px; max-height: 90vh; height: 360px;";
+
+    // Shown to players instead of the real name when a token has its name
+    // hidden. Kept as a const in case it should later read e.g. "Nombre oculto".
+    const HIDDEN_NAME_PLACEHOLDER = "••••••";
 
     const BASE62 =
       "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -97,16 +107,57 @@
       const name =
         toText(metadata.name) || toText(schema?.name) || "??";
       const imageUrl = toText(tokenInstance?.imageUrl);
-      return { name, imageUrl };
+      return { name, imageUrl, nameHidden: isNameHidden(schema, metadata) };
     }
 
     /**
-     * Initiative lookup from the session status by token name.
-     * TODO: leer del status de la sesión por nombre del token.
-     * Por ahora la iniciativa siempre arranca en 0.
+     * Whether a token has its name hidden from players.
+     * TODO: confirmar el campo real de "ocultar nombre" en el schema/metadata.
      */
-    function getInitiativeFromSession(_name) {
-      return 0;
+    function isNameHidden(schema, metadata) {
+      return !!(
+        metadata?.hide_name ??
+        metadata?.hideName ??
+        schema?.hideName ??
+        schema?.nameHidden
+      );
+    }
+
+    /**
+     * Read a tag value from a token's description metadata.
+     * @param {string} networkId
+     * @param {string} key - tag key (e.g. "char", "user")
+     * @returns {string|null}
+     */
+    function getTokenTag(networkId, key) {
+      const schema = TokenManager.getTokenSchema(networkId);
+      if (!schema) return null;
+      const metadata = safeJsonParse(schema.metadata) || {};
+      const description = toText(metadata.description);
+      return window._n21_.utils.parseTokenTag(description, key);
+    }
+
+    /**
+     * Initial initiative for a token. If the token is assigned to a
+     * character/creature (tag [char:rowId]), copy its current initiative value
+     * from the tracking panel. Otherwise start at 0. The DM can always edit it
+     * afterwards; this is only the initial value.
+     */
+    function getInitiativeForToken(networkId) {
+      const charId = getTokenTag(networkId, "char");
+      if (!charId) return 0;
+      return CharacterManager.getCharacterInitiative(charId);
+    }
+
+    /**
+     * Whether a token is assigned to the current user (tag [user:userName]).
+     * Used to highlight a player's own tokens in the turn order.
+     */
+    function isTokenMine(networkId) {
+      const assigned = getTokenTag(networkId, "user");
+      if (!assigned) return false;
+      const myName = PlayerManager.getMyUserName();
+      return !!myName && assigned === myName;
     }
 
     function clampTurn(turn, length) {
@@ -213,8 +264,12 @@
         listHtml = rows
           .map((entry, index) => {
             const isCurrent = index + 1 === currentTurn;
+            // Players see a placeholder for tokens whose name is hidden; the DM
+            // always sees the real name.
+            const displayName =
+              !editable && entry.nameHidden ? HIDDEN_NAME_PLACEHOLDER : entry.name;
             const initCell = editable
-              ? `<input type="number" class="form-control n21-turn-init" value="${escapeHtml(
+              ? `<input type="number" class="n21-turn-init" value="${escapeHtml(
                   entry.initiative,
                 )}" step="1" />`
               : `<div class="n21-turn-init-ro">${escapeHtml(
@@ -226,17 +281,22 @@
             const imgHtml = entry.imageUrl
               ? `<img class="n21-turn-img" src="${escapeHtml(
                   entry.imageUrl,
-                )}" alt="${escapeHtml(entry.name)}" loading="lazy" />`
+                )}" alt="${escapeHtml(displayName)}" loading="lazy" />`
               : `<div class="n21-turn-img n21-turn-img--empty"></div>`;
+
+            const mineIndicator = entry.mine
+              ? `<span class="n21-turn-mine" title="Tu token"></span>`
+              : "";
 
             return `
               <div class="n21-turn-row ${
                 isCurrent ? "n21-turn-row--current" : ""
-              }" data-index="${index}">
+              } ${entry.mine ? "n21-turn-row--mine" : ""}" data-index="${index}">
                 <div class="n21-turn-main ${editable ? "n21-turn-main--clickable" : ""}">
                   <span class="n21-turn-pos">${index + 1}</span>
                   ${imgHtml}
-                  <span class="n21-turn-name">${escapeHtml(entry.name)}</span>
+                  <span class="n21-turn-name">${escapeHtml(displayName)}</span>
+                  ${mineIndicator}
                 </div>
                 ${initCell}
                 ${removeBtn}
@@ -262,6 +322,127 @@
           <div class="n21-turn-list">${listHtml}</div>
           ${bottomBar}
         </div>`;
+    }
+
+    /* ----------------------- chat history helpers ----------------------- */
+
+    const N21_MESSAGE_REGEX = /\[\[n21:/; // skip encoded n21 messages
+
+    /**
+     * Map every known token's short id back to its networkId so a panel can
+     * resolve names/images from the shortened chat command.
+     */
+    function buildShortIdMap() {
+      const map = new Map();
+      (TokenManager.getAllTokenIds() || []).forEach((networkId) => {
+        map.set(shortId(networkId), networkId);
+      });
+      return map;
+    }
+
+    function resolveSenderId(messageElement) {
+      if (!messageElement || !messageElement.closest) return null;
+      const messageBox = messageElement.closest(".room-message");
+      const senderName = messageBox
+        ?.querySelector(".user-name")
+        ?.textContent?.replace(":", "")
+        .trim();
+      if (!senderName) return null;
+
+      const players = PlayerManager.getPlayerList() || [];
+      const sender = players.find(
+        (player) => String(player?.userName || "").trim() === senderName,
+      );
+      return sender?.userId || null;
+    }
+
+    function isFromGameMaster(messageElement) {
+      const senderId = resolveSenderId(messageElement);
+      if (!senderId) return false;
+      return PlayerManager.isUserGameMaster(senderId);
+    }
+
+    /**
+     * Apply a parsed "/turno" command to a state object
+     * ({ roster: [{shortId, initiative}], currentTurn, active }).
+     * Returns true if the state changed.
+     */
+    function reduceCommand(state, parsed) {
+      if (!parsed) return false;
+
+      if (parsed.type === "end") {
+        state.roster = [];
+        state.currentTurn = 0;
+        state.active = false;
+        return true;
+      }
+
+      if (parsed.type === "roster") {
+        state.roster = parsed.entries.map((entry) => ({
+          shortId: entry.token,
+          initiative: entry.initiative,
+        }));
+        state.currentTurn = clampTurn(
+          state.currentTurn >= 1 ? state.currentTurn : 1,
+          state.roster.length,
+        );
+        state.active = state.roster.length > 0;
+        return true;
+      }
+
+      if (parsed.type === "turn") {
+        if (!state.roster.length) return false;
+        state.currentTurn = clampTurn(parsed.turn, state.roster.length);
+        state.active = true;
+        return true;
+      }
+
+      return false;
+    }
+
+    /**
+     * Reconstruct the current turn-order state from the existing chat history by
+     * replaying every "/turno" command sent by the GM (in document order).
+     */
+    function scanHistoryState() {
+      const state = { roster: [], currentTurn: 0, active: false };
+      const containers = document.querySelectorAll(
+        ChatUIManager.getChatContainerSelector(),
+      );
+      const selector = ChatUIManager.getMessageTextSelector();
+
+      containers.forEach((container) => {
+        container.querySelectorAll(selector).forEach((element) => {
+          const text = element?.textContent || "";
+          if (!text.includes("/turno")) return;
+          if (N21_MESSAGE_REGEX.test(text)) return;
+          if (!isFromGameMaster(element)) return;
+          reduceCommand(state, parseTurnCommand(text));
+        });
+      });
+
+      return state;
+    }
+
+    /**
+     * Add the "Orden de turnos" button to the left main menu.
+     * @param {Function} onClick - opens the proper panel for this user
+     */
+    function addMenuButton(onClick) {
+      MainMenuUIManager.addHeader("Nivel 21", { id: "n21-menu-header" }).then(
+        (header) => {
+          MainMenuUIManager.addItem(
+            {
+              id: "n21-turn-order-panel",
+              title: PANEL_TITLE,
+              iconClass: PANEL_ICON,
+              order: 18,
+              onClick,
+            },
+            { afterElement: header },
+          );
+        },
+      );
     }
 
     /* ============================================================
@@ -292,6 +473,8 @@
             name: info.name,
             imageUrl: info.imageUrl,
             initiative: e.initiative,
+            mine: isTokenMine(e.networkId),
+            nameHidden: info.nameHidden,
           };
         });
 
@@ -315,10 +498,9 @@
           if (!id) return;
           if (roster.some((e) => e.networkId === id)) return;
 
-          const info = getTokenInfo(id);
           roster.push({
             networkId: id,
-            initiative: getInitiativeFromSession(info.name),
+            initiative: getInitiativeForToken(id),
           });
           added = true;
         });
@@ -460,6 +642,43 @@
           removeTokens(ids);
         },
       });
+
+      // Rebuild the DM (editable) panel from chat history on load, so an active
+      // turn order reopens after a reload. Tokens may not be loaded yet, so
+      // retry a few times until every short id resolves.
+      let reconstructTimer = null;
+      function reconstructDm(attempt = 0) {
+        const state = scanHistoryState();
+        if (!state.active || !state.roster.length) return;
+
+        const map = buildShortIdMap();
+        const rebuilt = state.roster
+          .map((e) => {
+            const networkId = map.get(e.shortId);
+            return networkId ? { networkId, initiative: e.initiative } : null;
+          })
+          .filter(Boolean);
+
+        if (rebuilt.length < state.roster.length && attempt < 10) {
+          if (reconstructTimer) clearTimeout(reconstructTimer);
+          reconstructTimer = setTimeout(() => reconstructDm(attempt + 1), 1000);
+        }
+
+        if (!rebuilt.length) return;
+
+        roster = rebuilt;
+        currentTurn = clampTurn(
+          state.currentTurn >= 1 ? state.currentTurn : 1,
+          roster.length,
+        );
+        dirty = false;
+        renderDm();
+      }
+
+      // Left-menu button to (re)open the DM panel if it gets closed.
+      addMenuButton(() => renderDm());
+
+      reconstructDm();
     }
 
     /* ============================================================
@@ -467,8 +686,6 @@
     ============================================================ */
 
     function setupPlayerMode() {
-      const N21_MESSAGE_REGEX = /\[\[n21:/; // skip encoded n21 messages
-
       // Reconstructed state from chat messages. Tokens stored by short id.
       let roster = []; // [{ shortId, initiative }]
       let currentTurn = 0;
@@ -476,71 +693,13 @@
       let needsRender = false;
       let retryTimer = null;
 
-      /**
-       * Map every known token's short id back to its networkId so the read-only
-       * panel can resolve names/images from the shortened chat command.
-       */
-      function buildShortIdMap() {
-        const map = new Map();
-        (TokenManager.getAllTokenIds() || []).forEach((networkId) => {
-          map.set(shortId(networkId), networkId);
-        });
-        return map;
-      }
-
-      function resolveSenderId(messageElement) {
-        if (!messageElement || !messageElement.closest) return null;
-        const messageBox = messageElement.closest(".room-message");
-        const senderName = messageBox
-          ?.querySelector(".user-name")
-          ?.textContent?.replace(":", "")
-          .trim();
-        if (!senderName) return null;
-
-        const players = PlayerManager.getPlayerList() || [];
-        const sender = players.find(
-          (player) => String(player?.userName || "").trim() === senderName,
-        );
-        return sender?.userId || null;
-      }
-
-      function isFromGameMaster(messageElement) {
-        const senderId = resolveSenderId(messageElement);
-        if (!senderId) return false;
-        return PlayerManager.isUserGameMaster(senderId);
-      }
-
       function applyCommand(parsed) {
-        if (!parsed) return;
-
-        if (parsed.type === "end") {
-          roster = [];
-          currentTurn = 0;
-          active = false;
-          needsRender = true;
-          return;
-        }
-
-        if (parsed.type === "roster") {
-          roster = parsed.entries.map((entry) => ({
-            shortId: entry.token,
-            initiative: entry.initiative,
-          }));
-          currentTurn = clampTurn(
-            currentTurn >= 1 ? currentTurn : 1,
-            roster.length,
-          );
-          active = roster.length > 0;
-          needsRender = true;
-          return;
-        }
-
-        if (parsed.type === "turn") {
-          if (!roster.length) return;
-          currentTurn = clampTurn(parsed.turn, roster.length);
-          active = true;
-          needsRender = true;
-        }
+        const state = { roster, currentTurn, active };
+        if (!reduceCommand(state, parsed)) return;
+        roster = state.roster;
+        currentTurn = state.currentTurn;
+        active = state.active;
+        needsRender = true;
       }
 
       function renderPlayer() {
@@ -560,13 +719,15 @@
           const networkId = map.get(e.shortId);
           if (!networkId) {
             unresolved += 1;
-            return { name: "??", imageUrl: "", initiative: e.initiative };
+            return { name: "??", imageUrl: "", initiative: e.initiative, mine: false };
           }
           const info = getTokenInfo(networkId);
           return {
             name: info.name,
             imageUrl: info.imageUrl,
             initiative: e.initiative,
+            mine: isTokenMine(networkId),
+            nameHidden: info.nameHidden,
           };
         });
 
@@ -595,6 +756,21 @@
         applyCommand(parseTurnCommand(text));
       }
 
+      // (Re)open the player panel if it gets closed. Shows the active order, or
+      // an empty state when there's none.
+      function openPlayerPanel() {
+        if (active && roster.length) {
+          renderPlayer();
+          return;
+        }
+        const $panel = ensurePanel();
+        if (!$panel || !$panel.length) return;
+        $panel
+          .find(".floating-block")
+          .first()
+          .html(buildBodyHtml([], 0, false, false));
+      }
+
       ChatUIManager.onMessage(
         "turn-order-player",
         (element) => processMessageElement(element),
@@ -608,6 +784,9 @@
           },
         },
       );
+
+      // Left-menu button to (re)open the player panel.
+      addMenuButton(() => openPlayerPanel());
 
       // Reconstruct from existing chat history (late join support).
       ChatUIManager.processExistingMessages();

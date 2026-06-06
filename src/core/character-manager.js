@@ -61,6 +61,25 @@
     }
 
     /**
+     * Get a character's initiative value by its row id, read from the tracking
+     * panel (.char-initiative-value). Returns 0 if there's no numeric value.
+     * @param {string} rowId
+     * @returns {number}
+     */
+    getCharacterInitiative(rowId) {
+      if (!rowId) return 0;
+
+      const row = document.querySelector(
+        `${TRACKING_ROWS_SELECTOR} ${CHARACTER_ROW_SELECTOR}[data-row-id="${rowId}"]`,
+      );
+      if (!row) return 0;
+
+      const valueEl = row.querySelector(".char-initiative-value");
+      const value = parseInt((valueEl?.textContent || "").trim(), 10);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    /**
      * Select a character in the tracking panel by triggering its row click.
      * Does nothing if the row doesn't exist.
      * @param {string} rowId
