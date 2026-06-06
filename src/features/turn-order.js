@@ -14,6 +14,7 @@
       TokenManager,
       FloatingPanelManager,
       CharacterManager,
+      CameraManager,
       MainMenuUIManager,
       SettingsManager,
     ] = await loadManagers(
@@ -24,6 +25,7 @@
       "TokenManager",
       "FloatingPanelManager",
       "CharacterManager",
+      "CameraManager",
       "MainMenuUIManager",
       "SettingsManager",
     );
@@ -218,6 +220,7 @@
     function closePanel() {
       const $panel = getPanel();
       if ($panel.length) $panel.remove();
+      setHighlight(null);
     }
 
     function ensurePanel() {
@@ -232,6 +235,7 @@
           PANEL_STYLE,
         );
       }
+      bindHighlightHover($panel);
       return $panel;
     }
 
@@ -291,7 +295,9 @@
             return `
               <div class="n21-turn-row ${
                 isCurrent ? "n21-turn-row--current" : ""
-              } ${entry.mine ? "n21-turn-row--mine" : ""}" data-index="${index}">
+              } ${entry.mine ? "n21-turn-row--mine" : ""}" data-index="${index}" data-network-id="${escapeHtml(
+                entry.networkId || "",
+              )}">
                 <div class="n21-turn-main">
                   <span class="n21-turn-pos">${index + 1}</span>
                   ${imgHtml}
@@ -326,6 +332,121 @@
           <div class="n21-turn-list">${listHtml}</div>
           ${bottomBar}
         </div>`;
+    }
+
+    /* ----------------------- token hover highlight ----------------------- */
+
+    // A yellow box drawn over the hovered row's token, on a canvas overlay that
+    // follows the token every frame (same idea as the ping overlay).
+    const HIGHLIGHT_COLOR = "#ffd400";
+    const HIGHLIGHT_OVERLAY_ID = "n21-turn-highlight-overlay";
+
+    let highlightNetworkId = null;
+    let highlightFrame = null;
+
+    function ensureHighlightCanvas() {
+      const appCanvas = document.querySelector("#application-canvas");
+      if (!appCanvas || !appCanvas.parentElement) return null;
+
+      let canvas = document.getElementById(HIGHLIGHT_OVERLAY_ID);
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = HIGHLIGHT_OVERLAY_ID;
+        canvas.className = "n21-turn-highlight-overlay";
+
+        const parent = appCanvas.parentElement;
+        if (appCanvas.nextSibling) {
+          parent.insertBefore(canvas, appCanvas.nextSibling);
+        } else {
+          parent.appendChild(canvas);
+        }
+      }
+      return canvas;
+    }
+
+    function drawHighlight() {
+      const canvas = ensureHighlightCanvas();
+      if (!canvas) {
+        highlightFrame = null;
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const networkId = highlightNetworkId;
+      if (networkId) {
+        const pos = TokenManager.getTokenPosition(networkId);
+        const scale = TokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
+        if (pos) {
+          const halfX = Math.abs(scale.x || 1) / 2;
+          const halfZ = Math.abs(scale.z || 1) / 2;
+
+          const corners = [
+            [pos.x - halfX, pos.z - halfZ],
+            [pos.x + halfX, pos.z - halfZ],
+            [pos.x + halfX, pos.z + halfZ],
+            [pos.x - halfX, pos.z + halfZ],
+          ]
+            .map(([wx, wz]) => CameraManager.worldToScreen(wx, wz, 0))
+            .filter(Boolean);
+
+          if (corners.length === 4) {
+            const xs = corners.map((p) => p.x);
+            const ys = corners.map((p) => p.y);
+            const minX = Math.min(...xs);
+            const maxX = Math.max(...xs);
+            const minY = Math.min(...ys);
+            const maxY = Math.max(...ys);
+
+            // Border thickness scales with how big a cell is on screen, so it
+            // stays ~3px at normal zoom and grows/shrinks with it.
+            const topEdgePx = Math.hypot(
+              corners[1].x - corners[0].x,
+              corners[1].y - corners[0].y,
+            );
+            const pxPerCell = topEdgePx / (Math.abs(scale.x) || 1);
+            const lineWidth = Math.max(2, pxPerCell * 0.06);
+
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = HIGHLIGHT_COLOR;
+            ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+          }
+        }
+      }
+
+      if (highlightNetworkId) {
+        highlightFrame = requestAnimationFrame(drawHighlight);
+      } else {
+        highlightFrame = null;
+      }
+    }
+
+    function setHighlight(networkId) {
+      highlightNetworkId = networkId || null;
+      if (highlightNetworkId && highlightFrame === null) {
+        highlightFrame = requestAnimationFrame(drawHighlight);
+      }
+    }
+
+    function bindHighlightHover($panel) {
+      if (!$panel || !$panel.length) return;
+      if ($panel.data("n21HighlightBound")) return;
+      $panel.data("n21HighlightBound", true);
+
+      $panel.on("mouseenter.n21turnhl", ".n21-turn-row", function () {
+        const networkId = $(this).attr("data-network-id");
+        setHighlight(networkId || null);
+      });
+      $panel.on("mouseleave.n21turnhl", ".n21-turn-row", function () {
+        setHighlight(null);
+      });
     }
 
     /* ----------------------- chat history helpers ----------------------- */
@@ -404,9 +525,19 @@
       return false;
     }
 
+    function isChatOrderReversed() {
+      const container = document.querySelector(
+        ChatUIManager.getChatContainerSelector(),
+      );
+      if (!container || !window.getComputedStyle) return false;
+      return window.getComputedStyle(container).flexDirection === "column-reverse";
+    }
+
     /**
      * Reconstruct the current turn-order state from the existing chat history by
-     * replaying every "/turno" command sent by the GM (in document order).
+     * replaying every "/turno" command sent by the GM in chronological order.
+     * The chat list is rendered newest-first (column-reverse), so DOM order must
+     * be flipped before replaying — otherwise the oldest roster would win.
      */
     function scanHistoryState() {
       const state = { roster: [], currentTurn: 0, active: false };
@@ -415,16 +546,27 @@
       );
       const selector = ChatUIManager.getMessageTextSelector();
 
+      const matches = [];
       containers.forEach((container) => {
         container.querySelectorAll(selector).forEach((element) => {
           const text = element?.textContent || "";
           if (!text.includes("/turno")) return;
           if (N21_MESSAGE_REGEX.test(text)) return;
           if (!isFromGameMaster(element)) return;
-          reduceCommand(state, parseTurnCommand(text));
+          const parsed = parseTurnCommand(text);
+          if (parsed) matches.push({ element, parsed });
         });
       });
 
+      // Document order, then flip if the chat renders newest-first.
+      matches.sort((a, b) => {
+        if (a.element === b.element) return 0;
+        const position = a.element.compareDocumentPosition(b.element);
+        return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+      });
+      if (isChatOrderReversed()) matches.reverse();
+
+      matches.forEach((m) => reduceCommand(state, m.parsed));
       return state;
     }
 
@@ -502,6 +644,7 @@
             initiative: e.initiative,
             mine: isTokenMine(e.networkId),
             nameHidden: info.nameHidden,
+            networkId: e.networkId,
           };
         });
 
@@ -728,13 +871,14 @@
       let needsRender = false;
       let retryTimer = null;
 
-      function applyCommand(parsed) {
-        const state = { roster, currentTurn, active };
-        if (!reduceCommand(state, parsed)) return;
+      // Recompute the whole state from chat history (order-corrected). This is
+      // idempotent, so it's safe no matter how many times the chat history is
+      // re-scanned (e.g. when other features call processExistingMessages).
+      function rebuildFromHistory() {
+        const state = scanHistoryState();
         roster = state.roster;
         currentTurn = state.currentTurn;
         active = state.active;
-        needsRender = true;
       }
 
       function renderPlayer() {
@@ -763,6 +907,7 @@
             initiative: e.initiative,
             mine: isTokenMine(networkId),
             nameHidden: info.nameHidden,
+            networkId,
           };
         });
 
@@ -788,7 +933,8 @@
         if (N21_MESSAGE_REGEX.test(text)) return;
         if (!isFromGameMaster(element)) return;
 
-        applyCommand(parseTurnCommand(text));
+        // A relevant message appeared in this batch; recompute on onComplete.
+        needsRender = true;
       }
 
       // (Re)open the player panel if it gets closed. Shows the active order, or
@@ -815,6 +961,7 @@
             if (PlayerManager.isGameMaster()) return;
             if (!needsRender) return;
             needsRender = false;
+            rebuildFromHistory();
             renderPlayer();
           },
         },
