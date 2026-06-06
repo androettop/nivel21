@@ -143,6 +143,43 @@
     }
 
     /**
+     * Subscribe to token tag changes (add/remove on the token's tags set).
+     * Automatically registers listeners on all tokens (current and future).
+     * Callback receives (networkId).
+     * @param {Function} callback - Tag change callback
+     * @returns {Function} Unsubscribe function (best effort)
+     */
+    onTokenTagsChange(callback) {
+      if (typeof callback !== "function") return () => {};
+
+      const entityManager = this._getEntityManager();
+      const schemaRoot = entityManager?.schema?.();
+
+      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+        return () => {};
+      }
+
+      schemaRoot.onAdd((schema, networkId) => {
+        if (!schema || !networkId) return;
+
+        const token = this.getToken(networkId);
+        const tags = token?.tags;
+
+        if (tags && typeof tags.on === "function") {
+          try {
+            tags.on("change", () => {
+              try {
+                callback(networkId);
+              } catch (_error) {}
+            });
+          } catch (_error) {}
+        }
+      });
+
+      return () => {};
+    }
+
+    /**
      * Check if the TokenManager is ready for use
      * @returns {boolean} True if the manager is ready
      */

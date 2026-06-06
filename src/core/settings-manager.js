@@ -224,6 +224,22 @@
       });
 
       this.registerSetting({
+        name: "feature.token-assign-player.enabled",
+        label: "Asignar Tokens a Jugadores",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-assign-character.enabled",
+        label: "Asignar Tokens a Personajes",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ping-map.enabled",
         label: "Ping en Mapa",
         type: "boolean",

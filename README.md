@@ -85,6 +85,34 @@ Asigna un aura de color alrededor de un token para representar zonas de efecto, 
 
 ---
 
+### Asignar Tokens a Jugadores
+
+Asigna un token a un jugador para que solo ese jugador pueda controlarlo. El resto de jugadores no podrá seleccionarlo ni moverlo.
+
+- **Click derecho en token (DM)** - Opción "Asignar a jugador" con la lista de jugadores conectados
+
+Tanto el DM como los jugadores deben tener la extensión instalada. Los jugadores sin la extensión seguirán controlando con normalidad todos los tokens no bloqueados
+
+<a id="token-assign-player">
+ <img src="popup/img/assign-to-player.png" alt="Asignar Tokens a Jugadores" />
+</a>
+
+---
+
+### Asignar Tokens a Personajes
+
+Asigna un token a un personaje o criatura del panel de personajes. Al cliquear el token se selecciona automáticamente ese personaje/criatura, permitiéndote usar sus acciones más fácilmente.
+
+- **Click derecho en token (DM)** - Opción "Asignar a personaje" con la lista de personajes y criaturas
+
+Tanto el DM como los jugadores deben tener la extensión instalada. Los jugadores sin la extensión no podrán seleccionar automáticamente su personaje al cliquear el token
+
+<a id="token-assign-character">
+ <img src="popup/img/assign-to-character.png" alt="Asignar Tokens a Personajes" />
+</a>
+
+---
+
 ### Mediciones Persistentes
 
 Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.

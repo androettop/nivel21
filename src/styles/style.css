@@ -143,6 +143,11 @@
 	margin-left: 4px;
 }
 
+.n21-canvas-dropdown-submenu.n21-canvas-dropdown-submenu-up {
+	top: auto;
+	bottom: -6px;
+}
+
 .n21-canvas-dropdown-submenu::before {
 	content: "";
 	position: absolute;

@@ -480,6 +480,11 @@
           });
 
           $item.append($button, $submenu);
+
+          // Flip the submenu upward when there isn't enough room below.
+          $item.on("mouseenter", () => {
+            this._positionSubmenu($submenu);
+          });
         } else {
           $button.on("click", () => {
             this.hide();
@@ -512,6 +517,27 @@
       });
 
       this._$menu.attr("aria-hidden", "false");
+    }
+
+    _positionSubmenu($submenu) {
+      if (!$submenu?.length) return;
+
+      const submenuEl = $submenu[0];
+
+      // Measure with the default (downward) position first.
+      $submenu.removeClass("n21-canvas-dropdown-submenu-up");
+
+      const rect = submenuEl.getBoundingClientRect();
+      const margin = 8;
+
+      // Flip upward only if it overflows the bottom edge and it actually fits
+      // better that way (i.e. it's not taller than the viewport).
+      if (
+        rect.bottom > window.innerHeight - margin &&
+        rect.height < window.innerHeight - margin * 2
+      ) {
+        $submenu.addClass("n21-canvas-dropdown-submenu-up");
+      }
     }
 
     hide() {
