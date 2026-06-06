@@ -58,6 +58,18 @@
     }
 
     /**
+     * Get the current player's user name
+     * @returns {string|null} The user name or null if not available
+     */
+    getMyUserName() {
+      const me = this._getNative()?.me?.();
+      if (me?.userName) return me.userName;
+
+      const meFromList = this.getPlayerList().find((player) => player?.isMe);
+      return meFromList?.userName || null;
+    }
+
+    /**
      * Get the current player's session ID
      * @returns {string|null} The session ID or null if not available
      */
