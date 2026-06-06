@@ -89,6 +89,7 @@
       showOn: ["token"],
       order: 60,
       gameMasterOnly: true,
+      singleSelectionOnly: true,
       isVisible: (context) => {
         if (!PlayerManager.isGameMaster()) return false;
         if (!context?.tokenNetworkId) return false;

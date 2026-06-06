@@ -163,6 +163,7 @@
       showOn: ["token"],
       order: 50,
       gameMasterOnly: true,
+      singleSelectionOnly: true,
       onClick: (context) => {
         if (!PlayerManager.isGameMaster()) return;
 

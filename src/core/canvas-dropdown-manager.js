@@ -70,6 +70,7 @@
         onClick: option.onClick,
         isVisible: typeof option.isVisible === "function" ? option.isVisible : null,
         gameMasterOnly: !!option.gameMasterOnly,
+        singleSelectionOnly: !!option.singleSelectionOnly,
         submenu: typeof option.submenu === "function" ? option.submenu : (
           Array.isArray(option.submenu) ? option.submenu.map((sub) => ({
             id: sub.id,
@@ -209,6 +210,61 @@
         this._clearRightClickState();
         this._clearTouchLongPressState();
       });
+
+      // Capture-phase guard: when more than one token is selected, a right-click
+      // on a token must NOT collapse the selection. We intercept the event
+      // before the engine's own handler (capture + stopPropagation) and drive
+      // the menu ourselves. Normal (0-1 selected) right-clicks are untouched and
+      // keep flowing through the bubble-phase handlers above.
+      document.addEventListener(
+        "mousedown",
+        (event) => this._onCaptureRightDown(event),
+        true,
+      );
+      document.addEventListener(
+        "mouseup",
+        (event) => this._onCaptureRightUp(event),
+        true,
+      );
+    }
+
+    _isCanvasTarget(target) {
+      return !!target && target.tagName === "CANVAS";
+    }
+
+    _onCaptureRightDown(event) {
+      this._blockingRightClick = false;
+
+      if (event.button !== 2) return;
+      if (!this._isCanvasTarget(event.target)) return;
+      if (this._getSelectedCount() <= 1) return;
+
+      // Only block when the right-click actually lands on a token.
+      const context = this._buildContext({
+        currentTarget: event.target,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+      if (context.type !== "token") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      this._blockingRightClick = true;
+      this._setRightClickState(event);
+    }
+
+    _onCaptureRightUp(event) {
+      if (event.button !== 2 || !this._blockingRightClick) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      this._blockingRightClick = false;
+
+      if (this._isQualifiedRightClick(event)) {
+        this._openMenuAt(event.target, event.clientX, event.clientY);
+      }
+
+      this._clearRightClickState();
     }
 
     _setRightClickState(event) {
@@ -357,7 +413,14 @@
         event,
         canvas,
         canvasCoords,
+        selectedCount: this._getSelectedCount(),
       };
+    }
+
+    _getSelectedCount() {
+      return Array.isArray(window.selectedSchemas)
+        ? window.selectedSchemas.length
+        : 0;
     }
 
     _openMenuAt(canvas, clientX, clientY) {
@@ -394,6 +457,12 @@
       return options
         .filter((option) => {
           if (option.gameMasterOnly && !this._isCurrentUserGameMaster()) {
+            return false;
+          }
+
+          // Options flagged single-selection-only are hidden when more than one
+          // token is selected.
+          if (option.singleSelectionOnly && context.selectedCount > 1) {
             return false;
           }
 
