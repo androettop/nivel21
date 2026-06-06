@@ -121,6 +121,7 @@ Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma 
 - **Iniciativa automática** - Si el token está asignado a un personaje, su iniciativa se completa sola (antes debes tirar iniciativa normalmente para que se registre el valor)
 - **Botón en el menú lateral** - Vuelve a abrir el panel cuando quieras, por si se cierra
 - **Tus tokens resaltados** - A cada jugador se le marcan sus propios tokens
+- **Resaltar en el mapa** - Pasa el mouse por una fila para ver de qué token se trata, marcado en el mapa
 
 <a id="turn-order">
  <img src="popup/img/turn-order.png" alt="Orden de Turnos" />
