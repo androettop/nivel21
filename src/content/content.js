@@ -53,6 +53,7 @@
       injectScript("src/core/html-manager.js"),
       injectScript("src/core/edit-token-ui-manager.js"),
       injectScript("src/core/canvas-dropdown-manager.js"),
+      injectScript("src/core/character-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
@@ -63,6 +64,7 @@
       injectScript("src/features/token-layers.js"),
       injectScript("src/features/token-aura.js"),
       injectScript("src/features/token-assign-player.js"),
+      injectScript("src/features/token-assign-character.js"),
       injectScript("src/features/token-move-arrows.js"),
       injectScript("src/features/token-drag-measurement.js"),
       injectScript("src/features/token-drag-speed.js"),
