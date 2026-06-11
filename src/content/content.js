@@ -54,6 +54,7 @@
       injectScript("src/core/edit-token-ui-manager.js"),
       injectScript("src/core/canvas-dropdown-manager.js"),
       injectScript("src/core/character-manager.js"),
+      injectScript("src/core/character-sheet-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
@@ -80,6 +81,7 @@
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
       injectScript("src/features/straighten-camera.js"),
+      injectScript("src/features/generate-spell-actions.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

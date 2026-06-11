@@ -52,6 +52,7 @@
         "src/core/edit-token-ui-manager.js",
         "src/core/canvas-dropdown-manager.js",
         "src/core/character-manager.js",
+        "src/core/character-sheet-manager.js",
         "src/core/main-menu-ui-manager.js",
         "src/core/quick-menu-ui-manager.js",
         "src/core/markdown-editor-manager.js",
@@ -78,6 +79,7 @@
         "src/features/center-camera-here.js",
         "src/features/ping-map.js",
         "src/features/straighten-camera.js",
+        "src/features/generate-spell-actions.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]
