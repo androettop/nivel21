@@ -1,5 +1,10 @@
 // Content script loader - injects scripts into page context
 (function () {
+  // Expose the extension's base URL (chrome-extension://<id>/ or
+  // moz-extension://<uuid>/) to the page context via a shared-DOM data
+  // attribute, so injected scripts can build URLs to web-accessible assets.
+  document.documentElement.dataset.n21BaseUrl = chrome.runtime.getURL("");
+
   // Function to inject script into page context
   function injectScript(file) {
     return new Promise((resolve) => {

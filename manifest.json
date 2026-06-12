@@ -29,6 +29,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "src/assets/*.png",
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/utils.js",

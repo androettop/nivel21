@@ -17,13 +17,24 @@
     ======================================================================= */
 
   // ----- Platform constants (icons reused by Nivel20 for each roll role) -----
-  const FOLDER_ICONS = {
-    0: "https://nivel20.com/images/2668/medium-41114445a83e0350aa1de712318e4a97fd3d2d72.png?1637238074",
-    1: "https://nivel20.com/images/2669/medium-1e9f33bedec92742153f649cda2bdb8e7ba367de.png?1637238075",
-    2: "https://nivel20.com/images/1515/medium-6203df033d4aa3735e048950302a2b94698f5894.png?1637233824",
-  };
-  // Fallback folder icon for spell levels not seen on the reference sheet (3+).
-  const FOLDER_ICON_FALLBACK = FOLDER_ICONS[2];
+
+  // Per-level folder icons are bundled extension assets (src/assets/lvlN.png,
+  // level 0 = trucos, up to level 9). They live in the extension package, so
+  // their URL is built from the extension's base URL (which carries the
+  // extension id). The content script exposes that base via a shared-DOM data
+  // attribute; outside the browser (Node unit tests) the base is empty.
+  function extensionBaseUrl() {
+    return (
+      (typeof document !== "undefined" &&
+        document.documentElement?.dataset?.n21BaseUrl) ||
+      ""
+    );
+  }
+
+  function folderIcon(level) {
+    const lvl = Math.min(Math.max(level | 0, 0), 9);
+    return `${extensionBaseUrl()}src/assets/lvl${lvl}.png`;
+  }
 
   const ROLE_ICONS = {
     attackAdvantage:
@@ -384,7 +395,7 @@
       id: null,
       name,
       text: "",
-      icon: FOLDER_ICONS[level] || FOLDER_ICON_FALLBACK,
+      icon: folderIcon(level),
       description: null,
       action_type: "folder",
       hidden: false,
