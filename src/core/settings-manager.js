@@ -152,6 +152,14 @@
       });
 
       this.registerSetting({
+        name: "feature.actions-bar.enabled",
+        label: "Acciones estándar en la barra de acciones",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ambient-fx.enabled",
         label: "Efectos ambientales",
         type: "boolean",

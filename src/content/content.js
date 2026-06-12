@@ -88,6 +88,7 @@
       injectScript("src/features/straighten-camera.js"),
       injectScript("src/features/generate-spell-actions.js"),
       injectScript("src/features/spell-action-bar.js"),
+      injectScript("src/features/actions-bar.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });
