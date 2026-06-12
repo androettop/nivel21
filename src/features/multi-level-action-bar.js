@@ -65,31 +65,43 @@
     function normalizeActionItems(items) {
       const root = [];
 
-      // índice global de items `none`/`folder` reutilizables
-      const noneIndex = new Map();
-
-      // IDs de items que fueron convertidos en folders y deben ser eliminados
-      const usedAsFolder = new Set();
-
       /**
-       * Indexa recursivamente items de tipo `none` y `folder`
-       * @param {Array<Object>} list
+       * Agrega un item a un nivel con semántica de merge. Si ya existe una
+       * carpeta con el mismo nombre en ESE nivel (porque un path hijo que la
+       * referenciaba se procesó antes que este item), no se duplica:
+       *   - carpeta real    -> se fusionan sus elementos en la existente
+       *   - placeholder `none` -> solo aporta su icono a la carpeta existente
+       * Devuelve el item que realmente quedó en el nivel.
+       * @param {Array<Object>} level
+       * @param {Object} item
+       * @returns {Object}
        */
-      function indexNoneItems(list) {
-        for (const item of list) {
-          if (item.action_type === "none" || item.action_type === "folder") {
-            noneIndex.set(item.name, item);
-          }
+      function addToLevel(level, item) {
+        const existingFolder = level.find(
+          (el) => el.name === item.name && el.action_type === "folder",
+        );
+        if (existingFolder) {
           if (isFolder(item)) {
-            indexNoneItems(item.elements);
+            existingFolder.elements.push(...item.elements);
+            return existingFolder;
+          }
+          if (item.action_type === "none") {
+            if (item.icon) existingFolder.icon = item.icon;
+            return existingFolder;
           }
         }
+        level.push(item);
+        return item;
       }
 
-      indexNoneItems(items);
-
       /**
-       * Inserta un item en el árbol según path
+       * Inserta un item en el árbol según su path.
+       *
+       * El "reuse" (promover un placeholder `none` a carpeta para que herede su
+       * icono/metadata) se resuelve SOLO entre los hermanos del nivel actual, no
+       * contra un índice global por nombre. Así dos items con el mismo nombre en
+       * carpetas distintas no se confunden.
+       *
        * @param {Array<Object>} tree
        * @param {Array<string>} path
        * @param {Object} item
@@ -103,25 +115,27 @@
           );
 
           if (!folder) {
-            const reusable = noneIndex.get(segment);
+            // ¿Hay un placeholder `none` con este nombre en ESTE nivel?
+            const idx = currentLevel.findIndex(
+              (el) => el.name === segment && el.action_type === "none",
+            );
 
-            if (reusable) {
+            if (idx !== -1) {
+              // Promoverlo a carpeta in-place (hereda icono/metadata) en vez de
+              // dejarlo como hermano duplicado.
               folder = {
-                ...reusable,
+                ...currentLevel[idx],
                 id: uuid ? uuid() : Math.random().toString(36).slice(2),
                 name: segment,
                 tooltip_title: segment,
                 action_type: "folder",
                 elements: [],
               };
-              // Marcar este item como usado para ser eliminado del árbol
-              usedAsFolder.add(reusable.id);
-              noneIndex.delete(segment);
+              currentLevel[idx] = folder;
             } else {
               folder = createFolderFromItem(item, segment);
+              currentLevel.push(folder);
             }
-
-            currentLevel.push(folder);
           }
 
           currentLevel = folder.elements;
@@ -138,15 +152,15 @@
         for (const item of list) {
           if (isFolder(item)) {
             const folder = { ...item, elements: [] };
-            root.push(folder);
-            walkInto(item.elements, folder.elements);
+            const placed = addToLevel(root, folder);
+            walkInto(item.elements, placed.elements);
             continue;
           }
 
           const parts = item.name.split(" > ").map((p) => p.trim());
 
           if (parts.length === 1) {
-            root.push(item);
+            addToLevel(root, item);
             continue;
           }
 
@@ -170,15 +184,15 @@
         for (const item of source) {
           if (isFolder(item)) {
             const folder = { ...item, elements: [] };
-            target.push(folder);
-            walkInto(item.elements, folder.elements);
+            const placed = addToLevel(target, folder);
+            walkInto(item.elements, placed.elements);
             continue;
           }
 
           const parts = item.name.split(" > ").map((p) => p.trim());
 
           if (parts.length === 1) {
-            target.push(item);
+            addToLevel(target, item);
             continue;
           }
 
@@ -195,27 +209,7 @@
 
       walk(items);
 
-      // Filtrar items que fueron convertidos en folders
-      return filterUsedItems(root);
-
-      /**
-       * Filtra recursivamente items que fueron usados como folders
-       * @param {Array<Object>} list
-       * @returns {Array<Object>}
-       */
-      function filterUsedItems(list) {
-        return list
-          .filter((item) => !usedAsFolder.has(item.id))
-          .map((item) => {
-            if (isFolder(item) && item.elements) {
-              return {
-                ...item,
-                elements: filterUsedItems(item.elements),
-              };
-            }
-            return item;
-          });
-      }
+      return root;
     }
 
     /**
