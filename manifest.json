@@ -80,6 +80,7 @@
         "src/features/ping-map.js",
         "src/features/straighten-camera.js",
         "src/features/generate-spell-actions.js",
+        "src/features/spell-action-bar.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]

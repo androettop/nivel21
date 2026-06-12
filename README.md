@@ -318,6 +318,18 @@ Ejemplo:
 
 ---
 
+### Conjuros en la barra de acciones
+
+Agrega automáticamente los conjuros de un personaje a su barra de acciones, con una carpeta por nivel de conjuro (Trucos, Nivel 1, Nivel 2…). Cada conjuro incluye las tiradas que correspondan, detectadas a partir de sus datos.
+
+- **Tiradas según el conjuro** - Ataque (con ventaja/desventaja), daño, crítico, curación o dado de utilidad
+
+<a id="spell-action-bar">
+ <img src="popup/img/spell-action-bar.png" alt="Conjuros en la barra de acciones" />
+</a>
+
+---
+
 ### Enviar tokens al chat
 
 Permite agregar notas descriptivas a los tokens que se pueden compartir con los jugadores. Los DMs pueden hacer clic derecho en un token para ver o enviar sus notas al chat.

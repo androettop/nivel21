@@ -365,6 +365,19 @@
     return elements;
   }
 
+  /**
+   * Whether a spell should be turned into actions: the ones the character
+   * actually has available — flagged `included`, or granted spells that are
+   * always available (`included === false` with no `prepared` state).
+   * @param {Object} spell
+   * @returns {boolean}
+   */
+  function shouldIncludeSpell(spell) {
+    if (spell.included === true) return true;
+    if (spell.included === false && spell.prepared == null) return true;
+    return false;
+  }
+
   function makeFolder(level, order, elements, sourceName) {
     const name = level === 0 ? "Trucos" : `Nivel ${level}`;
     return {
@@ -387,7 +400,10 @@
    * Build the spells "actions" payload from a character `printable_hash`.
    * @param {Object} ph - The character's printable_hash.
    * @param {Object} [options]
-   * @param {boolean} [options.includedOnly=true] - Only spells flagged `included`.
+   * @param {boolean} [options.includedOnly=true] - When true (default), keep
+   *   spells the character has available: `included === true`, or granted
+   *   spells (`included === false` with `prepared === null`). When false,
+   *   include every spell in the books.
    * @returns {Array<Object>} Array of folder objects (one per spell level).
    */
   function buildSpellActions(ph, options = {}) {
@@ -410,7 +426,7 @@
           const level = pair[0];
           const spells = pair[1] || [];
           for (const spell of spells) {
-            if (includedOnly && spell.included !== true) continue;
+            if (includedOnly && !shouldIncludeSpell(spell)) continue;
             if (!byLevel.has(level)) byLevel.set(level, []);
             byLevel.get(level).push({ spell, ...bookCtx });
           }
