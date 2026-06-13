@@ -330,6 +330,16 @@ Agrega automáticamente los conjuros de un personaje a su barra de acciones, con
 
 ---
 
+### Acciones estándar en la barra de acciones
+
+Agrega automáticamente una carpeta "Acciones" al final de la barra de un personaje, con las acciones comunes de combate (Carrera, Destrabar, Esquivar, Ayudar, Ocultarse, Preparar, Buscar, Investigar y Usar).
+
+<a id="actions-bar">
+ <img src="popup/img/actions-bar.png" alt="Acciones estándar en la barra de acciones" />
+</a>
+
+---
+
 ### Enviar tokens al chat
 
 Permite agregar notas descriptivas a los tokens que se pueden compartir con los jugadores. Los DMs pueden hacer clic derecho en un token para ver o enviar sus notas al chat.
