@@ -54,7 +54,13 @@
 
   // ----- Text parsing helpers -----
 
-  const MOD_PHRASE_RE = /modificador por aptitud m[aá]gica/i;
+  // Only add the casting mod to damage when the spell says the damage is
+  // "{dado} MÁS tu modificador por aptitud mágica" (e.g. Arma espiritual).
+  // Spells that merely mention the modifier in another sense — like Estallido
+  // mágico, where it caps the *number of dice* ("...es igual a tu modificador
+  // por aptitud mágica") — must NOT get the bonus.
+  const MOD_PHRASE_RE =
+    /m[aá]s\s+(?:tu|el|su)\s+modificador por aptitud m[aá]gica/i;
   // Strips the "upcasting / cantrip scaling" tail so we don't pick its dice.
   const SCALING_RE =
     /(?:\*+\s*)?(?:Mejora de truco|Con un espacio de conjuro|Mejora de conjuro)/i;
