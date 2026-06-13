@@ -30,8 +30,6 @@
 
     // Marks the folder injected by this feature so re-renders stay idempotent.
     const INJECT_TAG = "__n21Actions";
-    // Tag used by the spell-action-bar feature; we anchor right after its folders.
-    const SPELL_TAG = "__n21Spell";
 
     const uuid =
       window._n21_?.utils?.uuid || (() => Math.random().toString(36).slice(2));
@@ -139,23 +137,17 @@
     }
 
     /**
-     * Insert (idempotently) the "Acciones" folder right after the last spell
-     * folder, or at the front if there are no spells yet. Placing it after the
-     * spells keeps the order: [spells…, Acciones, native actions]. When the
-     * spell folders arrive later (they're fetched async) and get unshifted to
-     * the front, this folder still ends up right after them.
+     * Append (idempotently) the "Acciones" folder at the end of the list, so
+     * the order is: [spells…, native actions, Acciones]. Spells stay at the
+     * front (unshifted by the spell-action-bar feature) and our folder is
+     * always last.
      */
     function injectInto(items) {
       // Remove our own previously injected folder.
       for (let i = items.length - 1; i >= 0; i--) {
         if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
       }
-      // Anchor after the last spell-injected folder.
-      let pos = 0;
-      for (let i = 0; i < items.length; i++) {
-        if (items[i] && items[i][SPELL_TAG]) pos = i + 1;
-      }
-      items.splice(pos, 0, { ...buildActionsFolder(), [INJECT_TAG]: true });
+      items.push({ ...buildActionsFolder(), [INJECT_TAG]: true });
     }
 
     // Run after spell-action-bar (priority 50) so spells are already in place,
