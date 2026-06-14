@@ -614,7 +614,9 @@
           channel,
           setTimeout(() => {
             chatTimers.delete(channel);
-            ChatManager.send(message);
+            // Always send turn-order messages publicly so every player receives
+            // them, even when the DM has the chat configured as private.
+            ChatManager.send(message, { visibility: "public" });
           }, CHAT_DEBOUNCE_MS),
         );
       }
