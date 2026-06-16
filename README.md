@@ -340,6 +340,16 @@ Agrega automáticamente una carpeta "Acciones" al final de la barra de un person
 
 ---
 
+### Rasgos en la barra de acciones
+
+Agrega automáticamente una carpeta "Rasgos" al final de la barra de un personaje, agrupando sus rasgos de clase, raza y dotes. Al hacer clic en uno se abre su detalle en un panel flotante, se pueden enviar al chat presionando Shift + clic.
+
+<a id="traits-action-bar">
+ <img src="popup/img/traits-action-bar.png" alt="Rasgos en la barra de acciones" />
+</a>
+
+---
+
 ### Enviar tokens al chat
 
 Permite agregar notas descriptivas a los tokens que se pueden compartir con los jugadores. Los DMs pueden hacer clic derecho en un token para ver o enviar sus notas al chat.
