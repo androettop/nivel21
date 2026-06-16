@@ -168,6 +168,14 @@
       });
 
       this.registerSetting({
+        name: "feature.floating-panel-action.enabled",
+        label: "Acciones de panel flotante",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ambient-fx.enabled",
         label: "Efectos ambientales",
         type: "boolean",

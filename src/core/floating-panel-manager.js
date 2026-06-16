@@ -185,6 +185,63 @@
     }
 
     /**
+     * Open a floating panel for a remote URL. Routes through the (hooked)
+     * global loadInFloatingPanel so registered interceptors (e.g. send-to-chat)
+     * still get a chance to divert it. Prefer this over calling the global
+     * directly.
+     *
+     * @param {string} url - Page to load in the panel
+     * @param {string} title - Panel title
+     * @param {string} [icon] - Icon URL
+     * @param {string} [color] - Header background color
+     */
+    openUrlPanel(url, title, icon, color) {
+      if (typeof window.loadInFloatingPanel !== "function") {
+        console.warn(
+          "[FloatingPanelManager] loadInFloatingPanel function not available",
+        );
+        return;
+      }
+      window.loadInFloatingPanel(url, title, icon, color);
+    }
+
+    /**
+     * Open a static floating panel from raw HTML content. Runs the open
+     * interceptors first (so e.g. send-to-chat can divert it to chat when its
+     * modifier is held); if none handle it, renders the panel.
+     *
+     * @param {string} title - Panel title
+     * @param {string} icon - Icon URL/identifier. Passed to the interceptors;
+     *   the static panel header itself only supports icon *classes*, so image
+     *   URLs are not rendered there.
+     * @param {string} color - Header background color
+     * @param {string} content - HTML content to render inside the panel
+     * @param {string} [className] - Optional extra classes for the panel
+     * @param {string} [style] - Optional inline styles for the panel container
+     *   (e.g. width/height — without them the panel sizes to its content)
+     */
+    openStaticPanel(title, icon, color, content, className = "", style = "") {
+      const data = { title, icon, color, content };
+
+      for (const interceptor of this._openInterceptors) {
+        try {
+          if (interceptor.callback(data, undefined, undefined, undefined, []) === false) {
+            return; // an interceptor handled it (e.g. sent to chat)
+          }
+        } catch (error) {
+          console.warn(
+            `[FloatingPanelManager] Error in open interceptor "${interceptor.name}":`,
+            error,
+          );
+        }
+      }
+
+      // Our icons are image URLs, which can't be used as header icon *classes*,
+      // so leave the header icon empty rather than render a broken <i>.
+      this.openStaticPanelWithHtml(title, "", color, content, className, style);
+    }
+
+    /**
      * Build the HTML string for a static floating panel
      * @private
      */

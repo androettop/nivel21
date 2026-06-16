@@ -7,12 +7,11 @@
     const { loadManagers } = window._n21_;
     const { uuid } = window._n21_?.utils || {};
 
-    const [ActionBarManager, TooltipManager, SettingsManager, FloatingPanelManager] =
+    const [ActionBarManager, TooltipManager, SettingsManager] =
       await loadManagers(
         "ActionBarManager",
         "TooltipManager",
         "SettingsManager",
-        "FloatingPanelManager",
       );
 
     // Check if feature is enabled
@@ -340,38 +339,6 @@
               window.diceRoll(diceExpression, item.roll_options);
             }
           });
-        } else if (item.action_type === "floating-panel") {
-          // Open the item in a floating panel. Routing through the global
-          // load/openInFloatingPanel lets the send-to-chat feature intercept it
-          // (shift-click) to send the content to chat instead of opening it.
-          $itemElement.on("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const title = item.title || item.name;
-            if (item.url) {
-              if (typeof window.loadInFloatingPanel === "function") {
-                window.loadInFloatingPanel(
-                  item.url,
-                  title,
-                  item.icon,
-                  item.color,
-                );
-              }
-            } else if (item.content) {
-              // Static HTML panel: the marker object is recognised by our own
-              // open interceptor below (which actually renders it).
-              if (typeof window.openInFloatingPanel === "function") {
-                window.openInFloatingPanel({
-                  __n21StaticPanel: true,
-                  title,
-                  icon: item.icon,
-                  color: item.color,
-                  content: item.content,
-                });
-              }
-            }
-          });
         }
       });
     }
@@ -413,30 +380,8 @@
         ? `background: url('${encodeURI(item.icon)}') no-repeat;`
         : "";
 
-      // Floating-panel actions expose the data-floating-* attributes the
-      // send-to-chat feature looks for, so shift-clicking one sends its content
-      // to chat (and highlights on hover) instead of opening the panel. URL
-      // panels use data-floating(+url); static HTML panels use
-      // data-static-floating(+content).
-      let floatingAttrs = "";
-      if (item.action_type === "floating-panel") {
-        const attr = (v) =>
-          String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-        const common =
-          ` data-floating-title="${attr(item.title || item.name)}"` +
-          ` data-floating-icon="${attr(item.icon)}"`;
-        if (item.url) {
-          floatingAttrs =
-            ` data-floating data-floating-url="${attr(item.url)}"` + common;
-        } else if (item.content) {
-          floatingAttrs =
-            ` data-static-floating data-floating-content="${attr(item.content)}"` +
-            common;
-        }
-      }
-
       const html = `
-      <div class="action-bar-button tooltipstered" data-toggle="tooltip"${floatingAttrs}>
+      <div class="action-bar-button tooltipstered" data-toggle="tooltip">
         <div class="action-bar-bg"></div>
         <div class="action-bar-image" style="${imageStyle}"></div>
         <div class="action-bar-hover"></div>
@@ -466,31 +411,6 @@
 
       return $itemEl;
     }
-
-    // Render our own static HTML floating panels. The click handler above
-    // calls openInFloatingPanel with a `__n21StaticPanel` marker object; the
-    // send-to-chat feature (priority 100) runs first and, when its modifier is
-    // held, sends the content to chat and stops the chain. Otherwise this
-    // interceptor opens the panel and stops the native handler (which doesn't
-    // know our marker object).
-    FloatingPanelManager.onOpen(
-      "multi-level-static-panel",
-      (arg1) => {
-        if (!arg1 || typeof arg1 !== "object" || !arg1.__n21StaticPanel) {
-          return; // not ours -> let other handlers / native run
-        }
-        FloatingPanelManager.openStaticPanelWithHtml(
-          arg1.title || "",
-          // openStaticPanelWithHtml expects an icon *class*; our icon is an
-          // image URL, so leave the header icon empty rather than render broken.
-          "",
-          arg1.color || "",
-          arg1.content || "",
-        );
-        return false; // panel handled; skip the native openInFloatingPanel
-      },
-      { priority: 200 },
-    );
 
     // Register interceptor to handle multi-level action bar
     ActionBarManager.onCreateBar(
