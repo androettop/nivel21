@@ -84,6 +84,8 @@
         "src/features/generate-spell-actions.js",
         "src/features/spell-action-bar.js",
         "src/features/actions-bar.js",
+        "src/features/generate-trait-actions.js",
+        "src/features/traits-action-bar.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]

@@ -89,6 +89,8 @@
       injectScript("src/features/generate-spell-actions.js"),
       injectScript("src/features/spell-action-bar.js"),
       injectScript("src/features/actions-bar.js"),
+      injectScript("src/features/generate-trait-actions.js"),
+      injectScript("src/features/traits-action-bar.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

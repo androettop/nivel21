@@ -42,6 +42,15 @@
     function updateOutline(el, modifiers) {
       if (!el) return;
 
+      // Floating-panel actions (e.g. character traits) use the modifier for
+      // "send to chat", not advantage/disadvantage, so never outline them.
+      if (
+        $(el).closest('.action-bar-element[data-action-type="floating-panel"]')
+          .length
+      ) {
+        return;
+      }
+
       const $el = $(el);
       const configured = getConfiguredModifiers();
       const advantageActive = Boolean(modifiers[configured.advantage]);

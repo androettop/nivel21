@@ -160,6 +160,14 @@
       });
 
       this.registerSetting({
+        name: "feature.traits-action-bar.enabled",
+        label: "Rasgos en la barra de acciones",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ambient-fx.enabled",
         label: "Efectos ambientales",
         type: "boolean",
