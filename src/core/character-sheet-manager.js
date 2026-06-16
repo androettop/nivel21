@@ -49,6 +49,12 @@
      * Fetch a character sheet and return its `printable_hash` payload.
      * Accepts either a full `.json` URL or a raw character page URL/path
      * (the `.json` suffix is added automatically).
+     *
+     * Requests are cached (and de-duplicated while in flight) per normalized
+     * URL for the page lifetime, so multiple features asking for the same
+     * character (e.g. spells and traits action bars) share a single network
+     * request instead of each fetching the sheet on their own.
+     *
      * @param {string} [urlOrPath] - Defaults to the current character page.
      * @returns {Promise<Object>} The `printable_hash` object.
      */
@@ -63,18 +69,32 @@
       url = url.split("#")[0].split("?")[0].replace(/\/$/, "");
       if (!url.endsWith(".json")) url = `${url}.json`;
 
-      const response = await fetch(url, {
-        method: "GET",
-        credentials: "include",
-        headers: { Accept: "application/json" },
+      if (!this._cache) this._cache = new Map();
+      const cached = this._cache.get(url);
+      if (cached) return cached;
+
+      const request = (async () => {
+        const response = await fetch(url, {
+          method: "GET",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) {
+          throw new Error(
+            `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
+          );
+        }
+        const data = await response.json();
+        return data?.printable_hash || data;
+      })();
+
+      // Cache the in-flight promise so concurrent callers reuse it; drop it on
+      // failure so a later call can retry.
+      this._cache.set(url, request);
+      request.catch(() => {
+        if (this._cache.get(url) === request) this._cache.delete(url);
       });
-      if (!response.ok) {
-        throw new Error(
-          `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
-        );
-      }
-      const data = await response.json();
-      return data?.printable_hash || data;
+      return request;
     }
 
     /**
