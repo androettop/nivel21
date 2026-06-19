@@ -16,7 +16,7 @@
       );
 
     const TOKEN_NOTES_CHAT_KEY = "feature.token-notes";
-    const N21_MESSAGE_REGEX = /\[\[n21:[^\|]*\|\|([^\]]+)\]\]/g;
+    const N21_MESSAGE_REGEX = /\[\[n21:[^\|]*\|\|((?:\\.|[^\]])+)\]\]/g;
 
     if (!SettingsManager.get("feature.token-notes.enabled")) {
       return;
@@ -35,6 +35,18 @@
     function toText(value) {
       if (value === undefined || value === null) return "";
       return String(value).trim();
+    }
+
+    /**
+     * Whether a token has its name hidden from players.
+     */
+    function isNameHidden(schema, metadata) {
+      return !!(
+        metadata?.hide_name ??
+        metadata?.hideName ??
+        schema?.hideName ??
+        schema?.nameHidden
+      );
     }
 
     function createTokenNoteElement(payload) {
@@ -170,11 +182,18 @@
         const token = context?.token;
         const tokenInstance = token?.script?.tokenInstance;
 
-        const metadataJson = tokenInstance?.schema?.metadata;
+        const schema = tokenInstance?.schema;
+        const metadataJson = schema?.metadata;
         const metadata = safeJsonParse(metadataJson) || {};
 
-        const name = toText(metadata.name);
-        const description = toText(metadata.description);
+        // If the token's name is hidden, do not expose its name nor description.
+        const nameHidden = isNameHidden(schema, metadata);
+
+        const name = nameHidden ? "" : toText(metadata.name);
+        // Strip internal [key:value] tags so they are not shown in the chat.
+        const description = nameHidden
+          ? ""
+          : window._n21_.utils.stripTokenTags(toText(metadata.description));
         const borderType = toText(metadata.border_type);
         const borderColor = toText(metadata.border_color);
         const imageUrl = toText(tokenInstance?.imageUrl);

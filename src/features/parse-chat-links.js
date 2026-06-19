@@ -7,7 +7,7 @@
     const CHAT_LINK_KEY = "chat.link";
 
     // Regex to find custom n21 links
-    const chatLinkRegex = /\[\[n21:[^\|]*\|\|([^\]]+)\]\]/g;
+    const chatLinkRegex = /\[\[n21:[^\|]*\|\|((?:\\.|[^\]])+)\]\]/g;
 
     const { loadManagers } = window._n21_;
 

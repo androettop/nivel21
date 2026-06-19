@@ -192,6 +192,24 @@ Ejemplos:
 
 ---
 
+### Visibilidad de Tiradas de Dados
+
+Controla quién ve tus tiradas de dados de forma independiente a la visibilidad del chat. Por ejemplo, puedes dejar los mensajes del chat en público pero que todas tus tiradas las veas solo tú.
+
+Agrega un selector a la izquierda del campo de tiradas, igual al selector de visibilidad del chat.
+
+- **Auto (según el chat)** - No cambia nada; usa la visibilidad configurada en el chat (comportamiento por defecto)
+- **Todo el mundo** - Las tiradas las ve todo el mundo
+- **Master y remitente** - Las ven el master y el remitente
+- **Solo remitente** - Las ves solo tú
+- **Nadie** - No las ve nadie
+
+<a id="dice-visibility">
+ <img src="popup/img/dice-visibility.png" alt="Visibilidad de Tiradas de Dados" />
+</a>
+
+---
+
 ### Atajos para Tokens
 
 Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selecciona un token primero para activar estos atajos:

@@ -240,6 +240,14 @@
       });
 
       this.registerSetting({
+        name: "feature.dice-visibility.enabled",
+        label: "Visibilidad de Tiradas de Dados",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.token-layers.enabled",
         label: "Capas de Tokens",
         type: "boolean",
@@ -418,6 +426,21 @@
           { value: "shift", label: "Shift" },
           { value: "ctrl", label: "Ctrl" },
           { value: "alt", label: "Alt" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "dice-visibility.value",
+        label: "Visibilidad de las tiradas de dados",
+        type: "select",
+        defaultValue: "auto",
+        category: "dados",
+        options: [
+          { value: "auto", label: "Auto (según el chat)" },
+          { value: "public", label: "Todo el mundo" },
+          { value: "master_and_player", label: "Master y remitente" },
+          { value: "private", label: "Solo remitente" },
+          { value: "hidden", label: "Nadie" },
         ],
       });
     }

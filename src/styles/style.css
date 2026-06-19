@@ -1014,3 +1014,28 @@ span[n21-h] {
 	border-color: rgba(130, 32, 32, 0.8);
 	background: rgba(130, 32, 32, 0.3);
 }
+
+/* Dice Visibility selector (left of the dice input) */
+.n21-dice-visibility-col {
+	display: flex;
+	align-items: center;
+}
+
+.n21-dice-visibility-col .input-group {
+	flex: 1;
+}
+
+.n21-dice-visibility-col .n21-dice-visibility {
+	margin-right: 6px;
+}
+
+.n21-dice-visibility .dropdown-item.active,
+.n21-dice-visibility .dropdown-item.active i {
+	color: #fff;
+}
+
+.n21-dice-visibility .dropdown-item i {
+	width: 18px;
+	text-align: center;
+	margin-right: 4px;
+}

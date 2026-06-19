@@ -81,6 +81,7 @@
       injectScript("src/features/notes-panel.js"),
       injectScript("src/features/dm-screen.js"),
       injectScript("src/features/turn-order.js"),
+      injectScript("src/features/dice-visibility.js"),
       injectScript("src/features/settings-panel.js"),
       injectScript("src/features/token-notes.js"),
       injectScript("src/features/center-camera-here.js"),

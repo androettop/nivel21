@@ -231,6 +231,21 @@
     return text.replace(pattern, " ").trim();
   }
 
+  /**
+   * Remove all [key:value] tags from a description, leaving only the visible text.
+   * Useful when displaying a description publicly (e.g. sending it to chat) where
+   * the internal tags should not be shown.
+   * @param {string} description - The original description text
+   * @returns {string} The description without any tags
+   */
+  function stripTokenTags(description) {
+    if (!description) return "";
+    return String(description)
+      .replace(/\[[\w-]+:\s*(?:"[^"]*"|[^\]\s]+)\s*\]/g, "")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+  }
+
   window._n21_.utils.uuid = uuid;
   window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.getEmojiImageUrl = getEmojiImageUrl;
@@ -239,6 +254,7 @@
   window._n21_.utils.needsQuotes = needsQuotes;
   window._n21_.utils.formatTagValue = formatTagValue;
   window._n21_.utils.parseTokenTag = parseTokenTag;
+  window._n21_.utils.stripTokenTags = stripTokenTags;
   window._n21_.utils.setTokenTag = setTokenTag;
   window._n21_.utils.removeTokenTag = removeTokenTag;
 

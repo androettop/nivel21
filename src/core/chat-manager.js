@@ -15,7 +15,9 @@
     return String(value)
       .replace(/\\/g, "\\\\")
       .replace(/\|/g, "\\|")
-      .replace(/=/g, "\\=");
+      .replace(/=/g, "\\=")
+      .replace(/\[/g, "\\[")
+      .replace(/\]/g, "\\]");
   }
 
   /**
@@ -62,6 +64,8 @@
           const value = matchResult[2]
             .replace(/\\=/g, "=")
             .replace(/\\\|/g, "|")
+            .replace(/\\\[/g, "[")
+            .replace(/\\\]/g, "]")
             .replace(/\\\\/g, "\\");
           payload[name] = value;
         }
