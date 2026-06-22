@@ -3,13 +3,16 @@
     /* =======================
        Feature: Dice Visibility
        Adds a visibility selector to the left of the dice input (#dice-input)
-       that overrides the `visibility` option of every dice roll
-       (window.sendDiceRollMessage), independently of the chat's configured
-       visibility.
+       that overrides the `visibility` argument of every dice roll
+       (tabletopV2DiceRoll / tabletopDiceRoll / dice3dRoll, via DiceManager),
+       independently of the chat's configured visibility.
     ======================= */
 
     const { loadManagers } = window._n21_;
-    const [SettingsManager] = await loadManagers("SettingsManager");
+    const [SettingsManager, DiceManager] = await loadManagers(
+      "SettingsManager",
+      "DiceManager",
+    );
 
     // Check if feature is enabled
     if (!SettingsManager.get("feature.dice-visibility.enabled")) {
@@ -47,40 +50,16 @@
       );
     }
 
-    // ==================== Hook sendDiceRollMessage ====================
+    // ==================== Apply the visibility override ====================
 
-    // Wrap window.sendDiceRollMessage so the third argument (options) carries
-    // the selected visibility. When "auto" is selected we don't touch options,
-    // preserving the original/default behaviour.
-    function installDiceRollHook() {
-      const original = window.sendDiceRollMessage;
-      if (typeof original !== "function") return false;
-      if (original.__n21DiceVisibilityHooked) return true;
-
-      const hooked = function (notation, sender, options, ...rest) {
-        const visibility = getVisibility();
-        let finalOptions = options;
-
-        if (visibility !== AUTO) {
-          finalOptions = { ...(options || {}), visibility };
-        }
-
-        return original.call(this, notation, sender, finalOptions, ...rest);
-      };
-
-      hooked.__n21DiceVisibilityHooked = true;
-      window.sendDiceRollMessage = hooked;
-      return true;
+    // Push the current selection to the DiceManager. "auto" disables the
+    // override, preserving the chat's default behaviour.
+    function applyVisibility() {
+      const visibility = getVisibility();
+      DiceManager.setVisibilityOverride(visibility === AUTO ? null : visibility);
     }
 
-    // sendDiceRollMessage may not exist yet when the feature loads; retry until
-    // it is available, then stop.
-    if (!installDiceRollHook()) {
-      const intervalId = setInterval(() => {
-        if (installDiceRollHook()) clearInterval(intervalId);
-      }, 200);
-      setTimeout(() => clearInterval(intervalId), 30000);
-    }
+    applyVisibility();
 
     // ==================== UI: dice visibility selector ====================
 
@@ -187,6 +166,7 @@
     // (e.g. from the settings panel).
     SettingsManager.onChange((name) => {
       if (name !== SETTING_KEY) return;
+      applyVisibility();
       const root = document.querySelector(".input-group ." + CONTAINER_CLASS);
       if (root) updateToggle(root);
     });
