@@ -35,6 +35,9 @@
     // 2. Load base manager
     await injectScript("src/core/base-manager.js");
 
+    // 2b. Load shared, manager-less helpers used by multiple features.
+    await injectScript("src/core/money.js");
+
     // 3. Load managers and features in parallel
     await Promise.all([
       // Managers
@@ -94,6 +97,7 @@
       injectScript("src/features/traits-action-bar.js"),
       injectScript("src/features/floating-panel-action.js"),
       injectScript("src/features/inventory-panel.js"),
+      injectScript("src/features/money-editor.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

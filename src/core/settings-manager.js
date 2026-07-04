@@ -184,6 +184,14 @@
       });
 
       this.registerSetting({
+        name: "feature.money-editor.enabled",
+        label: "Editor de monedas en el equipo",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.ambient-fx.enabled",
         label: "Efectos ambientales",
         type: "boolean",

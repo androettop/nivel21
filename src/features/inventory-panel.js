@@ -49,17 +49,8 @@
       return;
     }
 
-    // Currencies to look for inside a [money:...] token, in display order.
-    // Add/replace freely for other game systems; the icon is a bundled asset
-    // under src/assets/inventory/currency/. Undeclared currencies are ignored,
-    // and any with a zero total are not shown.
-    const CURRENCIES = [
-      { key: "pp", label: "Platino", icon: "pp.png" },
-      { key: "gp", label: "Oro", icon: "gp.png" },
-      { key: "ep", label: "Electro", icon: "ep.png" },
-      { key: "sp", label: "Plata", icon: "sp.png" },
-      { key: "cp", label: "Cobre", icon: "cp.png" },
-    ];
+    // Shared money helpers (currency definitions + [money:...] parsing).
+    const money = window._n21_.money;
 
     // Minimum delay between manual refreshes, per the "don't hammer" rule.
     const REFRESH_COOLDOWN_MS = 10000;
@@ -106,42 +97,17 @@
 
     /* ------------------------------- Money -------------------------------- */
 
-    /**
-     * Parse the money totals from a free-text string by scanning every
-     * `[money:...]` token for `<number><currencyKey>` pairs. Only declared
-     * currencies are counted; multiple tokens sum together.
-     * @param {string} text
-     * @returns {Object<string, number>} key -> total
-     */
-    function parseMoney(text) {
-      const totals = {};
-      if (typeof text !== "string" || !text) return totals;
-      const known = new Set(CURRENCIES.map((c) => c.key.toLowerCase()));
-      const tokenRe = /\[money:([^\]]*)\]/gi;
-      let token;
-      while ((token = tokenRe.exec(text)) !== null) {
-        const pairRe = /(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/g;
-        let pair;
-        while ((pair = pairRe.exec(token[1])) !== null) {
-          const key = pair[2].toLowerCase();
-          if (!known.has(key)) continue;
-          totals[key] = (totals[key] || 0) + Number(pair[1]);
-        }
-      }
-      return totals;
-    }
-
     /** Build the money row HTML (only currencies with a positive total). */
     function buildMoneyHtml(totals) {
       const parts = [];
-      for (const currency of CURRENCIES) {
+      for (const currency of money.CURRENCIES) {
         const amount = totals[currency.key.toLowerCase()];
         if (!amount) continue;
         parts.push(
           `<span class="n21-inventory-coin" title="${escapeHtml(currency.label)}">` +
             `<span class="n21-inventory-coin-amount">${escapeHtml(amount)}</span>` +
-            `<img class="n21-inventory-coin-icon" src="${assetUrl(
-              `currency/${currency.icon}`,
+            `<img class="n21-inventory-coin-icon" src="${money.iconUrl(
+              currency,
             )}" alt="${escapeHtml(currency.key)}">` +
             `</span>`,
         );
@@ -224,7 +190,7 @@
         items.forEach((item) => $grid.append(buildItemCell(item)));
       }
 
-      const totals = parseMoney(ph?.equipment);
+      const totals = money.parse(ph?.equipment);
       $body.find(".n21-inventory-money").html(buildMoneyHtml(totals));
     }
 

@@ -1142,3 +1142,59 @@ span[n21-h] {
 	height: 16px;
 	object-fit: contain;
 }
+
+/* ------------------------------ Money editor ------------------------------- */
+
+.n21-money-editor {
+	margin-top: 10px;
+}
+
+.n21-money-editor-title {
+	font-weight: 600;
+	font-size: 13px;
+	margin-bottom: 6px;
+}
+
+.n21-money-editor-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.n21-money-editor-field {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+}
+
+.n21-money-editor-icon {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
+}
+
+.n21-money-editor-field input {
+	width: 64px;
+}
+
+/* Inline [money:...] rendered as coin icons in the equipment display. */
+.n21-money-inline {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	vertical-align: middle;
+}
+
+.n21-money-coin {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-weight: 600;
+}
+
+.n21-money-coin-icon {
+	width: 16px;
+	height: 16px;
+	object-fit: contain;
+}
