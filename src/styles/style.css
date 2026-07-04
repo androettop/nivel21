@@ -1039,3 +1039,106 @@ span[n21-h] {
 	text-align: center;
 	margin-right: 4px;
 }
+
+/* ------------------------------ Inventory panel ----------------------------- */
+
+/* Fill the floating-panel body so the grid can scroll and the footer stick. */
+.n21-inventory-panel .card-body,
+.n21-inventory-panel .floating-block {
+	height: 100%;
+	min-height: 0;
+}
+
+.n21-inventory {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
+.n21-inventory-grid {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: scroll;
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0;
+	padding: 6px;
+	align-content: start;
+	justify-items: center;
+}
+
+/* The reused action-bar cells shouldn't stretch inside the grid. */
+.n21-inventory-grid .action-bar-element {
+	margin: 0;
+	padding: 0;
+}
+
+.n21-inventory-empty {
+	grid-column: 1 / -1;
+	text-align: center;
+	opacity: 0.7;
+	padding: 16px 8px;
+	font-size: 13px;
+}
+
+.n21-inventory-footer {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 8px;
+	border-top: 1px solid #999;
+}
+
+.n21-inventory-refresh {
+	flex: 0 0 auto;
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: inherit;
+	font-size: 14px;
+	padding: 4px 6px;
+	line-height: 1;
+	border-radius: 4px;
+}
+
+.n21-inventory-refresh:hover:not(:disabled) {
+	background: rgba(0, 0, 0, 0.1);
+}
+
+.n21-inventory-refresh:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.n21-inventory-refresh.loading i {
+	animation: n21-spin 0.8s linear infinite;
+}
+
+@keyframes n21-spin {
+	to { transform: rotate(360deg); }
+}
+
+.n21-inventory-money {
+	flex: 0 0 auto;
+	margin-left: auto;
+	margin-right: 16px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.n21-inventory-coin {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.n21-inventory-coin-icon {
+	width: 16px;
+	height: 16px;
+	object-fit: contain;
+}

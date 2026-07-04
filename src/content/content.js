@@ -93,6 +93,7 @@
       injectScript("src/features/generate-trait-actions.js"),
       injectScript("src/features/traits-action-bar.js"),
       injectScript("src/features/floating-panel-action.js"),
+      injectScript("src/features/inventory-panel.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

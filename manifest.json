@@ -31,6 +31,8 @@
       "resources": [
         "src/assets/*.png",
         "src/assets/actions/*",
+        "src/assets/inventory/*",
+        "src/assets/inventory/currency/*",
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/utils.js",
@@ -88,6 +90,7 @@
         "src/features/generate-trait-actions.js",
         "src/features/traits-action-bar.js",
         "src/features/floating-panel-action.js",
+        "src/features/inventory-panel.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]

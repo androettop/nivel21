@@ -98,6 +98,35 @@
     }
 
     /**
+     * Normalize a character URL/path to the cache key `fetchCharacter` uses.
+     * @param {string} [urlOrPath] - Defaults to the current character page.
+     * @returns {string|null}
+     * @private
+     */
+    _normalizeUrl(urlOrPath) {
+      let url = urlOrPath || this.getCurrentCharacterJsonUrl();
+      if (!url) return null;
+      url = url.split("#")[0].split("?")[0].replace(/\/$/, "");
+      if (!url.endsWith(".json")) url = `${url}.json`;
+      return url;
+    }
+
+    /**
+     * Drop the cached (or in-flight) sheet for a character so the next
+     * `fetchCharacter` re-downloads fresh data. Used by the inventory refresh
+     * button; because every feature reads through this shared cache, the fresh
+     * JSON is what the other features (spells, traits…) get next time too.
+     *
+     * @param {string} [urlOrPath] - Defaults to the current character page.
+     * @returns {boolean} Whether an entry was removed.
+     */
+    invalidate(urlOrPath) {
+      const url = this._normalizeUrl(urlOrPath);
+      if (!url || !this._cache) return false;
+      return this._cache.delete(url);
+    }
+
+    /**
      * Character display name from a printable_hash.
      * @param {Object} ph
      * @returns {string}
