@@ -368,6 +368,30 @@ Agrega automáticamente una carpeta "Rasgos" al final de la barra de un personaj
 
 ---
 
+### Inventario en la barra de acciones
+
+Agrega un botón "Inventario" al final de la barra de un personaje que abre un panel flotante con sus objetos (armas, armaduras y equipo) en una grilla, con el dinero calculado en la parte inferior.
+
+- **Botón de refrescar** - Vuelve a descargar la hoja del personaje (limitado a una vez cada 10 segundos para no saturar el servidor)
+
+<a id="inventory-panel">
+ <img src="popup/img/inventory-panel.png" alt="Inventario en la barra de acciones" />
+</a>
+
+---
+
+### Editor de monedas en el equipo
+
+Escribe tu dinero con la etiqueta `[money:1pp 2gp 3sp]` en el campo "Otras posesiones". En la vista del equipo la etiqueta se muestra con los iconos de cada moneda en lugar del texto crudo.
+
+- **Campos por moneda** - Al editar "Otras posesiones" se agrega, debajo del editor, un campo por moneda que actualiza la etiqueta automáticamente (solo se incluyen las monedas distintas de 0)
+
+<a id="money-editor">
+ <img src="popup/img/money-editor.png" alt="Editor de monedas en el equipo" />
+</a>
+
+---
+
 ### Enviar tokens al chat
 
 Permite agregar notas descriptivas a los tokens que se pueden compartir con los jugadores. Los DMs pueden hacer clic derecho en un token para ver o enviar sus notas al chat.
