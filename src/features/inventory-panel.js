@@ -276,7 +276,7 @@
         '<div class="n21-inventory-grid"></div>' +
         '<div class="n21-inventory-footer">' +
         '<button class="n21-inventory-refresh">' +
-        '<i class="fa fa-sync"></i></button>' +
+        '<i class="fa fa-refresh"></i></button>' +
         '<div class="n21-inventory-money"></div>' +
         "</div>" +
         "</div>"
