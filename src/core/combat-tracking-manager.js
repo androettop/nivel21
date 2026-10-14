@@ -521,6 +521,16 @@
         conditions: conditionIds.length ? conditionIds : "CLEAR",
       };
 
+      // The server rewrites the whole campaign status on each save, so
+      // concurrent saves of different rows overwrite each other. Send them
+      // one at a time.
+      const run = () => this._postStatus(baseUrl, payload);
+      this._saveChain = (this._saveChain || Promise.resolve()).then(run, run);
+      return this._saveChain;
+    }
+
+    /** @private */
+    _postStatus(baseUrl, payload) {
       return new Promise((resolve) => {
         $.ajax({
           url: `${baseUrl}/set_row_status`,
@@ -529,6 +539,15 @@
           data: payload,
           success: (response) => {
             try {
+              // Nivel20 skips payloads whose status_stamp (in seconds) isn't
+              // newer than the last one applied, so two saves within the same
+              // second would leave the panel stale. This response is the
+              // freshest state, so make sure it's applied.
+              const $tracking = $(TRACKING_SELECTOR);
+              const stamp = Number(response?.status_stamp);
+              if (Number.isFinite(stamp) && Number($tracking.data("status-stamp")) >= stamp) {
+                $tracking.data("status-stamp", stamp - 1);
+              }
               if (typeof window.refreshCampaignStatus === "function") {
                 window.refreshCampaignStatus(response);
               }
