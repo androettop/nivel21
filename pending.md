@@ -39,3 +39,4 @@
 - Tokens: la barra de vida se reemplazó por los PV en texto chico («actual/máximo», +temporales en celeste) abajo dentro de la base del token.
 - Conjuros con tirada de ataque: no llevan «Lanzar»; sus botones de ataque ponen Concentración y gastan el espacio del nivel (ojo: conjuros de varios ataques por lanzamiento, como Rayo abrasador, gastarían un espacio por ataque).
 - Conjuros sin espacios: en el tablero, los conjuros (y su carpeta) de un nivel sin espacios libres —ni de pacto— se ven en blanco y negro; siguen pudiendo lanzarse.
+- Configuración en vivo: todos los ajustes que no son interruptores de features ya se aplicaban sin recargar. Además se aplican en vivo (sin pedir recarga) los interruptores de: marco de personaje, PV y estados en tokens, estado Invisible, bloqueo de rotación, y conjuros/acciones/rasgos/inventario en la barra. El resto de las features sigue pidiendo recargar.

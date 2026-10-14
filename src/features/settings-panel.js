@@ -484,7 +484,12 @@
           SettingsManager.set(settingName, newValue);
           refreshDependencyNotes($panel);
 
-          if (settingName.startsWith("feature.") && settingName.endsWith(".enabled")) {
+          const changed = SettingsManager.getAllSettings()[settingName];
+          if (
+            settingName.startsWith("feature.") &&
+            settingName.endsWith(".enabled") &&
+            !changed?.live
+          ) {
             featureChangePending = true;
             showReloadMessage($panel);
           }

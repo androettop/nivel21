@@ -49,9 +49,8 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.inventory-panel.enabled")) {
-      return;
-    }
+    // Applies live: when disabled its items are stripped from the bar.
+    let featureEnabled = SettingsManager.get("feature.inventory-panel.enabled");
 
     // Shared money helpers (currency definitions + [money:...] parsing).
     const money = window._n21_.money;
@@ -804,15 +803,32 @@
     // List the item in the action bar editor.
     window._n21_.actionBarLayout?.registerProvider("inventory", {
       order: 40,
-      getEntries: async () => [
+      getEntries: async () => (!featureEnabled ? [] : [
         { key: "n21:inventory", label: "Inventario", icon: assetUrl("backpack.png") },
-      ],
+      ]),
     });
 
     // Run after actions (60) and traits (70) so "Inventario" is the last item.
+    function stripOwnItems(items) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
+      }
+    }
+
+    SettingsManager.onChange(() => {
+      const next = !!SettingsManager.get("feature.inventory-panel.enabled");
+      if (next === featureEnabled) return;
+      featureEnabled = next;
+      ActionBarManager.rerenderCharacterBars();
+    });
+
     ActionBarManager.onCreateBar(
       "inventory-panel",
       (element, items, parentItem = null) => {
+        if (!featureEnabled) {
+          if (parentItem === null && Array.isArray(items)) stripOwnItems(items);
+          return;
+        }
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;
 

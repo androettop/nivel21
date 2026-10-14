@@ -32,9 +32,8 @@
       "MarkdownEditorManager",
     );
 
-    if (!SettingsManager.get("feature.traits-action-bar.enabled")) {
-      return;
-    }
+    // Applies live: when disabled its items are stripped from the bar.
+    let featureEnabled = SettingsManager.get("feature.traits-action-bar.enabled");
 
     // charId -> Promise<Array> while in flight, then the resolved Array.
     // Lives for the page lifetime, so each character is fetched only once
@@ -130,9 +129,26 @@
     // Run after spell-action-bar (50) and actions-bar (60) so the traits
     // folder lands after them, and before multi-level (100) so it gets
     // normalized and rendered.
+    function stripOwnItems(items) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
+      }
+    }
+
+    SettingsManager.onChange(() => {
+      const next = !!SettingsManager.get("feature.traits-action-bar.enabled");
+      if (next === featureEnabled) return;
+      featureEnabled = next;
+      ActionBarManager.rerenderCharacterBars();
+    });
+
     ActionBarManager.onCreateBar(
       "traits-action-bar",
       (element, items, parentItem = null) => {
+        if (!featureEnabled) {
+          if (parentItem === null && Array.isArray(items)) stripOwnItems(items);
+          return;
+        }
         // Only augment the root render of a character bar.
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;
@@ -170,6 +186,7 @@
     window._n21_.actionBarLayout?.registerProvider("traits", {
       order: 30,
       getEntries: async (charId) => {
+        if (!featureEnabled) return [];
         let entry = cache.get(charId);
         if (!entry) {
           entry = fetchTraitFolders(charId);

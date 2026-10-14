@@ -24,9 +24,8 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.actions-bar.enabled")) {
-      return;
-    }
+    // Applies live: when disabled its items are stripped from the bar.
+    let featureEnabled = SettingsManager.get("feature.actions-bar.enabled");
 
     // Marks the folder injected by this feature so re-renders stay idempotent.
     const INJECT_TAG = "__n21Actions";
@@ -155,14 +154,31 @@
     // List the folder in the action bar editor.
     window._n21_.actionBarLayout?.registerProvider("actions", {
       order: 20,
-      getEntries: async () => [
+      getEntries: async () => (!featureEnabled ? [] : [
         { key: "n21:actions", label: "Acciones", icon: assetUrl("acciones.png") },
-      ],
+      ]),
+    });
+
+    function stripOwnItems(items) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
+      }
+    }
+
+    SettingsManager.onChange(() => {
+      const next = !!SettingsManager.get("feature.actions-bar.enabled");
+      if (next === featureEnabled) return;
+      featureEnabled = next;
+      ActionBarManager.rerenderCharacterBars();
     });
 
     ActionBarManager.onCreateBar(
       "actions-bar",
       (element, items, parentItem = null) => {
+        if (!featureEnabled) {
+          if (parentItem === null && Array.isArray(items)) stripOwnItems(items);
+          return;
+        }
         // Only augment the root render of a character bar.
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;

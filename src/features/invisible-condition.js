@@ -26,9 +26,8 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.invisible-condition.enabled")) {
-      return;
-    }
+    // Applies live: disabling it reveals every token it was hiding.
+    let enabled = SettingsManager.get("feature.invisible-condition.enabled");
 
     const SOURCE = "invisible-condition";
     const CONDITION_NAME = "invisible";
@@ -50,7 +49,7 @@
         .filter((a) => a.rowId);
 
       const next = new Map();
-      CombatTrackingManager.mapTokensToEntries(assignments).forEach((ref, networkId) => {
+      if (enabled) CombatTrackingManager.mapTokensToEntries(assignments).forEach((ref, networkId) => {
         if (!isInvisible(ref)) return;
         const canSee = CombatTrackingManager.isRowVisible(ref.type, ref.id);
         next.set(networkId, canSee ? "translucent" : "hidden");
@@ -76,6 +75,10 @@
       syncTimer = setTimeout(sync, 100);
     }
 
+    SettingsManager.watch("feature.invisible-condition.enabled", (value) => {
+      enabled = !!value;
+      scheduleSync();
+    });
     TokenManager.onTokenMetadataChange(scheduleSync);
     CombatTrackingManager.onChange(scheduleSync);
     setInterval(scheduleSync, 3000);

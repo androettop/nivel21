@@ -157,6 +157,7 @@
         label: "Conjuros en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -165,6 +166,7 @@
         label: "Acciones estándar en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -173,6 +175,7 @@
         label: "Rasgos en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -189,6 +192,7 @@
         label: "Inventario en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -221,6 +225,7 @@
         label: "Marco de personaje",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -238,6 +243,7 @@
         type: "boolean",
         defaultValue: true,
         dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
         category: "features",
       });
 
@@ -247,6 +253,7 @@
         type: "boolean",
         defaultValue: true,
         dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
         category: "features",
       });
 
@@ -256,6 +263,7 @@
         type: "boolean",
         defaultValue: true,
         dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
         category: "features",
       });
 
@@ -376,6 +384,7 @@
         label: "Bloquear rotación de la cámara",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -673,7 +682,30 @@
         options: setting.options || null,
         // Settings (features) this one needs enabled to work.
         dependsOn: Array.isArray(setting.dependsOn) ? setting.dependsOn : [],
+        // Applies without reloading the page.
+        live: !!setting.live,
       };
+    }
+
+    /**
+     * Call `callback(value)` now and whenever the effective value of a
+     * setting changes (including through its dependencies).
+     * @returns {Function} Unsubscribe
+     */
+    watch(name, callback) {
+      if (typeof callback !== "function") return () => {};
+      let last = this.get(name);
+      callback(last);
+      return this.onChange(() => {
+        const next = this.get(name);
+        if (next === last) return;
+        last = next;
+        try {
+          callback(next);
+        } catch (error) {
+          console.warn("[SettingsManager] watch callback error:", error);
+        }
+      });
     }
 
     /**

@@ -24,9 +24,8 @@
         "SettingsManager",
       );
 
-    if (!SettingsManager.get("feature.spell-action-bar.enabled")) {
-      return;
-    }
+    // Applies live: when disabled its items are stripped from the bar.
+    let featureEnabled = SettingsManager.get("feature.spell-action-bar.enabled");
 
     // charId -> Promise<Array> while in flight, then the resolved Array.
     // Lives for the page lifetime, so each character is fetched only once
@@ -137,9 +136,26 @@
     // injected into `items` before multi-level normalizes and renders them.
     // Different interceptor names => both coexist (neither overwrites the
     // other); lower priority => this runs first.
+    function stripOwnItems(items) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
+      }
+    }
+
+    SettingsManager.onChange(() => {
+      const next = !!SettingsManager.get("feature.spell-action-bar.enabled");
+      if (next === featureEnabled) return;
+      featureEnabled = next;
+      ActionBarManager.rerenderCharacterBars();
+    });
+
     ActionBarManager.onCreateBar(
       "spell-action-bar",
       (element, items, parentItem = null) => {
+        if (!featureEnabled) {
+          if (parentItem === null && Array.isArray(items)) stripOwnItems(items);
+          return;
+        }
         // Only augment the root render of a character bar.
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;
@@ -180,6 +196,7 @@
     window._n21_.actionBarLayout?.registerProvider("spells", {
       order: 10,
       getEntries: async (charId) => {
+        if (!featureEnabled) return [];
         let entry = cache.get(charId);
         if (!entry) {
           entry = fetchSpellFolders(charId);

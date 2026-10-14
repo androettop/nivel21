@@ -23,9 +23,6 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.token-health-bar.enabled")) {
-      return;
-    }
 
     // networkId -> entry snapshot ({ currentHp, maxHp, tempHp })
     let bars = new Map();
@@ -158,7 +155,15 @@
     setInterval(scheduleRebuild, 3000);
     rebuild();
 
-    TokenOverlayManager.addLayer("token-health-bar", draw, 10);
+    // Applies live: the layer is added/removed with the setting.
+    SettingsManager.watch("feature.token-health-bar.enabled", (enabled) => {
+      if (enabled) {
+        rebuild();
+        TokenOverlayManager.addLayer("token-health-bar", draw, 10);
+      } else {
+        TokenOverlayManager.removeLayer("token-health-bar");
+      }
+    });
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Health Bar", error);
   }

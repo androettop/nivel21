@@ -25,9 +25,6 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.token-conditions.enabled")) {
-      return;
-    }
 
     const ROWS = 4;
     const images = new Map(); // url -> HTMLImageElement
@@ -120,7 +117,15 @@
     setInterval(scheduleRebuild, 3000);
     rebuild();
 
-    TokenOverlayManager.addLayer("token-conditions", draw, 15);
+    // Applies live: the layer is added/removed with the setting.
+    SettingsManager.watch("feature.token-conditions.enabled", (enabled) => {
+      if (enabled) {
+        rebuild();
+        TokenOverlayManager.addLayer("token-conditions", draw, 15);
+      } else {
+        TokenOverlayManager.removeLayer("token-conditions");
+      }
+    });
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Conditions", error);
   }

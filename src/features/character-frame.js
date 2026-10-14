@@ -35,9 +35,8 @@
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.character-frame.enabled")) {
-      return;
-    }
+    // Applies live: the frame is hidden while the feature is disabled.
+    let enabled = SettingsManager.get("feature.character-frame.enabled");
 
     if (!window._n21_.utils.isTabletopUrl()) return;
 
@@ -261,6 +260,13 @@
     }
 
     function render() {
+      if (!enabled) {
+        const existing = document.getElementById(ROOT_ID);
+        if (existing) existing.hidden = true;
+        closeDropdown();
+        lastRenderKey = "";
+        return;
+      }
       const entry = getCurrentEntry();
       const root = ensureRoot();
       if (!root) return;
@@ -570,6 +576,11 @@
       });
     }
 
+    SettingsManager.watch("feature.character-frame.enabled", (value) => {
+      enabled = !!value;
+      lastRenderKey = "";
+      render();
+    });
     CombatTrackingManager.onChange(render);
     LocalResourcesManager.onChange(() => {
       lastRenderKey = "";
