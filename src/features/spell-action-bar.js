@@ -220,6 +220,25 @@
       } catch (_error) {}
     }
 
+    /**
+     * Spend a spell slot of the spell's level (or a pact slot of that level
+     * or higher). Does nothing if none is left or the user can't edit.
+     */
+    function spendSlot(charId, level) {
+      const Tracking = window._n21_.managers.CombatTrackingManager;
+      const entry = Tracking?.getEntry("character", charId);
+      if (!entry?.editable || !(level > 0)) return;
+      const available = (r) => r.used < r.max;
+      const slot =
+        entry.resources.find(
+          (r) => r.category === "spell_slots" && Number(r.id) === level && available(r),
+        ) ||
+        entry.resources
+          .filter((r) => r.category === "pact_spell_slots" && Number(r.id) >= level && available(r))
+          .sort((a, b) => Number(a.id) - Number(b.id))[0];
+      if (slot) Tracking.setResourceUsed(entry, slot.category, slot.id, slot.used + 1);
+    }
+
     // Capture phase: the bar's own handlers stop propagation.
     document.addEventListener(
       "click",
@@ -227,7 +246,12 @@
         const element = event.target.closest?.(".action-bar-element[data-action]");
         if (!element) return;
         const action = readAction(element);
-        if (!action || (action.action_type !== "spell_cast" && !action.n21_concentration)) return;
+        if (
+          !action ||
+          (action.action_type !== "spell_cast" && !action.n21_concentration && !action.n21_consume_slot)
+        ) {
+          return;
+        }
 
         const charId = resolveCharacterId(element);
 
@@ -243,6 +267,7 @@
           );
         }
 
+        if (action.n21_consume_slot && charId) spendSlot(charId, Number(action.n21_spell_level));
         if (action.n21_concentration && charId) startConcentration(charId);
       },
       true,

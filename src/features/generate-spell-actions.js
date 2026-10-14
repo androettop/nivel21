@@ -255,6 +255,8 @@
       n21_spell_name: spell.name,
       n21_spell_level: spell.level ?? null,
       n21_concentration: isConcentration(spell),
+      // Casting a leveled spell spends a slot of its level.
+      n21_consume_slot: (spell.level | 0) > 0,
     };
   }
 
@@ -273,6 +275,8 @@
     if (elements.length === 1) {
       header.n21_concentration = concentration;
       header.n21_spell_name = spell.name;
+      header.n21_spell_level = spell.level ?? null;
+      header.n21_consume_slot = (spell.level | 0) > 0;
       return elements;
     }
 

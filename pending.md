@@ -33,3 +33,4 @@
 - [x] **Lanzar conjuros**: botón «Lanzar» (icono del conjuro) primero en los conjuros con ataque/daño; los conjuros sin tiradas se lanzan con su propio botón. Envía un mensaje al chat y, si es de concentración, activa el estado Concentración (también con sus botones de ataque y al usar conjuros de curación/utilidad de concentración). Carpetas renombradas a «Conjuros de nivel N» con iconos de número romano.
 - [x] **Inventario**: botón de editar que abre el equipo en la hoja (URL de la campaña).
 - Inventario: los objetos se reordenan arrastrando; el orden es local (localStorage por personaje, clave por id del objeto).
+- Lanzar un conjuro de nivel (botón «Lanzar» o el propio botón en conjuros de curación/utilidad) gasta un espacio de ese nivel; si no hay, uno de pacto de nivel igual o mayor; si no queda ninguno, no descuenta. Los ataques y los trucos no gastan.
