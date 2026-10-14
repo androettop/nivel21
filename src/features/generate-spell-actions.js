@@ -18,7 +18,7 @@
 
   // ----- Platform constants (icons reused by Nivel20 for each roll role) -----
 
-  // Per-level folder icons are bundled extension assets (src/assets/lvlN.png,
+  // Per-level folder icons are bundled extension assets (src/assets/spell-levels/lvlN.png,
   // level 0 = trucos, up to level 9). They live in the extension package, so
   // their URL is built from the extension's base URL (which carries the
   // extension id). The content script exposes that base via a shared-DOM data
@@ -33,8 +33,7 @@
 
   function folderIcon(level) {
     const lvl = Math.min(Math.max(level | 0, 0), 9);
-    // Spell levels use a roman numeral icon; cantrips keep their own.
-    if (lvl === 0) return `${extensionBaseUrl()}src/assets/lvl0.png`;
+    // Roman numeral per level; cantrips get a hollow square.
     return `${extensionBaseUrl()}src/assets/spell-levels/lvl${lvl}.png`;
   }
 
@@ -455,7 +454,7 @@
       name,
       // The icon already shows the level: a zero-width text keeps the bar
       // from printing the long name over it.
-      text: level === 0 ? "" : "\u200b",
+      text: "\u200b",
       icon: folderIcon(level),
       description: null,
       action_type: "folder",

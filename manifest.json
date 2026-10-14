@@ -29,7 +29,6 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/assets/*.png",
         "src/assets/actions/*",
         "src/assets/inventory/*",
         "src/assets/inventory/currency/*",
