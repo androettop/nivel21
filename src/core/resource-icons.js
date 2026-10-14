@@ -25,7 +25,7 @@
     { key: "second-wind", color: "#5dade2", keywords: ["tomar aliento", "nuevas energias", "segundo aliento", "recuperar aliento", "second wind"] },
     { key: "action-surge", color: "#e67e22", keywords: ["oleada de accion", "accion subita", "action surge"] },
     { key: "lay-on-hands", color: "#f5d76e", keywords: ["imposicion de manos", "lay on hands"] },
-    { key: "superiority", color: "#a3b1bf", keywords: ["dados de superioridad", "dado de superioridad", "superiority"] },
+    { key: "superiority", color: "#a3b1bf", keywords: ["dados de superioridad", "dado de superioridad", "dados de supremacia", "dado de supremacia", "superiority"] },
     { key: "indomitable", color: "#8e9aa6", keywords: ["indomable", "indomitable"] },
     { key: "luck", color: "#58c26b", keywords: ["puntos de suerte", "afortunado", "suerte", "lucky", "luck"] },
     { key: "breath-weapon", color: "#f06a2b", keywords: ["arma de aliento", "aliento de dragon", "breath weapon", "aliento"] },
