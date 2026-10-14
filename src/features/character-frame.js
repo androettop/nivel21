@@ -52,7 +52,6 @@
     let current = null; // entry being shown
     let lastRenderKey = "";
     let dropdownOpen = false;
-    let busy = false;
 
     function escapeHtml(value) {
       const div = document.createElement("div");
@@ -300,7 +299,7 @@
     }
 
     async function applyHpAction(action) {
-      if (busy || !current) return;
+      if (!current) return;
       const dropdown = getDropdown();
       const value = parseInt(dropdown?.querySelector("input")?.value, 10);
       if (!Number.isFinite(value) || value < 0) {
@@ -308,21 +307,11 @@
         return;
       }
 
+      // Applied optimistically; the manager batches and sends the request.
       const entry = current;
-      busy = true;
-      let ok = false;
-      try {
-        if (action === "heal") ok = await CombatTrackingManager.applyHealing(entry, value);
-        if (action === "damage") ok = await CombatTrackingManager.applyDamage(entry, value);
-        if (action === "temp") ok = await CombatTrackingManager.setTempHp(entry, value);
-      } finally {
-        busy = false;
-      }
-
-      if (!ok) {
-        showMessage("<p>No se pudo actualizar la vida. Vuelve a intentarlo.</p>");
-        return;
-      }
+      if (action === "heal") CombatTrackingManager.applyHealing(entry, value);
+      if (action === "damage") CombatTrackingManager.applyDamage(entry, value);
+      if (action === "temp") CombatTrackingManager.setTempHp(entry, value);
 
       if (
         action === "damage" &&
@@ -337,8 +326,8 @@
 
     /* ----------------------- resources ----------------------- */
 
-    async function changeResource(button, delta) {
-      if (busy || !current) return;
+    function changeResource(button, delta) {
+      if (!current) return;
       const source = button.getAttribute("data-source");
       const id = button.getAttribute("data-id");
 
@@ -354,14 +343,7 @@
       const used = resource.used + delta;
       if (used < 0 || used > resource.max) return;
 
-      busy = true;
-      button.classList.add("n21-cframe-res--busy");
-      try {
-        await CombatTrackingManager.setResourceUsed(current, category, id, used);
-      } finally {
-        busy = false;
-        button.classList.remove("n21-cframe-res--busy");
-      }
+      CombatTrackingManager.setResourceUsed(current, category, id, used);
     }
 
     /* ----------------------- events ----------------------- */

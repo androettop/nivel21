@@ -10,6 +10,9 @@
   const CHARACTER_ROW_SELECTOR = ".character-row[data-row-id][data-row-type]";
   const HEALTH_BAR_SELECTOR = ".progress.health-bar[data-row-id][data-row-type]";
 
+  // Edits are applied optimistically and sent once the user stops clicking.
+  const SAVE_DEBOUNCE_MS = 600;
+
   /**
    * Normalize free text for comparisons: lowercase, no accents/diacritics,
    * collapsed whitespace. Conditions are matched by name with this (never by
@@ -44,6 +47,8 @@
       this._listeners = new Set();
       this._observer = null;
       this._notifyTimer = null;
+      // key -> { changes: {currentHp, tempHp, used}, timer, inFlight, version }
+      this._pending = new Map();
     }
 
     async init() {
@@ -143,6 +148,17 @@
      * @returns {Object|null}
      */
     getEntry(type, id, index = 0) {
+      const entry = this._readEntry(type, id, index);
+      if (!entry) return null;
+      const pending = this._pending.get(entry.key);
+      return pending ? this._applyChanges(entry, pending.changes) : entry;
+    }
+
+    /**
+     * Entry as currently stored by Nivel20 (no pending local edits).
+     * @private
+     */
+    _readEntry(type, id, index = 0) {
       const $row = this._getRow(type, id);
       const $bar = this._getHealthBar(type, id, index);
       if (!$row.length || !$bar.length) return null;
@@ -263,6 +279,105 @@
     }
 
     /**
+     * Overlay pending (not yet saved) changes on an entry.
+     * @private
+     */
+    _applyChanges(entry, changes) {
+      const next = { ...entry };
+      if (changes.currentHp !== undefined) next.currentHp = changes.currentHp;
+      if (changes.tempHp !== undefined) next.tempHp = changes.tempHp;
+      const used = changes.used || {};
+      next.resources = entry.resources.map((r) => {
+        const value = used[r.category]?.[r.id];
+        return value === undefined ? r : { ...r, used: value };
+      });
+      next._usedResources = { ...entry._usedResources };
+      Object.entries(used).forEach(([category, values]) => {
+        next._usedResources[category] = { ...(next._usedResources[category] || {}), ...values };
+      });
+      next.pending = true;
+      return next;
+    }
+
+    /**
+     * Queue a change: listeners see it right away (optimistic update) and it
+     * is sent to Nivel20 once no more changes arrive for SAVE_DEBOUNCE_MS, so
+     * spamming clicks results in a single request. If the request fails, the
+     * pending change is dropped and the real state shows again.
+     * @param {Object} entry - From getEntry
+     * @param {Object} changes - { currentHp, tempHp, used: {category: {id: n}} }
+     * @returns {boolean} True if queued
+     */
+    queueStatus(entry, changes = {}) {
+      if (!entry?.key) return false;
+      let pending = this._pending.get(entry.key);
+      if (!pending) {
+        pending = {
+          type: entry.type,
+          id: entry.id,
+          index: entry.index,
+          changes: {},
+          timer: null,
+          inFlight: false,
+          version: 0,
+        };
+        this._pending.set(entry.key, pending);
+      }
+
+      const merged = { ...pending.changes };
+      if (changes.currentHp !== undefined) merged.currentHp = changes.currentHp;
+      if (changes.tempHp !== undefined) merged.tempHp = changes.tempHp;
+      if (changes.used) {
+        merged.used = { ...(merged.used || {}) };
+        Object.entries(changes.used).forEach(([category, values]) => {
+          merged.used[category] = { ...(merged.used[category] || {}), ...values };
+        });
+      }
+      pending.changes = merged;
+      pending.version += 1;
+
+      clearTimeout(pending.timer);
+      pending.timer = setTimeout(() => this._flush(entry.key), SAVE_DEBOUNCE_MS);
+      this._notifyNow();
+      return true;
+    }
+
+    async _flush(key) {
+      const pending = this._pending.get(key);
+      if (!pending) return;
+      if (pending.inFlight) {
+        // One request at a time per entry; retry when the current one ends.
+        clearTimeout(pending.timer);
+        pending.timer = setTimeout(() => this._flush(key), SAVE_DEBOUNCE_MS);
+        return;
+      }
+
+      const base = this._readEntry(pending.type, pending.id, pending.index);
+      if (!base) {
+        this._pending.delete(key);
+        this._notifyNow();
+        return;
+      }
+
+      const sentVersion = pending.version;
+      pending.inFlight = true;
+      const ok = await this.setStatus(base, pending.changes);
+      pending.inFlight = false;
+
+      if (pending.version === sentVersion) {
+        // Nothing new arrived meanwhile: the panel now has the saved values
+        // (or the old ones if it failed, which reverts the optimistic edit).
+        this._pending.delete(key);
+      } else if (!ok) {
+        // Keep the newer edits; they'll be retried by their own timer.
+      }
+      if (!ok) {
+        console.warn("[CombatTrackingManager] Could not save status for", key);
+      }
+      this._notifyNow();
+    }
+
+    /**
      * Send a new status for an entry through Nivel20's set_row_status, keeping
      * every field not being changed exactly as it is now.
      * @param {Object} entry - From getEntry
@@ -351,17 +466,17 @@
 
     /** Damage (amount > 0) an entry. */
     applyDamage(entry, amount) {
-      return this.setStatus(entry, this.computeHpChange(entry, -Math.abs(amount)));
+      return this.queueStatus(entry, this.computeHpChange(entry, -Math.abs(amount)));
     }
 
     /** Heal (amount > 0) an entry. */
     applyHealing(entry, amount) {
-      return this.setStatus(entry, this.computeHpChange(entry, Math.abs(amount)));
+      return this.queueStatus(entry, this.computeHpChange(entry, Math.abs(amount)));
     }
 
     /** Set temporary HP (they don't stack: the value replaces the current). */
     setTempHp(entry, value) {
-      return this.setStatus(entry, { tempHp: Math.max(toInt(value, 0), 0) });
+      return this.queueStatus(entry, { tempHp: Math.max(toInt(value, 0), 0) });
     }
 
     /** Set how many uses of a resource are spent. */
@@ -369,7 +484,7 @@
       const resource = entry.resources.find((r) => r.category === category && r.id === id);
       const max = resource ? resource.max : usedCount;
       const value = Math.max(Math.min(toInt(usedCount, 0), max), 0);
-      return this.setStatus(entry, { used: { [category]: { [id]: value } } });
+      return this.queueStatus(entry, { used: { [category]: { [id]: value } } });
     }
 
     /**
@@ -419,6 +534,18 @@
         characterData: true,
         attributes: true,
         attributeFilter: ["class", "style", "data-condition-count"],
+      });
+    }
+
+    _notifyNow() {
+      clearTimeout(this._notifyTimer);
+      this._notifyTimer = null;
+      this._listeners.forEach((callback) => {
+        try {
+          callback();
+        } catch (error) {
+          console.warn("[CombatTrackingManager] listener error:", error);
+        }
       });
     }
 

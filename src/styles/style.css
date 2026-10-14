@@ -1609,7 +1609,7 @@ span[n21-h] {
 .n21-cframe-res-label {
 	font-size: 14px;
 	color: var(--n21-cf-muted);
-	max-width: 120px;
+	max-width: 160px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -1624,10 +1624,6 @@ span[n21-h] {
 .n21-cframe-res--empty .n21-cframe-res-value {
 	color: var(--n21-cf-muted);
 	text-decoration: line-through;
-}
-
-.n21-cframe-res--busy {
-	opacity: 0.5;
 }
 
 .n21-cframe--readonly .n21-cframe-res {
@@ -1735,4 +1731,131 @@ span[n21-h] {
 .n21-cframe-hp-msg-actions {
 	display: flex;
 	gap: 6px;
+}
+
+/* ----------------------- Creature Resources ----------------------- */
+
+.n21-cres {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px;
+	height: 100%;
+	min-height: 0;
+	font-size: 14px;
+}
+
+.n21-cres-label {
+	margin: 0;
+	font-weight: 600;
+}
+
+.n21-cres-list {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-cres-empty {
+	padding: 12px;
+	text-align: center;
+	opacity: 0.75;
+	font-size: 14px;
+}
+
+.n21-cres-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid rgba(127, 127, 127, 0.3);
+	border-radius: 8px;
+}
+
+.n21-cres-row-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.n21-cres .n21-cres-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	padding: 2px 4px;
+}
+
+.n21-cres .n21-cres-name:hover,
+.n21-cres .n21-cres-name:focus {
+	border-color: rgba(127, 127, 127, 0.5);
+}
+
+.n21-cres-count {
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-cres-remove {
+	border: none;
+	background: transparent;
+	color: #c0392b;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 4px;
+}
+
+.n21-cres-boxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.n21-cres-box {
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 2px solid rgba(127, 127, 127, 0.7);
+	border-radius: 4px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.n21-cres-box--used {
+	background: #822020;
+	border-color: #822020;
+}
+
+.n21-cres-add {
+	display: flex;
+	gap: 6px;
+	margin: 0;
+}
+
+.n21-cres-add .n21-cres-add-name {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.n21-cres-add .n21-cres-add-max {
+	flex: 0 0 64px;
+	width: 64px;
+}
+
+.n21-cres-footer {
+	display: flex;
+	gap: 6px;
+}
+
+.n21-cres-footer > * {
+	flex: 1 1 0;
+	min-width: 0;
 }
