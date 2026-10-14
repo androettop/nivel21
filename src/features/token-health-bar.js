@@ -1,10 +1,10 @@
 (async () => {
   try {
     /* =======================
-       Feature: Token Health Bar (Barras de vida en los tokens)
+       Feature: Token Health Bar (Puntos de golpe en los tokens)
 
-       Dibuja una barra de vida debajo de cada token asignado a un
-       personaje/criatura ([char:id]). Cada usuario solo ve las barras de los
+       Muestra los PV ("actual/máximo") en chico, abajo dentro de la base de
+       cada token asignado a un personaje/criatura ([char:id]). Cada usuario solo ve los PV de los
        personajes/criaturas que puede ver en su propio panel de personajes (el
        DM los ve todos). No se envía nada a Nivel20: es solo una capa visual.
     ======================= */
@@ -56,8 +56,20 @@
       rebuildTimer = setTimeout(rebuild, 100);
     }
 
-    // Same red as Nivel20's health bars.
-    const BAR_COLOR = "#c62828";
+    // Small "current/max" label at the bottom, inside the token base.
+    const TEXT_COLOR = "#f2f0ea";
+    const TEMP_COLOR = "#7fb8ec";
+    const DOWN_COLOR = "#ff8a80";
+
+    function roundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
 
     function draw(ctx, helpers) {
       bars.forEach((hp, networkId) => {
@@ -65,7 +77,7 @@
         if (!visibility || (visibility.hidden && !visibility.translucent)) return;
 
         const rect = helpers.rectOf(networkId);
-        if (!rect || rect.width < 8) return;
+        if (!rect || rect.width < 24) return;
         if (
           rect.x > helpers.width ||
           rect.y > helpers.height ||
@@ -75,24 +87,41 @@
           return;
         }
 
-        const width = rect.width * 0.9;
-        const height = Math.max(4, Math.min(rect.width * 0.08, 12));
-        const x = rect.x + (rect.width - width) / 2;
-        const y = rect.y + rect.height + Math.max(2, height * 0.4);
-        const ratio = Math.max(0, Math.min(hp.currentHp / hp.maxHp, 1));
-        const tempRatio = Math.max(0, Math.min(hp.tempHp / hp.maxHp, 1));
+        const fontSize = Math.round(Math.min(Math.max(rect.width * 0.15, 9), 14));
+        ctx.font = `700 ${fontSize}px sans-serif`;
+        ctx.textBaseline = "middle";
+
+        const main = String(hp.currentHp);
+        const temp = hp.tempHp > 0 ? `+${hp.tempHp}` : "";
+        const rest = `/${hp.maxHp}`;
+        const wMain = ctx.measureText(main).width;
+        const wTemp = temp ? ctx.measureText(temp).width : 0;
+        const wRest = ctx.measureText(rest).width;
+        const textWidth = wMain + wTemp + wRest;
+
+        const padX = fontSize * 0.35;
+        const boxW = textWidth + padX * 2;
+        const boxH = fontSize * 1.25;
+        const x = rect.x + (rect.width - boxW) / 2;
+        const y = rect.y + rect.height - boxH - rect.height * 0.04;
 
         ctx.globalAlpha = visibility.translucent ? 0.5 : 1;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-        ctx.fillRect(x - 1, y - 1, width + 2, height + 2);
-        ctx.fillStyle = "#3a3c40";
-        ctx.fillRect(x, y, width, height);
-        ctx.fillStyle = BAR_COLOR;
-        ctx.fillRect(x, y, width * ratio, height);
-        if (tempRatio > 0) {
-          ctx.fillStyle = "#4a90d9";
-          ctx.fillRect(x, y, width * tempRatio, Math.max(2, height * 0.35));
+        roundedRect(ctx, x, y, boxW, boxH, boxH / 2);
+        ctx.fillStyle = "rgba(15, 16, 18, 0.72)";
+        ctx.fill();
+
+        let cursor = x + padX;
+        const middle = y + boxH / 2 + 0.5;
+        ctx.fillStyle = hp.currentHp <= 0 ? DOWN_COLOR : TEXT_COLOR;
+        ctx.fillText(main, cursor, middle);
+        cursor += wMain;
+        if (temp) {
+          ctx.fillStyle = TEMP_COLOR;
+          ctx.fillText(temp, cursor, middle);
+          cursor += wTemp;
         }
+        ctx.fillStyle = TEXT_COLOR;
+        ctx.fillText(rest, cursor, middle);
       });
     }
 

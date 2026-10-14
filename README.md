@@ -163,14 +163,14 @@ Las criaturas no tienen recursos en Nivel20: el DM puede crearles casillas propi
 
 ---
 
-### Barras de vida y estados en los tokens
+### Puntos de golpe y estados en los tokens
 
-Los tokens asignados a un personaje o criatura muestran su barra de vida debajo y los iconos de sus estados sobre el borde derecho. Cada jugador solo los ve en los personajes y criaturas que puede ver en su panel (el DM los ve todos).
+Los tokens asignados a un personaje o criatura muestran sus puntos de golpe («actual/máximo», en chico abajo dentro del token) y los iconos de sus estados sobre el borde derecho. Cada jugador solo los ve en los personajes y criaturas que puede ver en su panel (el DM los ve todos).
 
 Si el personaje o criatura tiene el estado **Invisible**, su token se oculta a quienes no lo ven en su panel; quienes sí lo ven, lo ven semitransparente. No se cambia nada en Nivel20: sin la extensión, todos siguen viendo el token.
 
 <a id="token-status">
- <img src="popup/img/token-status.png" alt="Barras de vida y estados en los tokens" />
+ <img src="popup/img/token-status.png" alt="Puntos de golpe y estados en los tokens" />
 </a>
 
 ---

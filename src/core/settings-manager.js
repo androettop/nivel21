@@ -234,7 +234,7 @@
 
       this.registerSetting({
         name: "feature.token-health-bar.enabled",
-        label: "Barras de vida en los tokens",
+        label: "Puntos de golpe en los tokens",
         type: "boolean",
         defaultValue: true,
         dependsOn: ["feature.token-assign-character.enabled"],
