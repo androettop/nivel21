@@ -114,7 +114,7 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>';
 
     const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
-    const MAX_PIPS = 8;
+    const MAX_PIPS = 6;
 
     /** Fallback "icon" for resources we don't recognize: their initial. */
     function initialOf(resource) {

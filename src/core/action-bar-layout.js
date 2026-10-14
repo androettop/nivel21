@@ -75,23 +75,12 @@
    * Items the layout doesn't know keep their position.
    */
   function apply(items, charId) {
-    if (!Array.isArray(items)) return items;
     const layout = getLayout(charId);
-    if (!layout) {
-      attachIconHolders(items);
-      return items;
-    }
+    if (!layout || !Array.isArray(items)) return items;
 
     const hidden = new Set(layout.hidden);
-    // Hidden extension folders take their icon holder with them.
-    const hiddenNames = new Set(
-      items.filter((it) => it?.n21Key && hidden.has(it.n21Key)).map((it) => it.name),
-    );
     for (let i = items.length - 1; i >= 0; i -= 1) {
-      const item = items[i];
-      const isHiddenHolder =
-        !item?.n21Key && item?.action_type === "none" && hiddenNames.has(item?.name);
-      if (hidden.has(keyOf(item)) || isHiddenHolder) items.splice(i, 1);
+      if (hidden.has(keyOf(items[i]))) items.splice(i, 1);
     }
 
     const rankOf = (item) => {
@@ -112,36 +101,7 @@
     slots.forEach((slot, i) => {
       items[slot] = known[i].item;
     });
-    attachIconHolders(items, hidden);
     return items;
-  }
-
-  /**
-   * Extension folders can get an icon from a Nivel20 "Sin acción" action with
-   * the same name (the bar merges its icon into the folder). For the merge to
-   * happen the holder must come right after the folder; if the folder is
-   * hidden, its holder is hidden too.
-   */
-  function attachIconHolders(items, hidden = new Set()) {
-    const isHolder = (item) => !item?.n21Key && item?.action_type === "none";
-    for (let i = 0; i < items.length; i += 1) {
-      const folder = items[i];
-      // Extension folders and Nivel20's default folders (not user records).
-      const takesHolder =
-        folder?.n21Key ||
-        (folder?.action_type === "folder" && folder.id != null && !/^\d+$/.test(String(folder.id)));
-      if (!takesHolder) continue;
-      const holderIndex = items.findIndex((it) => isHolder(it) && it.name === folder.name);
-      if (holderIndex === -1) continue;
-      const [holder] = items.splice(holderIndex, 1);
-      if (folder.n21Key && hidden.has(folder.n21Key)) {
-        if (holderIndex < i) i -= 1;
-        continue;
-      }
-      const at = items.indexOf(folder) + 1;
-      items.splice(at, 0, holder);
-      if (at <= i) i += 1;
-    }
   }
 
   window._n21_.actionBarLayout = {

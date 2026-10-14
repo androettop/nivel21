@@ -2210,25 +2210,35 @@ span[n21-h] {
 	padding-left: 6px;
 }
 
+/* Each element is a box: its row and, when editing, its form below. */
+.n21-abe-box {
+	margin: 3px 0;
+	border: 1px solid rgba(127, 127, 127, 0.25);
+	border-radius: 6px;
+	background: rgba(127, 127, 127, 0.06);
+}
+
+.n21-abe-box:hover,
+.n21-abe-open > .n21-abe-box {
+	border-color: rgba(127, 127, 127, 0.55);
+}
+
+.n21-abe-open > .n21-abe-box {
+	background: rgba(127, 127, 127, 0.1);
+}
+
 .n21-abe-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	min-height: 44px;
 	padding: 4px 8px;
-	margin: 2px 0;
-	border: 1px solid rgba(127, 127, 127, 0.25);
 	border-radius: 6px;
-	background: rgba(127, 127, 127, 0.06);
 	font-size: 14px;
 	cursor: grab;
 }
 
-.n21-abe-row:hover {
-	border-color: rgba(127, 127, 127, 0.5);
-}
-
-.n21-abe-dragging > .n21-abe-row {
+.n21-abe-dragging > .n21-abe-box {
 	opacity: 0.45;
 }
 
@@ -2283,6 +2293,34 @@ span[n21-h] {
 	white-space: nowrap;
 }
 
+.n21-abe-name--editable,
+.n21-abe-icon--editable {
+	cursor: pointer;
+}
+
+.n21-abe-name--editable:hover {
+	text-decoration: underline dotted;
+}
+
+.n21-abe-icon--editable:hover,
+.n21-abe-icon--editable:focus-visible {
+	outline: 2px solid #822020;
+	outline-offset: 1px;
+}
+
+.n21-abe .n21-abe-rename {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 30px;
+	padding: 2px 8px;
+	border: 1px solid #822020;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+}
+
 .n21-abe-badge {
 	flex: 0 0 auto;
 	font-size: 14px;
@@ -2330,7 +2368,63 @@ span[n21-h] {
 }
 
 .n21-abe-details {
-	margin: 4px 0 8px 30px;
+	padding: 4px 12px 12px 48px;
+	border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+/* The native fragment, restyled only inside the editor. */
+.n21-abe-details > .action-button-form,
+.n21-abe-details .accordion-wrapper,
+.n21-abe-details .accordion-content,
+.n21-abe-details .card-body {
+	border: none !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Name is edited in the row and position by dragging: hide them here
+   (child actions use different class names, so match by field name). */
+.n21-abe-details .accordion-header,
+.n21-abe-details .form-group:has(> input[name$="[name]"]),
+.n21-abe-details .form-group:has(> input[name$="[order]"]),
+.n21-abe-details .remove_fields,
+.n21-abe-details .help-block {
+	display: none !important;
+}
+
+.n21-abe-details .pt-1.pb-1 {
+	padding-top: 8px !important;
+}
+
+.n21-abe-details .row {
+	margin-left: -6px;
+	margin-right: -6px;
+}
+
+.n21-abe-details .row > [class*="col"] {
+	padding-left: 6px;
+	padding-right: 6px;
+}
+
+.n21-abe-details .form-group {
+	margin-bottom: 10px;
+}
+
+.n21-abe-details .control-label {
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.n21-abe-details .form-control {
+	font-size: 14px;
+	border-radius: 6px;
+}
+
+.n21-abe-details textarea.form-control {
+	min-height: 64px;
 }
 
 /* Children are managed by the tree, not by the native folder section. */
@@ -2338,26 +2432,7 @@ span[n21-h] {
 	display: none !important;
 }
 
-.n21-abe-sub-form label {
-	display: block;
-	font-size: 14px;
-	font-weight: 600;
-}
 
-/* Icon holder of an extension folder: only the icon matters. */
-.n21-abe-icon-holder .character_actionbar_actions_name,
-.n21-abe-icon-holder .character_actionbar_actions_description,
-.n21-abe-icon-holder .character_actionbar_actions_action_type,
-.n21-abe-icon-holder .character_actionbar_actions_order,
-.n21-abe-icon-holder .character_actionbar_actions_icon_text,
-.n21-abe-icon-holder .remove_fields,
-.n21-abe-icon-holder .action-type-dependent {
-	display: none !important;
-}
-
-.n21-abe-icon-holder .accordion-header {
-	display: none !important;
-}
 
 .n21-abe-confirm {
 	flex: 0 0 auto;
@@ -2378,12 +2453,6 @@ span[n21-h] {
 	color: #c0392b;
 }
 
-.n21-abe-sub-icon-label {
-	display: block;
-	margin-top: 8px;
-	font-size: 14px;
-	font-weight: 600;
-}
 
 .n21-abe-warning {
 	margin: 8px 16px 0;

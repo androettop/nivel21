@@ -355,19 +355,6 @@
         }),
       );
 
-      // "Sin acción" records named like an extension folder are that folder's
-      // icon: shown as part of the folder, not as separate rows.
-      [...ext, ...others.filter((n) => n.kind === "default" && n.type === "folder")].forEach((extNode) => {
-        const index = nativeLevel.findIndex(
-          (n) => n.kind === "native" && n.type === "none" && n.label === extNode.label && n.frag,
-        );
-        if (index === -1) return;
-        const [holder] = nativeLevel.splice(index, 1);
-        extNode.iconFrag = holder.frag;
-        if (holder.icon) extNode.icon = holder.icon;
-        nodes.delete(holder.uid);
-      });
-
       // Default order = how the bar renders today: spells first, then
       // Nivel20's items, then the other extension folders.
       root = [
@@ -417,17 +404,10 @@
       return node.kind === "native" || node.kind === "sub";
     }
 
-    // Folders whose icon comes from the extension itself.
-    function isIconLocked(node) {
-      return (
-        node.kind === "ext" &&
-        (node.key === "n21:actions" || node.key === "n21:inventory" || node.key?.startsWith("n21:spells:"))
-      );
-    }
-
-    /** Folders whose icon is set through a "Sin acción" record with their name. */
-    function usesIconHolder(node) {
-      return (node.kind === "ext" && !isIconLocked(node)) || (node.kind === "default" && node.type === "folder");
+    // Only the user's own actions/folders (and sub-folders) take icons;
+    // folders from the extension and Nivel20's defaults keep theirs.
+    function canEditIcon(node) {
+      return node.kind === "native" || node.kind === "sub";
     }
 
     /* ---------- rendering ---------- */
@@ -447,13 +427,15 @@
 
     function iconStyle(node) {
       if (node.icon) return `background-image: url('${encodeURI(node.icon)}')`;
-      const preview = (node.frag || node.iconFrag)?.querySelector(".select-icon.icon-preview");
-      const style = preview?.getAttribute("style") || "";
-      return /background/.test(style) ? style : "";
+      // The native picker writes the chosen icon on .icon-content.
+      const content = node.frag?.querySelector(".select-icon .icon-content");
+      const image = content?.style?.backgroundImage;
+      return image && image !== "none" ? `background-image: ${image}` : "";
     }
 
     function renderNode(node) {
       const isFolder = node.type === "folder";
+      const editable = node.kind === "native" || node.kind === "sub";
       const toggle =
         node.kind === "ext" || node.kind === "default"
           ? `<label class="n21-abe-toggle" title="Mostrar en la barra">
@@ -461,48 +443,58 @@
                <span>Visible</span>
              </label>`
           : "";
-      const editable = node.kind === "native" || node.kind === "sub";
+      const iconAttrs = canEditIcon(node)
+        ? 'role="button" tabindex="0" title="Cambiar icono"'
+        : "";
+      const nameAttrs = editable ? 'role="button" tabindex="0" title="Renombrar"' : "";
       return `
         <li class="n21-abe-node ${isFolder ? "n21-abe-folder" : ""} ${
           node.enabled ? "" : "n21-abe-disabled"
-        }" data-uid="${node.uid}">
-          <div class="n21-abe-row" draggable="true">
-            <span class="n21-abe-handle" aria-hidden="true">⠿</span>
-            ${
-              isFolder && (node.kind === "native" || node.kind === "sub")
-                ? `<button type="button" class="n21-abe-collapse" aria-label="${
-                    node.collapsed ? "Expandir" : "Contraer"
-                  }">${node.collapsed ? "▸" : "▾"}</button>`
-                : `<span class="n21-abe-collapse-spacer"></span>`
-            }
-            <span class="n21-abe-icon" style="${escapeHtml(iconStyle(node))}"></span>
-            <span class="n21-abe-name">${escapeHtml(node.label)}</span>
-            <span class="n21-abe-badge">${escapeHtml(typeBadge(node))}</span>
-            <span class="n21-abe-actions">
-              ${toggle}
+        } ${openUid === node.uid ? "n21-abe-open" : ""}" data-uid="${node.uid}">
+          <div class="n21-abe-box">
+            <div class="n21-abe-row" draggable="true">
+              <span class="n21-abe-handle" aria-hidden="true">⠿</span>
               ${
                 isFolder && editable
-                  ? `<button type="button" class="n21-abe-btn n21-abe-add-child" title="Añadir acción dentro">+ Acción</button>
-                     <button type="button" class="n21-abe-btn n21-abe-add-sub" title="Añadir subcarpeta dentro">+ Carpeta</button>`
-                  : ""
+                  ? `<button type="button" class="n21-abe-collapse" aria-label="${
+                      node.collapsed ? "Expandir" : "Contraer"
+                    }">${node.collapsed ? "▸" : "▾"}</button>`
+                  : `<span class="n21-abe-collapse-spacer"></span>`
               }
-              ${
-                usesIconHolder(node)
-                  ? `<button type="button" class="n21-abe-btn n21-abe-edit" title="Elegir el icono de la carpeta">Icono</button>`
-                  : ""
-              }
-              ${editable ? `<button type="button" class="n21-abe-btn n21-abe-edit" title="Editar">Editar</button>` : ""}
-              ${editable ? `<button type="button" class="n21-abe-btn n21-abe-delete" title="Eliminar">✕</button>` : ""}
-            </span>
-            <span class="n21-abe-confirm" hidden>
-              <span>¿Eliminar${node.children.length ? " con su contenido" : ""}?</span>
-              <button type="button" class="n21-abe-btn n21-abe-confirm-yes">Eliminar</button>
-              <button type="button" class="n21-abe-btn n21-abe-confirm-no">Cancelar</button>
-            </span>
+              <span class="n21-abe-icon ${canEditIcon(node) ? "n21-abe-icon--editable" : ""}" style="${escapeHtml(
+                iconStyle(node),
+              )}" ${iconAttrs}></span>
+              <span class="n21-abe-name ${editable ? "n21-abe-name--editable" : ""}" ${nameAttrs}>${escapeHtml(
+                node.label,
+              )}</span>
+              <span class="n21-abe-badge">${escapeHtml(typeBadge(node))}</span>
+              <span class="n21-abe-actions">
+                ${toggle}
+                ${
+                  isFolder && editable
+                    ? `<button type="button" class="n21-abe-btn n21-abe-add-child" title="Añadir acción dentro">+ Acción</button>
+                       <button type="button" class="n21-abe-btn n21-abe-add-sub" title="Añadir subcarpeta dentro">+ Carpeta</button>`
+                    : ""
+                }
+                ${
+                  node.kind === "native"
+                    ? `<button type="button" class="n21-abe-btn n21-abe-edit" aria-expanded="${
+                        openUid === node.uid
+                      }">${openUid === node.uid ? "Cerrar" : "Editar"}</button>`
+                    : ""
+                }
+                ${editable ? `<button type="button" class="n21-abe-btn n21-abe-delete" title="Eliminar">✕</button>` : ""}
+              </span>
+              <span class="n21-abe-confirm" hidden>
+                <span>¿Eliminar${node.children.length ? " con su contenido" : ""}?</span>
+                <button type="button" class="n21-abe-btn n21-abe-confirm-yes">Eliminar</button>
+                <button type="button" class="n21-abe-btn n21-abe-confirm-no">Cancelar</button>
+              </span>
+            </div>
+            <div class="n21-abe-details" ${openUid === node.uid ? "" : "hidden"}></div>
           </div>
-          <div class="n21-abe-details" ${openUid === node.uid ? "" : "hidden"}></div>
           ${
-            isFolder && node.kind !== "ext" && node.kind !== "default" && node.kind !== "item"
+            isFolder && editable
               ? `<ul class="n21-abe-children" ${node.collapsed ? "hidden" : ""}>${node.children
                   .map(renderNode)
                   .join("")}</ul>`
@@ -523,50 +515,10 @@
 
     function openDetails(uid) {
       const node = nodes.get(uid);
-      const $details = $card.find(`.n21-abe-node[data-uid="${uid}"] > .n21-abe-details`);
+      const $details = $card.find(`.n21-abe-node[data-uid="${uid}"] > .n21-abe-box > .n21-abe-details`);
       if (!node || !$details.length) return;
       openUid = uid;
       $details.prop("hidden", false).empty();
-
-      const showHolder = (holder) => {
-        holder.style.display = "";
-        holder.classList.add("n21-abe-icon-holder");
-        $details.append(holder);
-        $(holder).find(".accordion-content").addClass("show in");
-      };
-
-      if (node.kind === "sub") {
-        // Name + icon. The icon lives in a "Sin acción" placeholder named
-        // like the sub-folder (created on demand).
-        $details.append(`
-          <div class="n21-abe-sub-form">
-            <label>Nombre de la subcarpeta
-              <input type="text" class="form-control n21-abe-sub-name" maxlength="60" value="${escapeHtml(node.label)}" />
-            </label>
-            <span class="n21-abe-sub-icon-label">Icono</span>
-          </div>`);
-        if (!node.frag) {
-          node.frag = createTopFrag("none");
-          if (node.frag) writeField(node.frag, "name", node.label);
-        }
-        if (node.frag) showHolder(node.frag);
-        return;
-      }
-
-      if (usesIconHolder(node)) {
-        // The folder's icon lives in a "Sin acción" record with its name.
-        if (!node.iconFrag) {
-          node.iconFrag = createTopFrag("none");
-          if (!node.iconFrag) return;
-          writeField(node.iconFrag, "name", node.label);
-        }
-        const holder = node.iconFrag;
-        holder.style.display = "";
-        holder.classList.add("n21-abe-icon-holder");
-        $details.append(holder);
-        $(holder).find(".accordion-content").addClass("show in");
-        return;
-      }
 
       const frag = node.frag;
       if (!frag) return;
@@ -581,7 +533,7 @@
 
     function closeDetails() {
       if (!openUid) return;
-      const $details = $card.find(`.n21-abe-node[data-uid="${openUid}"] > .n21-abe-details`);
+      const $details = $card.find(`.n21-abe-node[data-uid="${openUid}"] > .n21-abe-box > .n21-abe-details`);
       $details.find("> .action-button-form").each(function () {
         this.style.display = "none";
         nativeEditor.appendChild(this);
@@ -611,7 +563,7 @@
       const parent = parentUid ? nodes.get(parentUid) : null;
       (parent ? parent.children : root).push(node);
       if (parent) parent.collapsed = false;
-      openUid = node.uid;
+      openUid = node.kind === "native" ? node.uid : null;
       render();
     }
 
@@ -677,9 +629,64 @@
         if (openUid === uid) closeDetails();
         else {
           closeDetails();
-          openDetails(uid);
+          openUid = uid;
         }
+        render();
       });
+
+      // Click the icon: Nivel20's own icon picker for that action/folder.
+      $card.on("click keydown", ".n21-abe-icon--editable", function (event) {
+        if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        const node = nodes.get($(this).closest(".n21-abe-node").attr("data-uid"));
+        if (!node) return;
+        if (!node.frag && node.kind === "sub") {
+          // A sub-folder's icon lives in a "Sin acción" placeholder.
+          node.frag = createTopFrag("none");
+          if (node.frag) writeField(node.frag, "name", node.label);
+        }
+        $(node.frag).find(".select-icon").first().trigger("click");
+      });
+      // The picker writes the icon id and fires "change": refresh the rows.
+      // (it paints the preview right after the event, so wait a tick).
+      $(form).on("change", ".icon-input", () => setTimeout(render, 0));
+
+      // Click the name: rename in place.
+      $card.on("click keydown", ".n21-abe-name--editable", function (event) {
+        if (event.type === "keydown" && !["Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        const $name = $(this);
+        const node = nodes.get($name.closest(".n21-abe-node").attr("data-uid"));
+        if (!node) return;
+        const $input = $(
+          `<input type="text" class="n21-abe-rename" maxlength="80" aria-label="Nombre" />`,
+        ).val(node.label);
+        $name.replaceWith($input);
+        $input.trigger("focus").trigger("select");
+        let done = false;
+        const finish = (save) => {
+          if (done) return;
+          done = true;
+          const value = String($input.val() || "").replace(/>/g, "").trim();
+          if (save && value) {
+            node.label = value;
+            if (node.frag && node.kind === "native") writeField(node.frag, "name", value);
+          }
+          render();
+        };
+        $input.on("keydown", (e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            finish(true);
+          } else if (e.key === "Escape") {
+            finish(false);
+          }
+        });
+        $input.on("blur", () => finish(true));
+      });
+      // Don't start a drag from the rename field.
+      $card.on("mousedown", ".n21-abe-rename", (event) => event.stopPropagation());
       // Inline confirmation (Nivel20 replaces window.confirm with its own
       // asynchronous dialogs).
       $card.on("click", ".n21-abe-delete", function () {
@@ -713,9 +720,7 @@
         const $node = $(this).closest(".n21-abe-node");
         const node = nodes.get($node.attr("data-uid"));
         if (!node) return;
-        if ($(this).hasClass("n21-abe-sub-name")) {
-          node.label = this.value.trim() || "Carpeta";
-        } else if (this.name?.endsWith("[name]")) {
+        if (this.name?.endsWith("[name]")) {
           node.label = this.value.split(" > ").pop().trim() || "Sin nombre";
         } else if (this.name?.endsWith("[action_type]")) {
           const wasFolder = node.type === "folder";
@@ -725,8 +730,8 @@
             return;
           }
         }
-        $node.find("> .n21-abe-row .n21-abe-name").text(node.label);
-        $node.find("> .n21-abe-row .n21-abe-badge").text(typeBadge(node));
+        $node.find("> .n21-abe-box > .n21-abe-row .n21-abe-name").text(node.label);
+        $node.find("> .n21-abe-box > .n21-abe-row .n21-abe-badge").text(typeBadge(node));
       });
 
       $card.on("dragstart", ".n21-abe-row", function (event) {
@@ -798,7 +803,7 @@
       return created;
     }
 
-    /** A new icon placeholder the user didn't give an icon to: drop it. */
+    /** A new sub-folder icon placeholder without an icon: drop it. */
     function dropIfEmptyHolder(frag) {
       if (!frag || recordId(frag) || fieldOf(frag, "icon_id")?.value) return frag;
       destroyFrag(frag);
@@ -816,12 +821,6 @@
       root.forEach((node) => {
         if (node.kind === "ext" || node.kind === "default" || node.kind === "item") {
           order.push(node.key);
-          node.iconFrag = dropIfEmptyHolder(node.iconFrag);
-          if (node.iconFrag) {
-            node.iconFrag = ensureTop(node.iconFrag, "none");
-            writeField(node.iconFrag, "name", node.label);
-            writeField(node.iconFrag, "order", (topOrder += 1));
-          }
           return;
         }
 
