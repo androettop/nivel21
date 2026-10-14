@@ -64,6 +64,7 @@
         "src/core/character-items-manager.js",
         "src/core/money.js",
         "src/core/resource-icons.js",
+        "src/core/weather-renderer.js",
         "src/core/main-menu-ui-manager.js",
         "src/core/quick-menu-ui-manager.js",
         "src/core/markdown-editor-manager.js",

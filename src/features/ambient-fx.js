@@ -41,6 +41,10 @@
     }
 
     const COMMAND_NAME = "ambient-fx";
+    // Animated weather layer ("/ambient-weather <tipo|clear> [intensidad]").
+    const WEATHER_COMMAND = "ambient-weather";
+    const weather = window._n21_.weather;
+    const DEFAULT_WEATHER_INTENSITY = 0.5;
     const OVERLAY_ID = "n21-ambient-fx-overlay";
     const PREVIEW_OVERLAY_ID = "n21-ambient-fx-overlay-preview";
     const PANEL_TITLE = "Efectos Ambientales";
@@ -77,6 +81,48 @@
     let currentOpacity = null;
     let currentBlend = null;
     let previewEnabled = false;
+    let currentWeather = { type: null, intensity: DEFAULT_WEATHER_INTENSITY };
+
+    function isWeatherType(value) {
+      return !!weather?.TYPES.some((t) => t.key === value);
+    }
+
+    /** Parse "/ambient-weather" args into { type, intensity } or null. */
+    function parseWeatherArgs(args) {
+      const first = String(args?.[0] ?? "").trim().toLowerCase();
+      if (first === COMMAND_CLEAR) return { type: null, intensity: DEFAULT_WEATHER_INTENSITY };
+      if (!isWeatherType(first)) return null;
+      const intensity = parseOpacityCommand(args?.[1]);
+      return { type: first, intensity: intensity ?? DEFAULT_WEATHER_INTENSITY };
+    }
+
+    function applyWeather(next) {
+      currentWeather = {
+        type: next?.type || null,
+        intensity: next?.intensity ?? DEFAULT_WEATHER_INTENSITY,
+      };
+      syncWeatherInputs();
+      const container = document.querySelector("#application-canvas")?.parentElement;
+      // Each viewer can turn the animation off (e.g. on slow devices).
+      if (!weather || !currentWeather.type || !container ||
+          !SettingsManager.get("ambient-fx.animated-weather")) {
+        weather?.stop();
+        return;
+      }
+      weather.start(container, currentWeather.type, currentWeather.intensity);
+    }
+
+    function syncWeatherInputs() {
+      const typeInput = document.querySelector("#n21-ambient-weather-type");
+      const intensityInput = document.querySelector("#n21-ambient-weather-intensity");
+      if (typeInput) typeInput.value = currentWeather.type || "";
+      if (intensityInput) intensityInput.value = formatOpacityValue(currentWeather.intensity);
+    }
+
+    function buildWeatherCommand(type, intensity) {
+      if (!type) return `/${WEATHER_COMMAND} ${COMMAND_CLEAR}`;
+      return `/${WEATHER_COMMAND} ${type} ${formatOpacityValue(intensity)}`;
+    }
 
     function normalizeOpacity(value) {
       if (value === undefined || value === null) return null;
@@ -266,6 +312,42 @@
               }
 
               applyState(lastState.color, lastState.opacity, lastState.blend);
+            }
+            ChatUIManager.removeHandler(handlerName);
+          },
+        },
+      );
+
+      ChatUIManager.processExistingMessages();
+    }
+
+    function restoreWeatherFromChatHistory() {
+      const matches = [];
+      const handlerName = "ambient-weather-restore";
+
+      ChatUIManager.onMessage(
+        handlerName,
+        (element) => {
+          const messageText = element?.textContent?.trim();
+          if (!messageText) return;
+          const parsed = ChatCommandsManager.parseInput(messageText);
+          if (!parsed || !parsed.isCommand || parsed.name !== WEATHER_COMMAND) return;
+          const senderId = resolveSenderIdFromElement(element);
+          if (!senderId || !PlayerManager.isUserGameMaster(senderId)) return;
+          const next = parseWeatherArgs(parsed.args || []);
+          if (next) matches.push({ element, next });
+        },
+        {
+          priority: -100,
+          onComplete: () => {
+            if (matches.length) {
+              matches.sort((a, b) => {
+                if (a.element === b.element) return 0;
+                const position = a.element.compareDocumentPosition(b.element);
+                return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+              });
+              if (isChatOrderReversed()) matches.reverse();
+              applyWeather(matches[matches.length - 1].next);
             }
             ChatUIManager.removeHandler(handlerName);
           },
@@ -521,6 +603,24 @@
           normalizedBlend === "luminosity" ? " selected" : ""
         }>Luminosidad</option>` +
         "</select>" +
+        "<label for='n21-ambient-weather-type' style='display: block; margin: 12px 0 8px; font-weight: 600;'>" +
+        "Clima animado" +
+        "</label>" +
+        "<select id='n21-ambient-weather-type' style='width: 100%; margin-bottom: 12px;'>" +
+        `<option value=''${currentWeather.type ? "" : " selected"}>Ninguno</option>` +
+        (weather?.TYPES || [])
+          .map(
+            (t) =>
+              `<option value='${t.key}'${currentWeather.type === t.key ? " selected" : ""}>${t.label}</option>`,
+          )
+          .join("") +
+        "</select>" +
+        "<label for='n21-ambient-weather-intensity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
+        "Intensidad del clima" +
+        "</label>" +
+        `<input id='n21-ambient-weather-intensity' type='range' min='0.1' max='1' step='0.05' value='${formatOpacityValue(
+          currentWeather.intensity,
+        )}' style='width: 100%;' />` +
         "<label style='display: flex; gap: 8px; align-items: center; margin-top: 12px;'>" +
         `<input id='${PREVIEW_TOGGLE_ID}' type='checkbox' />` +
         "Vista previa" +
@@ -555,7 +655,7 @@
         "#822020",
         html,
         "n21-ambient-fx-panel n21-fixed-panel",
-        "width: 300px; height: 352px; min-width: 300px; min-height: 352px; max-width: 300px; max-height: 352px;",
+        "width: 300px; height: 470px; min-width: 300px; min-height: 470px; max-width: 300px; max-height: 470px;",
       );
 
       if (!$panel || typeof $panel.find !== "function") return;
@@ -628,6 +728,10 @@
           }
           const commandText = getCommandFromInputs(true);
           sendCommandToChat(commandText, { debounce: true });
+          if (currentWeather.type) {
+            $panel.find("#n21-ambient-weather-type").val("");
+            sendCommandToChat(buildWeatherCommand(null), {});
+          }
         });
       }
 
@@ -647,6 +751,18 @@
           }
           const commandText = getCommandFromInputs(false);
           sendCommandToChat(commandText, { debounce: true });
+
+          const weatherType = $panel.find("#n21-ambient-weather-type").val() || null;
+          const weatherIntensity = parseOpacityInput(
+            $panel.find("#n21-ambient-weather-intensity").val(),
+            DEFAULT_WEATHER_INTENSITY,
+          );
+          if (
+            weatherType !== currentWeather.type ||
+            (weatherType && weatherIntensity !== currentWeather.intensity)
+          ) {
+            sendCommandToChat(buildWeatherCommand(weatherType, weatherIntensity), {});
+          }
         });
       }
 
@@ -749,8 +865,40 @@
       applyState(nextColor, nextOpacity, nextBlend);
     });
 
+    ChatCommandsManager.registerCommand(WEATHER_COMMAND, {
+      description: "Clima animado (lluvia, tormenta, nieve, niebla, nubes, brasas)",
+      params: [
+        {
+          name: "tipo",
+          getSuggestions: (fragment) => {
+            const keys = [...(weather?.TYPES || []).map((t) => t.key), COMMAND_CLEAR];
+            if (!fragment) return keys;
+            return keys.filter((k) => k.startsWith(String(fragment).toLowerCase()));
+          },
+        },
+        { name: "intensidad" },
+      ],
+      validate: ({ args }) => {
+        if (!args || !args.length || args.length > 2) return false;
+        return parseWeatherArgs(args) !== null;
+      },
+    });
+
+    ChatCommandsManager.onCommand((payload) => {
+      if (payload.command?.name !== WEATHER_COMMAND) return;
+      const senderId = payload?.messageData?.raw?.user_id;
+      if (!senderId || !PlayerManager.isUserGameMaster(senderId)) return;
+      const next = parseWeatherArgs(payload.args || []);
+      if (next) applyWeather(next);
+    });
+
+    SettingsManager.onChange((name) => {
+      if (name === "ambient-fx.animated-weather") applyWeather(currentWeather);
+    });
+
     applyColor(currentColor, currentOpacity, currentBlend);
     restoreFromChatHistory();
+    restoreWeatherFromChatHistory();
 
     if (!PlayerManager.isGameMaster()) {
       return;

@@ -200,6 +200,14 @@
       });
 
       this.registerSetting({
+        name: "ambient-fx.animated-weather",
+        label: "Mostrar el clima animado (lluvia, nieve...). Desactívalo en equipos lentos",
+        type: "boolean",
+        defaultValue: true,
+        category: "advanced",
+      });
+
+      this.registerSetting({
         name: "feature.character-frame.enabled",
         label: "Marco de personaje",
         type: "boolean",
