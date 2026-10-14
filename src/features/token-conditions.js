@@ -3,9 +3,10 @@
     /* =======================
        Feature: Token Conditions (Estados en los tokens)
 
-       Muestra, a la derecha de cada token asignado a un personaje/criatura
-       ([char:id]), los íconos de sus estados (los mismos íconos que usa
-       Nivel20): hasta 4 filas y tantas columnas como hagan falta. Cada
+       Muestra, sobre el borde derecho de cada token asignado a un
+       personaje/criatura ([char:id]), los íconos de sus estados (los mismos
+       íconos que usa Nivel20): hasta 4 filas; si hay más, se agregan columnas
+       hacia la izquierda. Cada
        usuario solo los ve en los personajes/criaturas que puede ver en su
        panel (el DM los ve todos). Es solo una capa visual.
     ======================= */
@@ -84,15 +85,16 @@
 
         const gap = Math.max(1, rect.height * 0.02);
         const size = Math.max(10, Math.min((rect.height - gap * (ROWS - 1)) / ROWS, 32));
-        const startX = rect.x + rect.width + gap * 2;
+        // Right edge aligned with the token's box; extra columns grow left.
+        const rightX = rect.x + rect.width - size;
         const startY = rect.y;
-        if (startX > helpers.width || startY > helpers.height || startY + rect.height < 0) return;
+        if (rect.x > helpers.width || startY > helpers.height || startY + rect.height < 0) return;
 
         ctx.globalAlpha = visibility.translucent ? 0.6 : 1;
         icons.forEach((url, i) => {
           const col = Math.floor(i / ROWS);
           const row = i % ROWS;
-          const x = startX + col * (size + gap);
+          const x = rightX - col * (size + gap);
           const y = startY + row * (size + gap);
           const radius = size * 0.15;
 
