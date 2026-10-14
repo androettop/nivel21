@@ -232,6 +232,14 @@
       });
 
       this.registerSetting({
+        name: "feature.token-conditions.enabled",
+        label: "Estados en los tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.invisible-condition.enabled",
         label: "Ocultar tokens con el estado Invisible",
         type: "boolean",

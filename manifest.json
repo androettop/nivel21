@@ -103,6 +103,7 @@
         "src/features/character-frame.js",
         "src/features/creature-resources.js",
         "src/features/token-health-bar.js",
+        "src/features/token-conditions.js",
         "src/features/invisible-condition.js",
         "src/features/error-report.js"
       ],
