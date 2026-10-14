@@ -15,7 +15,7 @@
 - [x] **Ping rápido**: además del menú contextual, doble click de la ruedita o tecla F (donde apunta el cursor), con el mismo debounce del ping.
 
 ## Cierre
-- [ ] Revisar dependencias entre features: declararlas y desactivar automáticamente las que dependan de una feature desactivada.
+- [x] Revisar dependencias entre features: declararlas y desactivar automáticamente las que dependan de una feature desactivada.
 - [x] Capturas con Playwright para README y popup
 - [x] Documentación en README + entradas del popup
 
@@ -29,3 +29,4 @@
 - Clima animado: viaja en el mismo comando `/ambient-fx <color> <opacidad> <fusión> [clima] [intensidad]` (un solo mensaje; solo del DM). La vista previa también muestra el clima. Cada usuario puede desactivarlo en Ajustes > Avanzado (equipos lentos). Hecho con texturas tileables generadas una vez (sin archivos): por frame solo 2–3 rellenos con patrón; sigue a la cámara (paneo/rotación/zoom; lluvia/nieve/brasas escalan en saltos para mantenerse legibles). 30 fps, pausa con la pestaña oculta; con «reducir movimiento» va más lento y sin destellos.
 - Nivel20 tiene un WAF (AWS) que responde 202 vacío si se hacen muchas requests seguidas (pasó durante las pruebas). Las features comparten la caché del JSON del personaje y debouncean las ediciones para no dispararlo.
 - Editor de barra: el primer nivel se guarda como carpetas nativas; los niveles siguientes como nombres «Sub > Acción» (+ «Sin acción» con el nombre de la subcarpeta para su icono). Las carpetas de Nivel21 pueden tener icono mediante una acción «Sin acción» con su mismo nombre. Orden/visibilidad de carpetas de Nivel21, acciones por defecto y armas: por personaje en el navegador. También se corrigió que la barra multinivel mostraba acciones ocultas con «Acciones a ocultar».
+- Dependencias: barras de vida, estados en tokens e Invisible requieren «Asignar tokens a personajes»; el editor de la barra requiere «Carpetas anidadas». Si falta una dependencia la feature se desactiva sola y el panel de configuración lo indica.

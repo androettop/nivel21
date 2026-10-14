@@ -2488,3 +2488,14 @@ span[n21-h] {
 	border: 1px solid rgba(224, 160, 32, 0.6);
 	font-size: 14px;
 }
+
+.n21-setting-dependency {
+	padding: 0 8px 6px 36px;
+	font-size: 14px;
+	opacity: 0.7;
+}
+
+.n21-setting-dependency--missing {
+	opacity: 1;
+	color: #e0a020;
+}

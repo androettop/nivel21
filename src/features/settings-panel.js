@@ -133,8 +133,32 @@
             <span>${escapedLabel}</span>
             ${modifiedIndicatorHtml}
           </label>
+          ${buildDependencyNoteHtml(name, setting)}
         </div>
       `;
+    }
+
+    /** "Requiere: X" note, highlighted when a dependency is disabled. */
+    function buildDependencyNoteHtml(name, setting) {
+      if (!setting.dependsOn?.length) return "";
+      const all = SettingsManager.getAllSettings();
+      const missing = new Set(SettingsManager.getMissingDependencies(name));
+      const labels = setting.dependsOn
+        .map((dep) => escapeHtml(all[dep]?.label || dep))
+        .join(", ");
+      return `<div class="n21-setting-dependency ${
+        missing.size ? "n21-setting-dependency--missing" : ""
+      }" data-depends-for="${escapeHtml(name)}">${
+        missing.size ? "Desactivada: requiere" : "Requiere"
+      } «${labels}»</div>`;
+    }
+
+    function refreshDependencyNotes($panel) {
+      $panel.find(".n21-setting-dependency").each(function () {
+        const name = $(this).attr("data-depends-for");
+        const setting = SettingsManager.getAllSettings()[name];
+        if (setting) $(this).replaceWith(buildDependencyNoteHtml(name, setting));
+      });
     }
 
     function buildHotkeySettingHtml(name, setting, value) {
@@ -294,7 +318,7 @@
 
       const settingsHtml = Object.entries(settings)
         .map(([name, setting]) => {
-          const value = SettingsManager.get(name);
+          const value = SettingsManager.getRaw(name);
 
           switch (setting.type) {
             case "boolean":
@@ -458,6 +482,7 @@
         $input.on("change.n21Settings", function () {
           const newValue = $input.prop("checked");
           SettingsManager.set(settingName, newValue);
+          refreshDependencyNotes($panel);
 
           if (settingName.startsWith("feature.") && settingName.endsWith(".enabled")) {
             featureChangePending = true;

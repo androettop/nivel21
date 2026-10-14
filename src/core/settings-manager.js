@@ -148,6 +148,7 @@
         label: "Editor de la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        dependsOn: ["feature.multi-level-action-bar.enabled"],
         category: "features",
       });
 
@@ -236,6 +237,7 @@
         label: "Barras de vida en los tokens",
         type: "boolean",
         defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
         category: "features",
       });
 
@@ -244,6 +246,7 @@
         label: "Estados en los tokens",
         type: "boolean",
         defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
         category: "features",
       });
 
@@ -252,6 +255,7 @@
         label: "Ocultar tokens con el estado Invisible",
         type: "boolean",
         defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
         category: "features",
       });
 
@@ -573,7 +577,37 @@
         defaultValue: setting.defaultValue,
         category: setting.category || "general",
         options: setting.options || null,
+        // Settings (features) this one needs enabled to work.
+        dependsOn: Array.isArray(setting.dependsOn) ? setting.dependsOn : [],
       };
+    }
+
+    /**
+     * Value chosen by the user (or default), ignoring dependencies.
+     * @param {string} name
+     */
+    getRaw(name) {
+      const setting = this._settings[name];
+      if (!setting) return undefined;
+      const storedValue = this._getFromStorage(this._storagePrefix + name);
+      if (storedValue !== null) return this._parseValue(storedValue, setting.type);
+      return setting.defaultValue;
+    }
+
+    /**
+     * Dependencies of a setting that are currently disabled (recursively).
+     * @param {string} name
+     * @returns {string[]} setting names
+     */
+    getMissingDependencies(name, seen = new Set()) {
+      const setting = this._settings[name];
+      if (!setting || seen.has(name)) return [];
+      seen.add(name);
+      const missing = [];
+      setting.dependsOn.forEach((dep) => {
+        if (!this.getRaw(dep) || this.getMissingDependencies(dep, seen).length) missing.push(dep);
+      });
+      return missing;
     }
 
     /**
@@ -619,14 +653,12 @@
         return undefined;
       }
 
-      const storageKey = this._storagePrefix + name;
-      const storedValue = this._getFromStorage(storageKey);
-
-      if (storedValue !== null) {
-        return this._parseValue(storedValue, setting.type);
+      // A feature is off when any feature it depends on is off.
+      if (setting.dependsOn.length && this.getMissingDependencies(name).length) {
+        return setting.type === "boolean" ? false : setting.defaultValue;
       }
 
-      return setting.defaultValue;
+      return this.getRaw(name);
     }
 
     /**
