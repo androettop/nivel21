@@ -268,7 +268,8 @@
     function renderItems($container, items, $baseElement, depth) {
       $container.empty();
 
-      items.forEach((item) => {
+      // Respect actions hidden in Nivel20's "Acciones a ocultar".
+      items.filter((item) => !item?.hidden).forEach((item) => {
         const $itemElement = createItemElement(item);
         $container.append($itemElement);
 

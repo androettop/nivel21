@@ -103,7 +103,11 @@
       // unshift in order so folders keep their sequence (Trucos, Nivel 1, …)
       // and land before the character's existing actions.
       items.unshift(
-        ...folders.map((folder) => ({ ...folder, [INJECT_TAG]: true })),
+        ...folders.map((folder) => ({
+          ...folder,
+          n21Key: `n21:spells:${folder.name}`,
+          [INJECT_TAG]: true,
+        })),
       );
     }
 
@@ -171,6 +175,21 @@
       },
       { priority: 50 },
     );
+
+    // List the spell folders in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("spells", {
+      order: 10,
+      getEntries: async (charId) => {
+        let entry = cache.get(charId);
+        if (!entry) {
+          entry = fetchSpellFolders(charId);
+          cache.set(charId, entry);
+        }
+        const folders = await entry;
+        cache.set(charId, folders);
+        return folders.map((f) => ({ key: `n21:spells:${f.name}`, label: f.name, icon: f.icon }));
+      },
+    });
 
     // Catch the level-0 bar that the multi-level observer may have already
     // rendered before we registered.

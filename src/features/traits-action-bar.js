@@ -102,7 +102,11 @@
         if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
       }
       items.push(
-        ...folders.map((folder) => ({ ...folder, [INJECT_TAG]: true })),
+        ...folders.map((folder) => ({
+          ...folder,
+          n21Key: `n21:traits:${folder.name}`,
+          [INJECT_TAG]: true,
+        })),
       );
     }
 
@@ -161,6 +165,21 @@
       },
       { priority: 70 },
     );
+
+    // List the traits folder(s) in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("traits", {
+      order: 30,
+      getEntries: async (charId) => {
+        let entry = cache.get(charId);
+        if (!entry) {
+          entry = fetchTraitFolders(charId);
+          cache.set(charId, entry);
+        }
+        const folders = await entry;
+        cache.set(charId, folders);
+        return folders.map((f) => ({ key: `n21:traits:${f.name}`, label: f.name, icon: f.icon }));
+      },
+    });
 
     // Catch the level-0 bar that the multi-level observer may have already
     // rendered before we registered.

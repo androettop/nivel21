@@ -543,6 +543,7 @@
         tooltip_title: "Inventario",
         owned: false,
         charId,
+        n21Key: "n21:inventory",
         [INJECT_TAG]: true,
       };
     }
@@ -554,6 +555,14 @@
       }
       items.push(buildInventoryItem(charId));
     }
+
+    // List the item in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("inventory", {
+      order: 40,
+      getEntries: async () => [
+        { key: "n21:inventory", label: "Inventario", icon: assetUrl("backpack.png") },
+      ],
+    });
 
     // Run after actions (60) and traits (70) so "Inventario" is the last item.
     ActionBarManager.onCreateBar(

@@ -11,7 +11,7 @@
 - [x] **Efectos ambientales animados**: lluvia, nubes, tormenta, etc.; capa liviana sobre el canvas.
 - [x] **Barra de vida sobre los tokens**: el DM en todos los tokens asignados; los jugadores solo en los que ven en su panel.
 - [x] **Estado invisible**: según la ESTADO «Invisible» del personaje/criatura (no el invisible nativo del DM): ocultar el token a quienes no ven al personaje/criatura en su panel (solo del lado del cliente). Quienes sí lo ven, lo ven semitransparente con un iconito que indica que es invisible por el estado (no por el invisible del DM).
-- [ ] **Formulario mejorado de la barra de acciones**: árbol multinivel, arrastrar y soltar, carpetas de la extensión (acciones, conjuros, inventario…) reordenables/activables, ajuste por personaje al guardar.
+- [x] **Formulario mejorado de la barra de acciones**: árbol multinivel, arrastrar y soltar, carpetas de la extensión (acciones, conjuros, inventario…) reordenables/activables, ajuste por personaje al guardar.
 - [x] **Ping rápido**: además del menú contextual, doble click de la ruedita o tecla F (donde apunta el cursor), con el mismo debounce del ping.
 
 ## Cierre
@@ -27,3 +27,5 @@
 - Inventario: el JSON de la hoja no trae ids de objetos; se cruzan con los enlaces Editar/Eliminar de la página del personaje por nombre y orden. Las ediciones usan los formularios nativos (se carga el formulario y solo se cambia el campo necesario).
 - Permisos: vida, recursos y estados solo se editan si el usuario puede abrir el modal nativo (barra de vida `.editable`); inventario/dinero, si la hoja le muestra los formularios.
 - Clima animado: viaja en el mismo comando `/ambient-fx <color> <opacidad> <fusión> [clima] [intensidad]` (un solo mensaje; solo del DM). La vista previa también muestra el clima. Cada usuario puede desactivarlo en Ajustes > Avanzado (equipos lentos). Hecho con texturas tileables generadas una vez (sin archivos): por frame solo 2–3 rellenos con patrón; sigue a la cámara (paneo/rotación/zoom; lluvia/nieve/brasas escalan en saltos para mantenerse legibles). 30 fps, pausa con la pestaña oculta; con «reducir movimiento» va más lento y sin destellos.
+- Nivel20 tiene un WAF (AWS) que responde 202 vacío si se hacen muchas requests seguidas (pasó durante las pruebas). Las features comparten la caché del JSON del personaje y debouncean las ediciones para no dispararlo.
+- Editor de barra: el primer nivel se guarda como carpetas nativas; los niveles siguientes como nombres «Sub > Acción» (+ «Sin acción» con el nombre de la subcarpeta para su icono). Las carpetas de Nivel21 pueden tener icono mediante una acción «Sin acción» con su mismo nombre. Orden/visibilidad de carpetas de Nivel21, acciones por defecto y armas: por personaje en el navegador. También se corrigió que la barra multinivel mostraba acciones ocultas con «Acciones a ocultar».

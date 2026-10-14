@@ -147,11 +147,19 @@
       for (let i = items.length - 1; i >= 0; i--) {
         if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
       }
-      items.push({ ...buildActionsFolder(), [INJECT_TAG]: true });
+      items.push({ ...buildActionsFolder(), n21Key: "n21:actions", [INJECT_TAG]: true });
     }
 
     // Run after spell-action-bar (priority 50) so spells are already in place,
     // and before multi-level (priority 100) so the folder gets normalized.
+    // List the folder in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("actions", {
+      order: 20,
+      getEntries: async () => [
+        { key: "n21:actions", label: "Acciones", icon: assetUrl("acciones.png") },
+      ],
+    });
+
     ActionBarManager.onCreateBar(
       "actions-bar",
       (element, items, parentItem = null) => {

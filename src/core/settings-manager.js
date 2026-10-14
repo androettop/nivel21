@@ -144,6 +144,14 @@
       });
 
       this.registerSetting({
+        name: "feature.action-bar-editor.enabled",
+        label: "Editor de la barra de acciones",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.spell-action-bar.enabled",
         label: "Conjuros en la barra de acciones",
         type: "boolean",
