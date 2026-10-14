@@ -1517,7 +1517,6 @@ span[n21-h] {
 	display: none;
 }
 
-.n21-cframe-card,
 .n21-cframe-condition-add {
 	padding: 0;
 	color: var(--n21-cf-text);
@@ -1585,6 +1584,7 @@ span[n21-h] {
 	color: var(--n21-cf-muted);
 }
 
+.n21-cframe-card,
 .n21-cframe-dropdown {
 	pointer-events: auto;
 }
