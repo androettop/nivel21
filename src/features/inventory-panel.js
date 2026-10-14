@@ -130,12 +130,11 @@
       const name = item?.name || "";
       const icon = item?.icon_url || "";
       const description = item?.cleanDescription ?? item?.description;
-      const quantity = item?.quantity;
+      const quantity = item?.quantity ?? 1;
 
       let tooltipHtml = `<h5>${escapeHtml(item?.tooltip_title || name)}</h5>`;
       if (item?.group) tooltipHtml += `<p><em>${escapeHtml(item.group)}</em></p>`;
-      if (quantity != null)
-        tooltipHtml += `<p><strong>Cantidad: ${escapeHtml(quantity)}</strong></p>`;
+      tooltipHtml += `<p><strong>Cantidad: ${escapeHtml(quantity)}</strong></p>`;
       if (description)
         tooltipHtml += `<p>${escapeHtml(description)}</p>`;
       if (item?.location_text)
@@ -167,7 +166,8 @@
           </div>
           <div class="action-bar-frame"></div>
           ${
-            quantity != null
+            // Like WoW: the count only shows for stacks (or when used up).
+            quantity !== 1
               ? `<span class="n21-inventory-qty">${escapeHtml(quantity)}</span>`
               : ""
           }
@@ -586,7 +586,7 @@
       if (!item) return;
       const current = item.quantity ?? 1;
       const next = Math.max(0, current + delta);
-      if (next === current && item.quantity != null) return;
+      if (next === current) return;
       if (!CharacterItemsManager.setQuantity(charId, item, next)) {
         flashMessage($panel, "No se puede editar este objeto.");
         return;

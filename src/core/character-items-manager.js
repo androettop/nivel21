@@ -158,7 +158,8 @@
           (l, index) => !used.has(index) && normalize(l.name) === normalize(item?.name) && used.add(index),
         );
         const pending = link ? this._pendingQty.get(link.itemId) : null;
-        const quantity = pending ? pending.qty : this.getQuantity(item?.description);
+        // Items without a declared quantity count as one.
+        const quantity = pending ? pending.qty : this.getQuantity(item?.description) ?? 1;
         return {
           ...item,
           itemId: link?.itemId || null,
