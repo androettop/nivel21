@@ -413,7 +413,7 @@
       const dc = Math.min(Math.max(10, Math.floor(damage / 2)), 30);
       const bonus = await getConstitutionSaveBonus(entry);
       showMessage(`
-        <p><b>${escapeHtml(entry.name)}</b> mantiene la concentración. ¿Tirar salvación de Constitución (CD ${dc})?</p>
+        <p><b>${escapeHtml(entry.name)}</b> está concentrándose. ¿Tirar salvación de Constitución (CD ${dc})?</p>
         <div class="n21-cframe-hp-msg-actions">
           <button type="button" class="n21-cframe-btn n21-cframe-btn--primary" data-concentration="roll"
             data-dc="${dc}" data-bonus="${bonus}">Tirar 1d20${formatBonus(bonus)}</button>
