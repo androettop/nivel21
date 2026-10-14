@@ -61,8 +61,10 @@
       return div.innerHTML;
     }
 
+    /** "+3" / "-1", and nothing for a zero bonus ("1d20", not "1d20+0"). */
     function formatBonus(value) {
-      return value >= 0 ? `+${value}` : `${value}`;
+      if (!value) return "";
+      return value > 0 ? `+${value}` : `${value}`;
     }
 
     /* ----------------------- DOM ----------------------- */
