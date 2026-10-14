@@ -2639,3 +2639,9 @@ span[n21-h] {
 .n21-chat-consent-toast--out {
 	opacity: 0;
 }
+
+/* Spells of a level with no slots left: greyed out but still clickable. */
+.action-bar-element.n21-spell-no-slots .action-bar-image {
+	filter: grayscale(1);
+	opacity: 0.6;
+}

@@ -261,6 +261,19 @@
   }
 
   function buildSpellElements(ctx) {
+    // Every element of a spell knows its level (used to grey out spells
+    // without slots left).
+    return tagLevel(buildSpellElementsInner(ctx), ctx.spell.level | 0);
+  }
+
+  function tagLevel(elements, level) {
+    elements.forEach((el) => {
+      el.n21_spell_level = level;
+    });
+    return elements;
+  }
+
+  function buildSpellElementsInner(ctx) {
     const elements = buildSpellElementsRaw(ctx);
     const { spell, sourceName, nextOrder } = ctx;
     const concentration = isConcentration(spell);
@@ -474,6 +487,7 @@
       tooltip_title: name,
       owned: false,
       elements,
+      n21_spell_level: level,
     };
   }
 

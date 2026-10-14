@@ -38,3 +38,4 @@
 - [x] **Bloquear rotación de la cámara**: toggle con candado en el menú rápido, activado por defecto; el ángulo se restaura cada frame si algo lo cambia (enderezar sigue funcionando). «Enderezar cámara» solo aparece si la cámara está girada.
 - Tokens: la barra de vida se reemplazó por los PV en texto chico («actual/máximo», +temporales en celeste) abajo dentro de la base del token.
 - Conjuros con tirada de ataque: no llevan «Lanzar»; sus botones de ataque ponen Concentración y gastan el espacio del nivel (ojo: conjuros de varios ataques por lanzamiento, como Rayo abrasador, gastarían un espacio por ataque).
+- Conjuros sin espacios: en el tablero, los conjuros (y su carpeta) de un nivel sin espacios libres —ni de pacto— se ven en blanco y negro; siguen pudiendo lanzarse.

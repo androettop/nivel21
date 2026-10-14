@@ -279,6 +279,60 @@
       true,
     );
 
+    /* ------------------- spells without slots left ------------------- */
+
+    /** Spell levels (1-9) the character can still cast with a free slot. */
+    function availableLevels(entry) {
+      const levels = new Set();
+      entry.resources.forEach((r) => {
+        if (r.used >= r.max) return;
+        const level = Number(r.id);
+        if (r.category === "spell_slots") levels.add(level);
+        // A pact slot can cast any spell of its level or lower.
+        if (r.category === "pact_spell_slots") for (let l = 1; l <= level; l += 1) levels.add(l);
+      });
+      return levels;
+    }
+
+    // Purely visual: spells whose level has no slot left look greyed out,
+    // but can still be cast.
+    function refreshSlotStyles() {
+      const Tracking = window._n21_.managers.CombatTrackingManager;
+      if (!Tracking) return; // only on the tabletop (combat tracking panel)
+      document.querySelectorAll(".action-bar[data-sender-info]").forEach((bar) => {
+        const match = (bar.getAttribute("data-sender-info") || "").match(/Character-(\d+)/);
+        const entry = match ? Tracking.getEntry("character", match[1]) : null;
+        const levels = entry ? availableLevels(entry) : null;
+        bar.querySelectorAll(".action-bar-element[data-n21-spell-level]").forEach((el) => {
+          const level = Number(el.getAttribute("data-n21-spell-level"));
+          const empty = !!levels && level > 0 && !levels.has(level);
+          el.classList.toggle("n21-spell-no-slots", empty);
+        });
+      });
+    }
+
+    let slotStyleTimer = null;
+    function scheduleSlotStyles() {
+      if (slotStyleTimer) return;
+      slotStyleTimer = setTimeout(() => {
+        slotStyleTimer = null;
+        refreshSlotStyles();
+      }, 100);
+    }
+
+    new MutationObserver((mutations) => {
+      const barChanged = mutations.some((m) =>
+        [...m.addedNodes].some(
+          (n) => n.nodeType === 1 && (n.matches?.(".action-bar-element, [data-folder-depth]") || n.querySelector?.(".action-bar-element")),
+        ),
+      );
+      if (barChanged) scheduleSlotStyles();
+    }).observe(document.body, { childList: true, subtree: true });
+
+    window._n21_.loadManagers("CombatTrackingManager", { timeout: 30000 })
+      .then(([Tracking]) => Tracking.onChange(scheduleSlotStyles))
+      .catch(() => {});
+
     // Catch the level-0 bar that the multi-level observer may have already
     // rendered before we registered.
     reprocessExistingBars();

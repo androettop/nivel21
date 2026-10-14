@@ -417,6 +417,7 @@ Agrega automáticamente los conjuros de un personaje a su barra de acciones, con
 
 - **Lanzar** - Los conjuros con tirada de ataque se lanzan con sus botones de ataque; los demás con daño o salvación tienen primero un botón «Lanzar» (con el icono del conjuro) que avisa en el chat, y los conjuros sin tiradas se lanzan con su propio botón. Si el conjuro es de concentración, al lanzarlo o al usar sus botones de ataque se le pone el estado Concentración al personaje. Lanzar un conjuro de nivel gasta un espacio de ese nivel (o uno de pacto)
 - Las carpetas se llaman «Conjuros de nivel N» y muestran el nivel en número romano
+- Los conjuros de un nivel sin espacios disponibles se ven en blanco y negro (se pueden lanzar igual)
 
 <a id="spell-action-bar">
  <img src="popup/img/spell-action-bar.png" alt="Conjuros en la barra de acciones" />
