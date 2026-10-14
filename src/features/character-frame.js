@@ -120,6 +120,8 @@
       if (resource.category === "spell_slots") return ROMAN[resource.id] || resource.id;
       if (resource.category === "pact_spell_slots") return `P${ROMAN[resource.id] || resource.id}`;
       const name = String(resource.label || resource.name || "");
+      const level = /\bnivel\s*(\d)\b/i.exec(name);
+      if (level && ROMAN[level[1]]) return ROMAN[level[1]];
       const words = name.split(/\s+/).filter((w) => w && !SHORT_WORDS.has(w.toLowerCase()));
       const initials = words
         .map((w) => (/^\d+$/.test(w) ? w : w.charAt(0).toUpperCase()))
@@ -131,6 +133,12 @@
     function buildResourceHtml(resource, source) {
       const remaining = Math.max(resource.max - resource.used, 0);
       const fullName = resource.label || resource.name;
+      // Slot levels keep their roman numeral; named resources get an icon
+      // when they're a standard D&D resource (Furia, Canalizar divinidad...).
+      const icon =
+        resource.category === "spell_slots" || resource.category === "pact_spell_slots"
+          ? null
+          : window._n21_.resourceIcons?.match(fullName);
       const attrs =
         source === "native"
           ? `data-source="native" data-category="${escapeHtml(resource.category)}" data-id="${escapeHtml(resource.id)}"`
@@ -146,7 +154,13 @@
         <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
           title="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}. Click: gastar · Click derecho: recuperar"
           aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
-          <span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>
+          ${
+            icon
+              ? `<span class="n21-cframe-res-icon" style="--n21-res-icon: url('${escapeHtml(
+                  icon.iconUrl,
+                )}'); --n21-res-color: ${icon.color}"></span>`
+              : `<span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>`
+          }
           ${pips}
         </button>`;
     }

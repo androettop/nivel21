@@ -37,6 +37,7 @@
 
     // 2b. Load shared, manager-less helpers used by multiple features.
     await injectScript("src/core/money.js");
+    await injectScript("src/core/resource-icons.js");
 
     // 3. Load managers and features in parallel
     await Promise.all([

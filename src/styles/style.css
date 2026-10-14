@@ -1618,6 +1618,18 @@ span[n21-h] {
 	font-family: Georgia, "Times New Roman", serif;
 }
 
+.n21-cframe-res-icon {
+	width: 22px;
+	height: 22px;
+	background-color: var(--n21-res-color, var(--n21-cf-text));
+	-webkit-mask: var(--n21-res-icon) center / contain no-repeat;
+	mask: var(--n21-res-icon) center / contain no-repeat;
+}
+
+.n21-cframe-res--empty .n21-cframe-res-icon {
+	opacity: 0.4;
+}
+
 .n21-cframe-res-pips {
 	display: grid;
 	grid-template-columns: repeat(4, 9px);
