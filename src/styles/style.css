@@ -1398,9 +1398,11 @@ span[n21-h] {
 	gap: 8px;
 }
 
+/* Portrait + name/HP on top; resources span the whole width below. */
 .n21-cframe-main {
-	display: flex;
-	gap: 8px;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: 8px;
 	padding: 6px;
 	background: var(--n21-cf-bg);
 	border: 1px solid var(--n21-cf-border);
@@ -1410,8 +1412,8 @@ span[n21-h] {
 
 .n21-cframe-portrait {
 	flex: 0 0 auto;
-	width: 64px;
-	height: 64px;
+	width: 48px;
+	height: 48px;
 	padding: 0;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 6px;
@@ -1446,6 +1448,7 @@ span[n21-h] {
 .n21-cframe-body {
 	display: flex;
 	flex-direction: column;
+	justify-content: center;
 	gap: 4px;
 	min-width: 0;
 	flex: 1 1 auto;
@@ -1585,6 +1588,8 @@ span[n21-h] {
 
 /* All resources in a single row; scrolls sideways if the screen is narrow. */
 .n21-cframe-resources {
+	grid-column: 1 / -1;
+	margin-top: 4px;
 	display: flex;
 	flex-wrap: nowrap;
 	gap: 4px;
@@ -1601,8 +1606,8 @@ span[n21-h] {
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	width: 42px;
-	height: 42px;
+	width: 36px;
+	height: 36px;
 	padding: 0;
 	overflow: hidden;
 	border: 1px solid var(--n21-cf-border);
@@ -1636,12 +1641,12 @@ span[n21-h] {
 }
 
 .n21-cframe-res-top {
-	top: 1px;
+	top: 0;
 	font-family: Georgia, "Times New Roman", serif;
 }
 
 .n21-cframe-res-bottom {
-	bottom: 1px;
+	bottom: 0;
 	font-variant-numeric: tabular-nums;
 }
 
@@ -1689,12 +1694,12 @@ span[n21-h] {
 /* Leave room for the label: slot squares sit a bit lower, icons a bit higher. */
 .n21-cframe-res-top ~ .n21-cframe-res-pips,
 .n21-cframe-res-top ~ .n21-cframe-res-count {
-	margin-top: 10px;
+	margin-top: 9px;
 }
 
 .n21-cframe-res-icon:not(:last-child),
 .n21-cframe-res-initial:not(:last-child) {
-	margin-bottom: 8px;
+	margin-bottom: 7px;
 }
 
 /* Out of uses: the whole button looks disabled. */

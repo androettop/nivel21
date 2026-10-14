@@ -244,8 +244,8 @@
               <span class="n21-cframe-hp-temp" style="width:${tempRatio * 100}%"></span>
               <span class="n21-cframe-hp-text">${hpText}</span>
             </button>
-            ${resources ? `<div class="n21-cframe-resources">${resources}</div>` : ""}
           </div>
+          ${resources ? `<div class="n21-cframe-resources">${resources}</div>` : ""}
         </div>`;
     }
 
