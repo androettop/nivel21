@@ -24,12 +24,14 @@
       LocalResourcesManager,
       CharacterSheetManager,
       DiceManager,
+      TooltipManager,
       SettingsManager,
     ] = await loadManagers(
       "CombatTrackingManager",
       "LocalResourcesManager",
       "CharacterSheetManager",
       "DiceManager",
+      "TooltipManager",
       "SettingsManager",
     );
 
@@ -171,7 +173,9 @@
 
       return `
         <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
-          title="${escapeHtml(fullName)} (${remaining}/${resource.max})&#10;Click: gastar · Click derecho: recuperar"
+          title="${escapeHtml(
+            `<h5>${escapeHtml(fullName)}</h5><p>Quedan ${remaining} de ${resource.max}</p><p><em>Click: gastar · Click derecho: recuperar</em></p>`,
+          )}"
           aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
           ${content}
         </button>`;
@@ -182,9 +186,9 @@
         ? `<div class="n21-cframe-conditions">${entry.conditions
             .map(
               (c) =>
-                `<span class="n21-cframe-condition" title="${escapeHtml(c.name)}${
-                  c.summary ? `: ${escapeHtml(c.summary)}` : ""
-                }">${
+                `<span class="n21-cframe-condition" title="${escapeHtml(
+                  `<h5>${escapeHtml(c.name)}</h5>${c.summary ? `<p>${escapeHtml(c.summary)}</p>` : ""}`,
+                )}">${
                   c.icon
                     ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}" />`
                     : escapeHtml(c.name)
@@ -283,6 +287,12 @@
       lastRenderKey = renderKey;
       root.querySelector(".n21-cframe-card").innerHTML = buildCardHtml(entry);
       root.querySelector(".n21-cframe-conditions-wrap").innerHTML = buildConditionsHtml(entry);
+      // Nivel20's own tooltips instead of plain browser titles; the frame is
+      // at the top of the screen, so they open downwards.
+      root.querySelectorAll("[title]").forEach((el) => {
+        el.dataset.side = "bottom";
+      });
+      TooltipManager.processAll(root);
     }
 
     /* ----------------------- HP dropdown ----------------------- */
