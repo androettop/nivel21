@@ -2,18 +2,26 @@
   /* =======================================================================
        Shared weather renderer
 
-       Lightweight animated weather (rain, storm, snow, fog, cloud shadows,
-       embers) drawn on a single 2D canvas layered over the board. Built to
-       run on modest devices:
-         - particles are drawn in batches (one path per frame per layer),
-         - capped at ~30 fps and paused while the tab is hidden,
-         - particle counts scale with screen area and intensity,
-         - rendered at CSS resolution (no devicePixelRatio upscaling),
-         - "prefers-reduced-motion" lowers counts and disables flashes.
+       Animated weather (rain, storm, snow, fog, cloud shadows, embers) drawn
+       on one 2D canvas over the board, built from TILEABLE TEXTURES:
+
+         - each effect is 2-3 layers of a seamless 512px texture generated
+           once at startup (no image files, no per-particle work),
+         - every frame each layer is a single pattern fill whose offset moves
+           with time (falling rain, drifting fog...),
+         - the fill goes through the camera's world->screen transform, so the
+           weather pans, rotates and zooms with the board (3 projected points
+           per frame give the affine map; the board is a plane).
+
+       Cheap enough for modest devices: ~30 fps cap, paused while the tab is
+       hidden, CSS resolution, and "prefers-reduced-motion" removes the storm
+       flashes and slows everything down.
 
        Exposed as `window._n21_.weather`:
-         weather.TYPES                       -> [{ key, label }]
-         weather.start(container, type, intensity)
+         weather.TYPES
+         weather.start(container, type, intensity, { project })
+           project(worldX, worldZ) -> {x, y} in canvas CSS pixels (optional;
+           without it the effect is drawn in screen space)
          weather.stop()
     ======================================================================= */
 
@@ -27,210 +35,224 @@
   ];
 
   const CANVAS_ID = "n21-weather-overlay";
+  const TILE = 512; // texture size in pixels
   const FRAME_MS = 1000 / 30;
-  const REFERENCE_AREA = 1920 * 1080;
+  // On-screen size particle tiles aim for, whatever the zoom.
+  const TARGET_TILE_PX = 512;
+  // Screen-space fallback: 1 world unit = 100 px.
+  const FALLBACK_SCALE = 100;
 
   const reducedMotion =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let state = null; // { canvas, ctx, type, intensity, particles, ... }
+  let state = null;
   let frame = null;
 
-  function rand(min, max) {
-    return min + Math.random() * (max - min);
+  /* ----------------------- seamless textures ----------------------- */
+
+  // Seeded random so textures look the same on every client.
+  function seeded(seed) {
+    let s = seed >>> 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
   }
 
-  /* ----------------------- sprites ----------------------- */
-
-  // Soft round blob, rendered once and reused for fog and cloud shadows.
-  function makeBlobSprite(size, color) {
-    const sprite = document.createElement("canvas");
-    sprite.width = size;
-    sprite.height = size;
-    const ctx = sprite.getContext("2d");
-    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, color(1));
-    gradient.addColorStop(0.55, color(0.55));
-    gradient.addColorStop(1, color(0));
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-    return sprite;
+  function makeTile(draw, seed) {
+    const canvas = document.createElement("canvas");
+    canvas.width = TILE;
+    canvas.height = TILE;
+    const ctx = canvas.getContext("2d");
+    draw(ctx, seeded(seed));
+    return canvas;
   }
 
-  let fogSprite = null;
-  let shadowSprite = null;
-
-  function getFogSprite() {
-    if (!fogSprite) fogSprite = makeBlobSprite(256, (a) => `rgba(220, 224, 230, ${a})`);
-    return fogSprite;
+  /** Call fn at (x, y) and at its wrapped copies so the tile is seamless. */
+  function wrapped(x, y, reach, fn) {
+    for (const dx of [-TILE, 0, TILE]) {
+      for (const dy of [-TILE, 0, TILE]) {
+        if (x + dx > -reach && x + dx < TILE + reach && y + dy > -reach && y + dy < TILE + reach) {
+          fn(x + dx, y + dy);
+        }
+      }
+    }
   }
 
-  function getShadowSprite() {
-    if (!shadowSprite) shadowSprite = makeBlobSprite(256, (a) => `rgba(0, 0, 0, ${a})`);
-    return shadowSprite;
+  function rainTile(count, alpha, seed) {
+    return makeTile((ctx, rnd) => {
+      ctx.strokeStyle = `rgba(190, 210, 240, ${alpha})`;
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      for (let i = 0; i < count; i += 1) {
+        const x = rnd() * TILE;
+        const y = rnd() * TILE;
+        const len = 14 + rnd() * 22;
+        wrapped(x, y, len, (px, py) => {
+          ctx.moveTo(px, py);
+          ctx.lineTo(px - len * 0.18, py - len);
+        });
+      }
+      ctx.stroke();
+    }, seed);
   }
 
-  /* ----------------------- particles ----------------------- */
-
-  function particleCount(base, extra) {
-    const s = state;
-    const areaFactor = Math.min(Math.max((s.width * s.height) / REFERENCE_AREA, 0.3), 1.5);
-    const motionFactor = reducedMotion ? 0.4 : 1;
-    return Math.round((base + extra * s.intensity) * areaFactor * motionFactor);
+  function dotsTile(count, minR, maxR, color, seed) {
+    return makeTile((ctx, rnd) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < count; i += 1) {
+        const x = rnd() * TILE;
+        const y = rnd() * TILE;
+        const r = minR + rnd() * (maxR - minR);
+        wrapped(x, y, r, (px, py) => {
+          ctx.moveTo(px + r, py);
+          ctx.arc(px, py, r, 0, Math.PI * 2);
+        });
+      }
+      ctx.fill();
+    }, seed);
   }
 
-  function spawn(type, initial) {
-    const { width, height } = state;
+  function blobTile(count, rgb, maxAlpha, seed) {
+    return makeTile((ctx, rnd) => {
+      for (let i = 0; i < count; i += 1) {
+        const x = rnd() * TILE;
+        const y = rnd() * TILE;
+        const r = TILE * (0.18 + rnd() * 0.22);
+        const a = maxAlpha * (0.5 + rnd() * 0.5);
+        wrapped(x, y, r, (px, py) => {
+          const g = ctx.createRadialGradient(px, py, 0, px, py, r);
+          g.addColorStop(0, `rgba(${rgb}, ${a})`);
+          g.addColorStop(0.6, `rgba(${rgb}, ${a * 0.45})`);
+          g.addColorStop(1, `rgba(${rgb}, 0)`);
+          ctx.fillStyle = g;
+          ctx.fillRect(px - r, py - r, r * 2, r * 2);
+        });
+      }
+    }, seed);
+  }
+
+  // Generated lazily the first time each effect is used.
+  const tiles = {};
+  function getTiles(type) {
+    if (tiles[type]) return tiles[type];
     switch (type) {
       case "lluvia":
+        tiles[type] = [rainTile(140, 0.55, 11), rainTile(90, 0.3, 12)];
+        break;
       case "tormenta":
-        return {
-          x: rand(-width * 0.2, width),
-          y: initial ? rand(-height, height) : rand(-height * 0.3, -10),
-          len: rand(10, 22),
-          speed: rand(700, 1100) * (type === "tormenta" ? 1.25 : 1),
-        };
+        tiles[type] = [rainTile(260, 0.6, 21), rainTile(180, 0.35, 22)];
+        break;
       case "nieve":
-        return {
-          x: rand(0, width),
-          y: initial ? rand(-height, height) : rand(-40, -5),
-          r: rand(1, 3.2),
-          speed: rand(25, 70),
-          phase: rand(0, Math.PI * 2),
-        };
+        tiles[type] = [
+          dotsTile(70, 2.2, 4, "rgba(255, 255, 255, 0.9)", 31),
+          dotsTile(110, 1.2, 2.4, "rgba(255, 255, 255, 0.6)", 32),
+        ];
+        break;
       case "brasas":
-        return {
-          x: rand(0, width),
-          y: initial ? rand(0, height) : height + rand(5, 40),
-          r: rand(0.8, 2.2),
-          speed: rand(20, 60),
-          phase: rand(0, Math.PI * 2),
-          life: rand(0.5, 1),
-        };
+        tiles[type] = [
+          dotsTile(26, 1.6, 3.2, "rgba(255, 150, 60, 0.9)", 41),
+          dotsTile(40, 1, 2, "rgba(255, 110, 40, 0.6)", 42),
+        ];
+        break;
       case "niebla":
-        return {
-          x: rand(-0.3, 1.1) * width,
-          y: rand(-0.1, 1) * height,
-          size: rand(0.35, 0.7) * Math.max(width, height),
-          speed: rand(6, 16),
-          alpha: rand(0.25, 0.5),
-        };
+        tiles[type] = [blobTile(9, "220, 224, 230", 0.55, 51), blobTile(7, "205, 210, 218", 0.4, 52)];
+        break;
       case "nubes":
-        return {
-          x: initial ? rand(-0.3, 1.1) * width : -0.6 * width,
-          y: rand(-0.2, 1) * height,
-          size: rand(0.35, 0.65) * Math.max(width, height),
-          speed: rand(10, 22),
-          alpha: rand(0.35, 0.6),
-        };
+        tiles[type] = [blobTile(6, "0, 0, 0", 0.55, 61)];
+        break;
       default:
-        return null;
+        tiles[type] = [];
+    }
+    return tiles[type];
+  }
+
+  /* ----------------------- layers ----------------------- */
+
+  // Per effect: tile world size (cells), velocity (cells/s) and opacity.
+  // A lower-res slower layer behind a faster one gives a parallax depth.
+  function layersFor(type) {
+    const slow = reducedMotion ? 0.4 : 1;
+    switch (type) {
+      case "lluvia":
+        return [
+          { tile: 0, size: 4, vx: 1.2 * slow, vz: 7 * slow, alpha: 1, particles: true },
+          { tile: 1, size: 2.6, vx: 0.8 * slow, vz: 5 * slow, alpha: 0.8, particles: true },
+        ];
+      case "tormenta":
+        return [
+          { tile: 0, size: 4, vx: 2.6 * slow, vz: 10 * slow, alpha: 1, particles: true },
+          { tile: 1, size: 2.8, vx: 1.8 * slow, vz: 7.5 * slow, alpha: 0.85, particles: true },
+        ];
+      case "nieve":
+        return [
+          { tile: 0, size: 6, vx: 0.15, vz: 0.6 * slow, sway: 0.35, alpha: 1, particles: true },
+          { tile: 1, size: 4, vx: 0.1, vz: 0.4 * slow, sway: 0.25, alpha: 0.9, particles: true },
+        ];
+      case "brasas":
+        return [
+          { tile: 0, size: 6, vx: 0.05, vz: -0.5 * slow, sway: 0.3, alpha: 1, particles: true },
+          { tile: 1, size: 4.5, vx: 0.08, vz: -0.35 * slow, sway: 0.2, alpha: 0.9, additive: true, particles: true },
+        ];
+      case "niebla":
+        return [
+          { tile: 0, size: 16, vx: 0.18 * slow, vz: 0.03, alpha: 1 },
+          { tile: 1, size: 11, vx: -0.12 * slow, vz: 0.05, alpha: 1 },
+        ];
+      case "nubes":
+        return [{ tile: 0, size: 24, vx: 0.35 * slow, vz: 0.1, alpha: 1 }];
+      default:
+        return [];
     }
   }
 
-  function populate() {
-    const type = state.type;
-    let count = 0;
-    if (type === "lluvia") count = particleCount(120, 520);
-    if (type === "tormenta") count = particleCount(260, 700);
-    if (type === "nieve") count = particleCount(70, 330);
-    if (type === "brasas") count = particleCount(25, 140);
-    if (type === "niebla") count = Math.round(5 + 6 * state.intensity);
-    if (type === "nubes") count = Math.round(3 + 4 * state.intensity);
-    state.particles = Array.from({ length: count }, () => spawn(type, true));
-  }
+  /* ----------------------- camera transform ----------------------- */
 
-  /* ----------------------- drawing ----------------------- */
-
-  function drawRain(ctx, dt, wind) {
-    const { width, height, particles } = state;
-    ctx.strokeStyle = `rgba(185, 205, 235, ${0.35 + 0.25 * state.intensity})`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i < particles.length; i += 1) {
-      const p = particles[i];
-      p.y += p.speed * dt;
-      p.x += p.speed * wind * dt;
-      if (p.y > height || p.x > width + 20) particles[i] = spawn(state.type, false);
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x - p.len * wind, p.y - p.len);
-    }
-    ctx.stroke();
-  }
-
-  function drawSnow(ctx, dt, time) {
-    const { width, height, particles } = state;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-    ctx.beginPath();
-    for (let i = 0; i < particles.length; i += 1) {
-      const p = particles[i];
-      p.y += p.speed * dt;
-      p.x += Math.sin(time * 0.8 + p.phase) * 18 * dt;
-      if (p.y > height + 5 || p.x < -10 || p.x > width + 10) particles[i] = spawn("nieve", false);
-      ctx.moveTo(p.x + p.r, p.y);
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    }
-    ctx.fill();
-  }
-
-  function drawEmbers(ctx, dt, time) {
-    const { particles } = state;
-    ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = "rgba(255, 140, 50, 0.85)";
-    ctx.beginPath();
-    for (let i = 0; i < particles.length; i += 1) {
-      const p = particles[i];
-      p.y -= p.speed * dt;
-      p.x += Math.sin(time * 1.6 + p.phase) * 14 * dt;
-      p.life -= dt * 0.12;
-      if (p.y < -10 || p.life <= 0) particles[i] = spawn("brasas", false);
-      const flicker = 0.6 + 0.4 * Math.sin(time * 9 + p.phase);
-      const r = p.r * flicker;
-      ctx.moveTo(p.x + r, p.y);
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    }
-    ctx.fill();
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  function drawBlobs(ctx, dt, sprite, alphaScale) {
-    const { width, particles } = state;
-    for (let i = 0; i < particles.length; i += 1) {
-      const p = particles[i];
-      p.x += p.speed * dt;
-      if (p.x - p.size / 2 > width) {
-        particles[i] = spawn(state.type, false);
-        continue;
-      }
-      ctx.globalAlpha = p.alpha * alphaScale;
-      ctx.drawImage(sprite, p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function drawLightning(ctx, dt) {
-    if (reducedMotion) return;
+  function computeView() {
     const s = state;
-    s.nextFlash -= dt;
-    if (s.nextFlash <= 0) {
-      s.flash = 1;
-      s.nextFlash = rand(6, 14) / (0.6 + s.intensity);
+    let t = null;
+    try {
+      const p0 = s.project?.(0, 0);
+      const px = s.project?.(1, 0);
+      const pz = s.project?.(0, 1);
+      if (p0 && px && pz) t = [px.x - p0.x, px.y - p0.y, pz.x - p0.x, pz.y - p0.y, p0.x, p0.y];
+    } catch (_error) {}
+    if (!t || !t.every(Number.isFinite) || Math.abs(t[0] * t[3] - t[1] * t[2]) < 1e-6) {
+      t = [FALLBACK_SCALE, 0, 0, FALLBACK_SCALE, 0, 0];
     }
-    if (s.flash > 0) {
-      // Soft double flicker, never a full white screen.
-      const a = 0.28 * s.flash * (s.flash > 0.5 ? 1 : 0.6);
-      ctx.fillStyle = `rgba(225, 232, 255, ${a})`;
-      ctx.fillRect(0, 0, s.width, s.height);
-      s.flash = Math.max(0, s.flash - dt * 3.2);
-    }
+    const [a, b, c, d, e, f] = t;
+    const det = a * d - b * c;
+    const toWorld = (x, y) => ({
+      x: (d * (x - e) - c * (y - f)) / det,
+      z: (-b * (x - e) + a * (y - f)) / det,
+    });
+    const corners = [
+      toWorld(0, 0),
+      toWorld(s.width, 0),
+      toWorld(0, s.height),
+      toWorld(s.width, s.height),
+    ];
+    const xs = corners.map((p) => p.x);
+    const zs = corners.map((p) => p.z);
+    return {
+      t,
+      pxPerUnit: Math.sqrt(Math.abs(det)),
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minZ: Math.min(...zs),
+      maxZ: Math.max(...zs),
+    };
   }
+
+  /* ----------------------- render loop ----------------------- */
 
   function render(now) {
     frame = null;
     const s = state;
-    if (!s) return;
-    if (document.hidden) return; // resumed on visibilitychange
+    if (!s || document.hidden) return; // resumed on visibilitychange
 
     const elapsed = now - s.lastFrame;
     if (elapsed < FRAME_MS) {
@@ -239,38 +261,67 @@
     }
     const dt = Math.min(elapsed / 1000, 0.1);
     s.lastFrame = now;
-    const time = now / 1000;
+    s.time += dt;
 
     resize();
     const ctx = s.ctx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, s.width, s.height);
 
-    switch (s.type) {
-      case "lluvia":
-        drawRain(ctx, dt, 0.18);
-        break;
-      case "tormenta":
-        ctx.fillStyle = `rgba(8, 12, 28, ${0.12 + 0.18 * s.intensity})`;
+    // Screen-space tints.
+    if (s.type === "tormenta") {
+      ctx.fillStyle = `rgba(8, 12, 28, ${0.12 + 0.18 * s.intensity})`;
+      ctx.fillRect(0, 0, s.width, s.height);
+    }
+    if (s.type === "niebla") {
+      ctx.fillStyle = `rgba(210, 214, 220, ${0.05 + 0.12 * s.intensity})`;
+      ctx.fillRect(0, 0, s.width, s.height);
+    }
+
+    // Texture layers, in world space through the camera.
+    const view = computeView();
+    ctx.setTransform(...view.t);
+    const textures = getTiles(s.type);
+    s.layers.forEach((layer) => {
+      const texture = textures[layer.tile];
+      if (!texture) return;
+      if (!layer.pattern) layer.pattern = ctx.createPattern(texture, "repeat");
+      // Small particles (rain, snow, embers) keep a readable on-screen size:
+      // their tile grows/shrinks in powers of two with the zoom.
+      let size = layer.size;
+      let speed = 1;
+      if (layer.particles) {
+        const k = Math.round(Math.log2(TARGET_TILE_PX / (layer.size * view.pxPerUnit)));
+        speed = 2 ** k;
+        size = layer.size * speed;
+      }
+      const sway = layer.sway ? Math.sin(s.time * 0.9) * layer.sway * speed : 0;
+      const ox = (layer.vx * speed * s.time + sway) % size;
+      const oz = (layer.vz * speed * s.time) % size;
+      const scale = size / TILE;
+      layer.pattern.setTransform(new DOMMatrix().translateSelf(ox, oz).scaleSelf(scale, scale));
+      ctx.globalAlpha = layer.alpha * (0.35 + 0.65 * s.intensity);
+      ctx.globalCompositeOperation = layer.additive ? "lighter" : "source-over";
+      ctx.fillStyle = layer.pattern;
+      ctx.fillRect(view.minX, view.minZ, view.maxX - view.minX, view.maxZ - view.minZ);
+    });
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+
+    // Storm flashes (screen space, soft, never full white).
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (s.type === "tormenta" && !reducedMotion) {
+      s.nextFlash -= dt;
+      if (s.nextFlash <= 0) {
+        s.flash = 1;
+        s.nextFlash = (6 + Math.random() * 8) / (0.6 + s.intensity);
+      }
+      if (s.flash > 0) {
+        const a = 0.28 * s.flash * (s.flash > 0.5 ? 1 : 0.6);
+        ctx.fillStyle = `rgba(225, 232, 255, ${a})`;
         ctx.fillRect(0, 0, s.width, s.height);
-        drawRain(ctx, dt, 0.32);
-        drawLightning(ctx, dt);
-        break;
-      case "nieve":
-        drawSnow(ctx, dt, time);
-        break;
-      case "brasas":
-        drawEmbers(ctx, dt, time);
-        break;
-      case "niebla":
-        ctx.fillStyle = `rgba(210, 214, 220, ${0.05 + 0.12 * s.intensity})`;
-        ctx.fillRect(0, 0, s.width, s.height);
-        drawBlobs(ctx, dt, getFogSprite(), 0.3 + 0.5 * s.intensity);
-        break;
-      case "nubes":
-        drawBlobs(ctx, dt, getShadowSprite(), 0.25 + 0.45 * s.intensity);
-        break;
-      default:
-        break;
+        s.flash = Math.max(0, s.flash - dt * 3.2);
+      }
     }
 
     frame = requestAnimationFrame(render);
@@ -283,12 +334,8 @@
     const height = Math.max(1, Math.round(rect.height));
     if (s.canvas.width !== width) s.canvas.width = width;
     if (s.canvas.height !== height) s.canvas.height = height;
-    if (s.width !== width || s.height !== height) {
-      const changed = Math.abs(width - s.width) > 50 || Math.abs(height - s.height) > 50;
-      s.width = width;
-      s.height = height;
-      if (changed && s.particles.length) populate();
-    }
+    s.width = width;
+    s.height = height;
   }
 
   document.addEventListener("visibilitychange", () => {
@@ -303,8 +350,9 @@
    * @param {HTMLElement} container - Element to place the layer in
    * @param {string} type - One of TYPES keys
    * @param {number} intensity - 0..1
+   * @param {{project?: Function}} [options]
    */
-  function start(container, type, intensity = 0.5) {
+  function start(container, type, intensity = 0.5, options = {}) {
     if (!container || !TYPES.some((t) => t.key === type)) {
       stop();
       return;
@@ -319,6 +367,7 @@
 
     const level = Math.min(Math.max(Number(intensity) || 0, 0), 1);
     if (state && state.canvas === canvas && state.type === type && state.intensity === level) {
+      if (options.project) state.project = options.project;
       return; // already running
     }
 
@@ -327,16 +376,16 @@
       ctx: canvas.getContext("2d"),
       type,
       intensity: level,
-      particles: [],
+      project: options.project || state?.project || null,
+      layers: layersFor(type),
       width: 0,
       height: 0,
       lastFrame: 0,
+      time: 0,
       flash: 0,
-      nextFlash: rand(2, 5),
+      nextFlash: 2 + Math.random() * 3,
     };
     canvas.dataset.weather = type;
-    resize();
-    populate();
     if (frame === null) frame = requestAnimationFrame(render);
   }
 
@@ -347,9 +396,5 @@
     document.getElementById(CANVAS_ID)?.remove();
   }
 
-  window._n21_.weather = {
-    TYPES,
-    start,
-    stop,
-  };
+  window._n21_.weather = { TYPES, start, stop };
 })();
