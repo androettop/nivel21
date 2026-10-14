@@ -99,7 +99,7 @@
         const wRest = ctx.measureText(rest).width;
         const textWidth = wMain + wTemp + wRest;
 
-        const padX = fontSize * 0.35;
+        const padX = fontSize * 0.9;
         const boxW = textWidth + padX * 2;
         const boxH = fontSize * 1.25;
         const x = rect.x + (rect.width - boxW) / 2;
@@ -109,6 +109,17 @@
         roundedRect(ctx, x, y, boxW, boxH, boxH / 2);
         ctx.fillStyle = "rgba(15, 16, 18, 0.72)";
         ctx.fill();
+
+        // Dark red fill that empties as hit points go down.
+        const ratio = Math.max(0, Math.min(hp.currentHp / hp.maxHp, 1));
+        if (ratio > 0) {
+          ctx.save();
+          roundedRect(ctx, x, y, boxW, boxH, boxH / 2);
+          ctx.clip();
+          ctx.fillStyle = "rgba(150, 24, 20, 0.7)";
+          ctx.fillRect(x, y, boxW * ratio, boxH);
+          ctx.restore();
+        }
 
         let cursor = x + padX;
         const middle = y + boxH / 2 + 0.5;
