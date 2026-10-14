@@ -181,58 +181,190 @@
       return $cell;
     }
 
-    /* ------------------------- Local item order -------------------------- */
+    /* --------------------------- Panel size ----------------------------- */
 
-    // The order of the icons is purely local, per character.
-    const ORDER_PREFIX = "_n21_inventory-order:";
+    // The window only takes whole-slot sizes: 1-9 columns and N rows. The
+    // last size is remembered (in columns x rows).
+    const SIZE_KEY = "_n21_inventory-panel-size";
+    const MAX_COLUMNS = 9;
+    const MIN_ROWS = 2;
+    const DEFAULT_SIZE = { columns: 4, rows: 6 };
+
+    function loadPanelSize() {
+      try {
+        const size = JSON.parse(localStorage.getItem(SIZE_KEY) || "null");
+        if (size?.columns > 0 && size?.rows > 0) {
+          return {
+            columns: Math.min(Math.max(size.columns, 1), MAX_COLUMNS),
+            rows: Math.max(size.rows, MIN_ROWS),
+          };
+        }
+      } catch (_) {}
+      return DEFAULT_SIZE;
+    }
+
+    function savePanelSize(size) {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify(size));
+      } catch (_) {}
+    }
+
+    /** Pixels the panel adds around the usable grid area (borders, header...). */
+    function panelChrome($panel) {
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      return {
+        x: $panel.outerWidth() - (grid.clientWidth - GRID_PADDING_PX),
+        y: $panel.outerHeight() - (grid.clientHeight - GRID_PADDING_PX),
+      };
+    }
+
+    /** Resize the panel to exactly `columns x rows` slots. */
+    function applyPanelSize($panel, size) {
+      const chrome = panelChrome($panel);
+      $panel.outerWidth(chrome.x + size.columns * CELL_PX);
+      $panel.outerHeight(chrome.y + size.rows * CELL_PX);
+    }
+
+    /** Make the native resize snap to whole slots and remember the size. */
+    function bindPanelResize($panel) {
+      if (typeof $panel.resizable !== "function") return;
+      const chrome = panelChrome($panel);
+      const onStop = () => {
+        const c = panelChrome($panel);
+        const size = {
+          columns: Math.min(Math.max(Math.round(($panel.outerWidth() - c.x) / CELL_PX), 1), MAX_COLUMNS),
+          rows: Math.max(Math.round(($panel.outerHeight() - c.y) / CELL_PX), MIN_ROWS),
+        };
+        applyPanelSize($panel, size);
+        savePanelSize(size);
+      };
+      try {
+        $panel.css({ minWidth: "", maxWidth: "", minHeight: "", maxHeight: "" });
+        // Keep any existing stop handler (Nivel20's own) and add ours.
+        const previousStop = $panel.resizable("option", "stop");
+        $panel.resizable("option", {
+          grid: [CELL_PX, CELL_PX],
+          minWidth: chrome.x + CELL_PX,
+          maxWidth: chrome.x + MAX_COLUMNS * CELL_PX,
+          minHeight: chrome.y + MIN_ROWS * CELL_PX,
+          stop: function (...args) {
+            if (typeof previousStop === "function") previousStop.apply(this, args);
+            onStop();
+          },
+        });
+      } catch (_) {}
+    }
+
+    /* ------------------------- Local slot layout -------------------------- */
+
+    // Bag-like slots: each item keeps its slot (gaps allowed). Purely local,
+    // per character: an array of item keys (null = empty slot).
+    const SLOTS_PREFIX = "_n21_inventory-slots:";
+    const CELL_PX = 60; // item cell size (same as the action bar buttons)
+    const GRID_PADDING_PX = 12;
 
     function itemKey(item) {
       return item?.itemId ? `id:${item.itemId}` : `name:${item?.name || ""}`;
     }
 
-    function loadOrder(charId) {
+    function loadSlots(charId) {
       try {
-        const list = JSON.parse(localStorage.getItem(ORDER_PREFIX + charId) || "[]");
+        const list = JSON.parse(localStorage.getItem(SLOTS_PREFIX + charId) || "[]");
         return Array.isArray(list) ? list : [];
       } catch (_) {
         return [];
       }
     }
 
-    function saveOrder(charId, items) {
+    function saveSlots(charId, slots) {
+      const keys = slots.map((item) => (item ? itemKey(item) : null));
+      while (keys.length && keys[keys.length - 1] === null) keys.pop();
       try {
-        localStorage.setItem(ORDER_PREFIX + charId, JSON.stringify(items.map(itemKey)));
+        localStorage.setItem(SLOTS_PREFIX + charId, JSON.stringify(keys));
       } catch (_) {}
     }
 
-    /** Items sorted by the saved order; new items keep their place at the end. */
-    function applyOrder(charId, items) {
-      const order = loadOrder(charId);
-      if (!order.length) return items;
-      return items
-        .map((item, index) => {
-          const rank = order.indexOf(itemKey(item));
-          return { item, index, rank: rank === -1 ? Infinity : rank };
-        })
-        .sort((a, b) => (a.rank === b.rank ? a.index - b.index : a.rank - b.rank))
-        .map((entry) => entry.item);
+    /**
+     * Place items in slots: saved positions first, the rest (new items) in
+     * the first free slots. Always leaves at least one empty row at the end.
+     * @returns {Array<Object|null>}
+     */
+    /** Columns and visible rows that fit in the (resizable) panel. */
+    function gridCapacity($panel) {
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      const width = grid?.clientWidth || CELL_PX * 4;
+      const height = grid?.clientHeight || CELL_PX * 6;
+      return {
+        columns: Math.max(1, Math.floor((width - GRID_PADDING_PX) / CELL_PX)),
+        rows: Math.max(1, Math.floor((height - GRID_PADDING_PX) / CELL_PX)),
+      };
+    }
+
+    function layoutSlots(charId, items, capacity = { columns: 4, rows: 6 }) {
+      const saved = charId ? loadSlots(charId) : [];
+      const slots = [];
+      const placed = new Set();
+      const byKey = new Map();
+      items.forEach((item) => {
+        const key = itemKey(item);
+        if (!byKey.has(key)) byKey.set(key, []);
+        byKey.get(key).push(item);
+      });
+      saved.forEach((key, index) => {
+        const candidates = key ? byKey.get(key) : null;
+        const item = candidates?.find((it) => !placed.has(it));
+        slots[index] = item || null;
+        if (item) placed.add(item);
+      });
+      items.forEach((item) => {
+        if (placed.has(item)) return;
+        let free = slots.findIndex((slot) => !slot);
+        if (free === -1) free = slots.length;
+        slots[free] = item;
+        placed.add(item);
+      });
+      for (let i = 0; i < slots.length; i += 1) if (slots[i] === undefined) slots[i] = null;
+      let last = slots.length - 1;
+      while (last >= 0 && !slots[last]) last -= 1;
+      // Fill the visible area, plus one free row after the last item.
+      const { columns, rows } = capacity;
+      const total = Math.max(columns * rows, Math.ceil((last + 1) / columns) * columns + columns);
+      while (slots.length < total) slots.push(null);
+      return slots.slice(0, total);
+    }
+
+    function renderSlots($panel) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const slots = $panel.data("n21InventorySlots") || [];
+      const $grid = $panel.find(".n21-inventory-grid");
+      $grid.empty();
+      slots.forEach((item, slot) => {
+        if (item) {
+          $grid.append(buildItemCell(item, items.indexOf(item)).attr("data-slot", slot));
+        } else {
+          $grid.append(
+            $("<div>").addClass("n21-inventory-slot").attr("data-slot", slot),
+          );
+        }
+      });
     }
 
     /** Render the grid + money into the panel body. */
     function renderInventory($body, items, ph) {
+      const $panel = $body.closest(".n21-inventory-panel");
       const $grid = $body.find(".n21-inventory-grid");
       $grid.empty();
-      const charId = $body.closest(".n21-inventory-panel").data("n21CharId");
-      if (charId) items = applyOrder(charId, items);
-      $body.closest(".n21-inventory-panel").data("n21InventoryItems", items);
-      $body.closest(".n21-inventory-panel").data("n21InventoryMoney", money.parse(ph?.equipment));
+      const charId = $panel.data("n21CharId");
+      $panel.data("n21InventoryItems", items);
+      $panel.data("n21InventorySlots", layoutSlots(charId, items, gridCapacity($panel)));
+      $panel.data("n21InventoryMoney", money.parse(ph?.equipment));
 
       if (!items.length) {
         $grid.append(
           '<div class="n21-inventory-empty">Sin objetos en el inventario.</div>',
         );
       } else {
-        items.forEach((item, index) => $grid.append(buildItemCell(item, index)));
+        renderSlots($panel);
       }
 
       const totals = money.parse(ph?.equipment);
@@ -369,8 +501,8 @@
         "#4a3b2a",
         panelBodyHtml(charId),
         "n21-inventory-panel",
-        "width: 269px; height: 420px; min-width: 269px; max-width: 269px; " +
-          "min-height: 240px;",
+        // Sized in whole slots right after opening (see applyPanelSize).
+        "width: 290px; height: 420px;",
       );
       if (!$panel || !$panel.length) return;
 
@@ -379,6 +511,8 @@
       // Bind refresh once per freshly created panel.
       if (!$panel.data("n21InventoryBound")) {
         $panel.data("n21InventoryBound", true);
+        applyPanelSize($panel, loadPanelSize());
+        bindPanelResize($panel);
         bindRefresh($panel, charId, jsonUrl);
         bindEditing($panel, charId);
       }
@@ -460,7 +594,7 @@
       // Optimistic update: redraw just this cell.
       item.quantity = next;
       const $old = $panel.find(`.n21-inventory-item[data-index="${index}"]`);
-      $old.replaceWith(buildItemCell(item, index));
+      $old.replaceWith(buildItemCell(item, index).attr("data-slot", $old.attr("data-slot")));
     }
 
     async function deleteItem($panel, charId, index) {
@@ -524,6 +658,25 @@
     }
 
     function bindEditing($panel, charId) {
+      // Resizing the window shows more or fewer slots.
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      if (grid && typeof ResizeObserver === "function") {
+        let lastTotal = null;
+        let timer = null;
+        new ResizeObserver(() => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            const items = $panel.data("n21InventoryItems");
+            if (!items?.length) return;
+            const slots = layoutSlots(charId, items, gridCapacity($panel));
+            if (slots.length === lastTotal) return;
+            lastTotal = slots.length;
+            $panel.data("n21InventorySlots", slots);
+            renderSlots($panel);
+          }, 80);
+        }).observe(grid);
+      }
+
       $panel.find(".n21-inventory").append('<div class="n21-inventory-message" role="status"></div>');
 
       $panel.on("contextmenu", ".n21-inventory-item", function (event) {
@@ -554,38 +707,40 @@
         ]);
       });
 
-      // Drag & drop to reorder (saved locally for this character).
-      let dragIndex = null;
+      // Drag & drop between slots (saved locally for this character):
+      // onto an empty slot moves the item, onto another item swaps them.
+      let dragSlot = null;
+      const SLOT_SELECTOR = ".n21-inventory-item, .n21-inventory-slot";
       $panel.on("dragstart", ".n21-inventory-item", function (event) {
-        dragIndex = Number($(this).attr("data-index"));
+        dragSlot = Number($(this).attr("data-slot"));
         event.originalEvent.dataTransfer.effectAllowed = "move";
-        event.originalEvent.dataTransfer.setData("text/plain", String(dragIndex));
+        event.originalEvent.dataTransfer.setData("text/plain", String(dragSlot));
         $(this).addClass("n21-inventory-item--dragging");
       });
-      $panel.on("dragend", ".n21-inventory-item", function () {
-        dragIndex = null;
+      $panel.on("dragend", ".n21-inventory-item", () => {
+        dragSlot = null;
         $panel.find(".n21-inventory-item--dragging, .n21-inventory-item--drop").removeClass(
           "n21-inventory-item--dragging n21-inventory-item--drop",
         );
       });
-      $panel.on("dragover", ".n21-inventory-item", function (event) {
-        if (dragIndex === null) return;
+      $panel.on("dragover", SLOT_SELECTOR, function (event) {
+        if (dragSlot === null) return;
         event.preventDefault();
         $panel.find(".n21-inventory-item--drop").removeClass("n21-inventory-item--drop");
         $(this).addClass("n21-inventory-item--drop");
       });
-      $panel.on("drop", ".n21-inventory-item", function (event) {
+      $panel.on("drop", SLOT_SELECTOR, function (event) {
         event.preventDefault();
-        const target = Number($(this).attr("data-index"));
-        const items = ($panel.data("n21InventoryItems") || []).slice();
-        if (dragIndex === null || dragIndex === target || !items[dragIndex]) return;
-        const [moved] = items.splice(dragIndex, 1);
-        items.splice(target, 0, moved);
-        saveOrder(charId, items);
-        const $grid = $panel.find(".n21-inventory-grid");
-        $panel.data("n21InventoryItems", items);
-        $grid.empty();
-        items.forEach((item, index) => $grid.append(buildItemCell(item, index)));
+        const target = Number($(this).attr("data-slot"));
+        const slots = ($panel.data("n21InventorySlots") || []).slice();
+        if (dragSlot === null || dragSlot === target || !slots[dragSlot]) return;
+        [slots[dragSlot], slots[target]] = [slots[target] || null, slots[dragSlot]];
+        saveSlots(charId, slots);
+        $panel.data(
+          "n21InventorySlots",
+          layoutSlots(charId, $panel.data("n21InventoryItems") || [], gridCapacity($panel)),
+        );
+        renderSlots($panel);
       });
 
       $panel.on("contextmenu", ".n21-inventory-money", (event) => {

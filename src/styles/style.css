@@ -1227,7 +1227,9 @@ span[n21-h] {
 	overflow-y: scroll;
 	overflow-x: hidden;
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: repeat(auto-fill, 60px);
+	grid-auto-rows: 60px;
+	justify-content: start;
 	gap: 0;
 	padding: 6px;
 	align-content: start;
@@ -1357,6 +1359,21 @@ span[n21-h] {
 
 .n21-inventory-item {
 	cursor: grab;
+}
+
+/* Empty bag slot, same footprint as an item cell. */
+.n21-inventory-slot {
+	width: 56px;
+	height: 56px;
+	margin: 2px;
+	border: 1px dashed rgba(127, 127, 127, 0.35);
+	border-radius: 6px;
+	background: rgba(0, 0, 0, 0.15);
+}
+
+.n21-inventory-slot.n21-inventory-item--drop {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.15);
 }
 
 .n21-inventory-item--dragging {
