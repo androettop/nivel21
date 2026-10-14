@@ -37,3 +37,4 @@
 - Mensajes al chat: antes de enviar, se pregunta (Enviar / No enviar + «No volver a preguntar», que guarda la elección en Configuración > Chat y lo avisa). En clima, turnos, ping, compartir y notas de token, «No enviar» no aplica el cambio; en el anuncio de conjuros el conjuro se lanza igual.
 - [x] **Bloquear rotación de la cámara**: toggle con candado en el menú rápido, activado por defecto; el ángulo se restaura cada frame si algo lo cambia (enderezar sigue funcionando). «Enderezar cámara» solo aparece si la cámara está girada.
 - Tokens: la barra de vida se reemplazó por los PV en texto chico («actual/máximo», +temporales en celeste) abajo dentro de la base del token.
+- Conjuros con tirada de ataque: no llevan «Lanzar»; sus botones de ataque ponen Concentración y gastan el espacio del nivel (ojo: conjuros de varios ataques por lanzamiento, como Rayo abrasador, gastarían un espacio por ataque).
