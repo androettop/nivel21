@@ -413,6 +413,9 @@ Agrega automáticamente los conjuros de un personaje a su barra de acciones, con
 
 - **Tiradas según el conjuro** - Ataque (con ventaja/desventaja), daño, crítico, curación o dado de utilidad
 
+- **Lanzar** - Cada conjuro con ataques o daños tiene primero un botón «Lanzar» (con el icono del conjuro) que avisa en el chat; los conjuros sin tiradas se lanzan con su propio botón. Si el conjuro es de concentración, al lanzarlo se le pone el estado Concentración al personaje
+- Las carpetas se llaman «Conjuros de nivel N» y muestran el nivel en número romano
+
 <a id="spell-action-bar">
  <img src="popup/img/spell-action-bar.png" alt="Conjuros en la barra de acciones" />
 </a>

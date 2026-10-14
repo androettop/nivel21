@@ -191,6 +191,63 @@
       },
     });
 
+    /* ----------------------- casting ----------------------- */
+
+    const CONCENTRATION_NAMES = ["concentracion", "concentrado", "concentrada"];
+
+    function readAction(element) {
+      try {
+        return JSON.parse(element.getAttribute("data-action") || "null");
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    /** Give the character the Concentración status (if allowed to edit it). */
+    async function startConcentration(charId) {
+      // Only on the tabletop, where the combat tracking panel exists.
+      const Tracking = window._n21_.managers.CombatTrackingManager;
+      const entry = Tracking?.getEntry("character", charId);
+      if (!entry?.editable) return;
+      if (Tracking.hasCondition(entry, CONCENTRATION_NAMES)) return;
+      try {
+        const results = await Tracking.searchConditions("concentr");
+        const condition = results.find((c) =>
+          CONCENTRATION_NAMES.includes(Tracking.normalizeText(c?.name)),
+        );
+        const fresh = Tracking.getEntry("character", charId);
+        if (condition && fresh) Tracking.addCondition(fresh, condition);
+      } catch (_error) {}
+    }
+
+    // Capture phase: the bar's own handlers stop propagation.
+    document.addEventListener(
+      "click",
+      (event) => {
+        const element = event.target.closest?.(".action-bar-element[data-action]");
+        if (!element) return;
+        const action = readAction(element);
+        if (!action || (action.action_type !== "spell_cast" && !action.n21_concentration)) return;
+
+        const charId = resolveCharacterId(element);
+
+        if (action.action_type === "spell_cast") {
+          event.preventDefault();
+          event.stopPropagation();
+          const ChatManager = window._n21_.managers.ChatManager;
+          const senderInfo = $(element).closest(".action-bar").attr("data-sender-info");
+          const spellName = action.n21_spell_name || action.name;
+          ChatManager?.send(
+            `Lanza ${spellName}${action.n21_concentration ? " (concentración)" : ""}`,
+            senderInfo ? { sender_info: senderInfo } : {},
+          );
+        }
+
+        if (action.n21_concentration && charId) startConcentration(charId);
+      },
+      true,
+    );
+
     // Catch the level-0 bar that the multi-level observer may have already
     // rendered before we registered.
     reprocessExistingBars();

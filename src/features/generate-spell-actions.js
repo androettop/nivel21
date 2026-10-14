@@ -238,7 +238,51 @@
    * @param {Object} ctx - { spell, slug, mod, attackBonus, sourceName, nextOrder }
    * @returns {Array<Object>}
    */
+  /** Whether a spell requires concentration ("Concentración, hasta 1 hora"). */
+  function isConcentration(spell) {
+    return /^\s*concentraci[oó]n/i.test(spell?.duration || "") || spell?.concentration === true;
+  }
+
+  /**
+   * "Lanzar" action: posts the casting to chat and, for concentration
+   * spells, sets the Concentración status (handled by the spell action bar).
+   */
+  function makeCastElement(spell, name, order, sourceName) {
+    return {
+      ...makeBaseElement(name, spell.icon_url, order, sourceName),
+      action_type: "spell_cast",
+      description: buildHeaderDescription(spell),
+      tooltip_title: `Lanzar ${spell.name}`,
+      n21_spell_name: spell.name,
+      n21_spell_level: spell.level ?? null,
+      n21_concentration: isConcentration(spell),
+    };
+  }
+
   function buildSpellElements(ctx) {
+    const elements = buildSpellElementsRaw(ctx);
+    const { spell, sourceName, nextOrder } = ctx;
+    const concentration = isConcentration(spell);
+    const header = elements[0];
+
+    // Spells without any roll: the button itself casts.
+    if (elements.length === 1 && header?.action_type === "none") {
+      return [makeCastElement(spell, spell.name, header.order, sourceName)];
+    }
+
+    // A single roll (healing, utility die) is already the cast button.
+    if (elements.length === 1) {
+      header.n21_concentration = concentration;
+      header.n21_spell_name = spell.name;
+      return elements;
+    }
+
+    // Attack/damage folders get a first "Lanzar" action.
+    const cast = makeCastElement(spell, `${spell.name} > Lanzar`, (header.order ?? 0) + 0.5, sourceName);
+    return [header, cast, ...elements.slice(1)];
+  }
+
+  function buildSpellElementsRaw(ctx) {
     const { spell, slug, mod, attackBonus, sourceName, nextOrder } = ctx;
     const name = spell.name;
     const attackParts = parseAttackString(spell.attack);
