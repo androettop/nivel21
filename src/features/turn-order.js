@@ -175,6 +175,7 @@
      *   { type: "roster", entries: [{ token, initiative }] }  (token = short id)
      *   { type: "turn", turn: number }
      *   { type: "end" }
+     *   { type: "timer", seconds: number }
      *   null (not a turno command)
      */
     function parseTurnCommand(text) {
@@ -186,6 +187,14 @@
 
       const args = parts.slice(1).filter(Boolean);
       if (!args.length) return null;
+
+      // "/turno tiempo N": seconds per turn for the combat timer (0 = off).
+      // Clients without timer support ignore it (it isn't a roster nor a turn).
+      if (args.length === 2 && args[0].toLowerCase() === "tiempo") {
+        const seconds = parseInt(args[1], 10);
+        if (!Number.isFinite(seconds) || seconds < 0) return null;
+        return { type: "timer", seconds };
+      }
 
       if (args.length === 1) {
         const single = args[0].toLowerCase();
@@ -209,6 +218,113 @@
       }
 
       return null;
+    }
+
+    /* ----------------------- turn timer ----------------------- */
+
+    // Purely visual countdown shared by DM and players. The DM picks the
+    // seconds per turn ("/turno tiempo N"); every client restarts its local
+    // countdown when the turn changes. Reaching 0 does nothing but turn red.
+    const TIMER_STORAGE_KEY = "_n21_turn-order.timer-seconds";
+    const TIMER_WARN_SECONDS = 10;
+    const timer = { seconds: 0, startedAt: Date.now(), running: false };
+    let timerInterval = null;
+
+    function loadStoredTimerSeconds() {
+      try {
+        const value = parseInt(localStorage.getItem(TIMER_STORAGE_KEY), 10);
+        return Number.isFinite(value) && value > 0 ? value : 0;
+      } catch (error) {
+        return 0;
+      }
+    }
+
+    function storeTimerSeconds(seconds) {
+      try {
+        localStorage.setItem(TIMER_STORAGE_KEY, String(seconds));
+      } catch (error) {}
+    }
+
+    function formatClock(totalSeconds) {
+      const value = Math.max(0, Math.ceil(totalSeconds));
+      const minutes = Math.floor(value / 60);
+      const seconds = value % 60;
+      return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function getTimerRemaining() {
+      if (!timer.seconds) return 0;
+      const elapsed = (Date.now() - timer.startedAt) / 1000;
+      return Math.max(0, timer.seconds - elapsed);
+    }
+
+    function updateTimerDom() {
+      const $timer = getPanel().find(".n21-turn-timer");
+      if (!$timer.length) return;
+
+      const active = timer.running && timer.seconds > 0;
+      const remaining = active ? getTimerRemaining() : timer.seconds;
+      const ratio = timer.seconds > 0 ? remaining / timer.seconds : 0;
+
+      $timer.find(".n21-turn-timer-value").text(
+        timer.seconds > 0 ? formatClock(remaining) : "Sin temporizador",
+      );
+      $timer
+        .find(".n21-turn-timer-fill")
+        .css("width", `${Math.round(ratio * 1000) / 10}%`);
+      $timer.toggleClass("n21-turn-timer--off", !timer.seconds);
+      $timer.toggleClass(
+        "n21-turn-timer--warn",
+        active && remaining > 0 && remaining <= TIMER_WARN_SECONDS,
+      );
+      $timer.toggleClass("n21-turn-timer--zero", active && remaining <= 0);
+    }
+
+    function syncTimerInterval() {
+      const shouldTick = timer.running && timer.seconds > 0;
+      if (shouldTick && !timerInterval) {
+        timerInterval = setInterval(updateTimerDom, 250);
+      } else if (!shouldTick && timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      updateTimerDom();
+    }
+
+    function restartTimer() {
+      timer.startedAt = Date.now();
+      syncTimerInterval();
+    }
+
+    function setTimerRunning(running) {
+      timer.running = !!running;
+      syncTimerInterval();
+    }
+
+    function buildTimerHtml(editable) {
+      if (!editable && !timer.seconds) return "";
+      const config = editable
+        ? `<label class="n21-turn-timer-config" title="Segundos por turno (0 = sin temporizador)">
+             <input type="number" class="n21-turn-timer-input" min="0" step="5" value="${escapeHtml(
+               timer.seconds,
+             )}" />
+             <span>s</span>
+           </label>`
+        : "";
+      const restartAttr = editable
+        ? 'role="button" tabindex="0" title="Reiniciar el temporizador del turno actual"'
+        : "";
+      return `
+        <div class="n21-turn-timer">
+          <div class="n21-turn-timer-row">
+            <i class="ft-clock"></i>
+            <span class="n21-turn-timer-value ${
+              editable ? "n21-turn-timer-value--action" : ""
+            }" ${restartAttr}></span>
+            ${config}
+          </div>
+          <div class="n21-turn-timer-bar"><div class="n21-turn-timer-fill"></div></div>
+        </div>`;
     }
 
     /* ----------------------- shared rendering ----------------------- */
@@ -329,6 +445,7 @@
       return `
         <div class="n21-turn-content">
           ${topBar}
+          ${buildTimerHtml(editable)}
           <div class="n21-turn-list">${listHtml}</div>
           ${bottomBar}
         </div>`;
@@ -502,6 +619,11 @@
         return true;
       }
 
+      if (parsed.type === "timer") {
+        state.timerSeconds = parsed.seconds;
+        return true;
+      }
+
       if (parsed.type === "roster") {
         state.roster = parsed.entries.map((entry) => ({
           shortId: entry.token,
@@ -540,7 +662,12 @@
      * be flipped before replaying — otherwise the oldest roster would win.
      */
     function scanHistoryState() {
-      const state = { roster: [], currentTurn: 0, active: false };
+      const state = {
+        roster: [],
+        currentTurn: 0,
+        active: false,
+        timerSeconds: 0,
+      };
       const containers = document.querySelectorAll(
         ChatUIManager.getChatContainerSelector(),
       );
@@ -601,6 +728,9 @@
       let roster = []; // [{ networkId, initiative }]
       let currentTurn = 0; // 1-based; 0 = not started
       let dirty = false;
+      // Timer seconds last broadcast to the table (null = never sent).
+      let sentTimerSeconds = null;
+      timer.seconds = loadStoredTimerSeconds();
 
       // Debounced chat sender: only the latest message per channel is sent after
       // a short idle period, so rapid actions (stepping turns, re-updating the
@@ -654,6 +784,34 @@
         $block.html(buildBodyHtml(rows, currentTurn, dirty, true));
 
         bindDmEvents($panel);
+        updateTimerDom();
+      }
+
+      // Key of "whose turn it is", to restart the timer only on real changes.
+      function currentTurnKey() {
+        const entry = roster[currentTurn - 1];
+        return entry ? `${currentTurn}|${entry.networkId}` : "";
+      }
+
+      function sendTimerIfChanged() {
+        if (sentTimerSeconds === timer.seconds) return;
+        sentTimerSeconds = timer.seconds;
+        queueChat("timer", `/turno tiempo ${timer.seconds}`);
+      }
+
+      function setTimerSeconds(seconds) {
+        const value = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+        if (value === timer.seconds) return;
+        timer.seconds = value;
+        storeTimerSeconds(value);
+        // Only broadcast while a combat is running; otherwise it goes out with
+        // the next "Actualizar".
+        if (timer.running) {
+          sendTimerIfChanged();
+          restartTimer();
+        } else {
+          updateTimerDom();
+        }
       }
 
       function setDirty(value) {
@@ -711,12 +869,16 @@
 
       function sendRoster() {
         if (!roster.length) return;
+        const previousKey = timer.running ? currentTurnKey() : null;
         // Each channel debounces independently, so a pending turn change is
         // still sent (in the order it was made) instead of being dropped here.
         queueChat("roster", buildRosterCommand());
+        sendTimerIfChanged();
         if (currentTurn < 1) currentTurn = 1;
         dirty = false;
         renderDm();
+        if (currentTurnKey() !== previousKey) restartTimer();
+        setTimerRunning(true);
       }
 
       function goToTurn(turn) {
@@ -725,6 +887,7 @@
         currentTurn = next;
         queueChat("turn", `/turno ${next}`);
         renderDm();
+        restartTimer();
       }
 
       function stepTurn(delta) {
@@ -744,6 +907,7 @@
         roster = [];
         currentTurn = 0;
         dirty = false;
+        setTimerRunning(false);
         closePanel();
       }
 
@@ -762,6 +926,24 @@
           if (!Number.isFinite(index) || !roster[index]) return;
           removeTokens([roster[index].networkId]);
         });
+
+        $panel.on("change.n21turn", ".n21-turn-timer-input", function () {
+          setTimerSeconds(parseInt(this.value, 10));
+        });
+
+        // Clicking the countdown restarts the current turn's timer for everyone
+        // (re-sending the current turn).
+        $panel.on(
+          "click.n21turn keydown.n21turn",
+          ".n21-turn-timer-value--action",
+          (event) => {
+            if (event.type === "keydown" && !["Enter", " "].includes(event.key)) {
+              return;
+            }
+            if (!timer.running || !timer.seconds) return;
+            goToTurn(currentTurn);
+          },
+        );
 
         $panel.on("input.n21turn", ".n21-turn-init", function () {
           const index = Number($(this).closest(".n21-turn-row").data("index"));
@@ -852,6 +1034,12 @@
           roster.length,
         );
         dirty = false;
+        sentTimerSeconds = state.timerSeconds;
+        if (!timer.running) {
+          // History has no timestamps: the countdown restarts on reload.
+          timer.running = true;
+          restartTimer();
+        }
         renderDm();
       }
 
@@ -872,15 +1060,34 @@
       let active = false; // whether a turn order is currently active
       let needsRender = false;
       let retryTimer = null;
+      // Messages already seen, so re-scans of the history don't restart the
+      // timer; only a new turn/timer message does.
+      const seenMessages = new WeakSet();
+      let restartTimerPending = false;
 
       // Recompute the whole state from chat history (order-corrected). This is
       // idempotent, so it's safe no matter how many times the chat history is
       // re-scanned (e.g. when other features call processExistingMessages).
       function rebuildFromHistory() {
+        const previousKey = currentTurn >= 1
+          ? `${currentTurn}|${roster[currentTurn - 1]?.shortId || ""}`
+          : "";
         const state = scanHistoryState();
         roster = state.roster;
         currentTurn = state.currentTurn;
         active = state.active;
+
+        const nextKey = currentTurn >= 1
+          ? `${currentTurn}|${roster[currentTurn - 1]?.shortId || ""}`
+          : "";
+        const timerChanged = timer.seconds !== state.timerSeconds;
+        timer.seconds = state.timerSeconds;
+        timer.running = active;
+        if (restartTimerPending || timerChanged || nextKey !== previousKey) {
+          timer.startedAt = Date.now();
+        }
+        restartTimerPending = false;
+        syncTimerInterval();
       }
 
       function renderPlayer() {
@@ -917,6 +1124,7 @@
         if (!$panel || !$panel.length) return;
         const $block = $panel.find(".floating-block").first();
         $block.html(buildBodyHtml(rows, currentTurn, false, false));
+        updateTimerDom();
 
         // Some tokens may not be loaded yet when reconstructing from history.
         if (unresolved > 0) {
@@ -934,6 +1142,16 @@
         if (!text.includes("/turno")) return;
         if (N21_MESSAGE_REGEX.test(text)) return;
         if (!isFromGameMaster(element)) return;
+
+        // A new turn (even the same one re-sent) or timer message restarts the
+        // countdown.
+        if (!seenMessages.has(element)) {
+          seenMessages.add(element);
+          const parsed = parseTurnCommand(text);
+          if (parsed?.type === "turn" || parsed?.type === "timer") {
+            restartTimerPending = true;
+          }
+        }
 
         // A relevant message appeared in this batch; recompute on onComplete.
         needsRender = true;
