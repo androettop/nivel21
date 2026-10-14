@@ -95,7 +95,8 @@
     function escapeHtml(value) {
       const div = document.createElement("div");
       div.textContent = String(value ?? "");
-      return div.innerHTML;
+      // Also safe inside attribute values.
+      return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     /* ---------- native form fragments (cocoon nested fields) ---------- */
@@ -426,11 +427,12 @@
     }
 
     function iconStyle(node) {
-      if (node.icon) return `background-image: url('${encodeURI(node.icon)}')`;
-      // The native picker writes the chosen icon on .icon-content.
-      const content = node.frag?.querySelector(".select-icon .icon-content");
-      const image = content?.style?.backgroundImage;
-      return image && image !== "none" ? `background-image: ${image}` : "";
+      // A freshly picked icon (the native picker paints .icon-content) wins
+      // over the one the sheet had.
+      const image = node.frag?.querySelector(".select-icon .icon-content")?.style?.backgroundImage || "";
+      const picked = /url\(["']?(.*?)["']?\)/.exec(image)?.[1];
+      const url = picked || node.icon;
+      return url ? `background-image: url('${String(url).replace(/'/g, "%27")}')` : "";
     }
 
     function renderNode(node) {
