@@ -444,6 +444,71 @@
       ],
     });
 
+    /* ---------- Quick ping: double middle click or "F" at the cursor ---------- */
+
+    const DOUBLE_CLICK_MS = 350;
+    const DOUBLE_CLICK_MAX_MOVE_PX = 6;
+    let pointer = null; // last cursor position over the board, canvas coords
+    let lastMiddleDown = null;
+
+    function boardCanvas() {
+      return document.querySelector("#application-canvas");
+    }
+
+    function pingAtCanvasPoint(x, y) {
+      const position = getWorldPositionFromContext({ canvasCoords: { x, y } });
+      if (!position) return;
+      // sendPingCommand keeps its own debounce, so this can't spam the chat.
+      sendPingCommand(position.x, position.z, null);
+    }
+
+    document.addEventListener(
+      "mousemove",
+      (event) => {
+        const canvas = boardCanvas();
+        if (!canvas || event.target !== canvas) {
+          pointer = null;
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      },
+      { passive: true },
+    );
+
+    document.addEventListener("mousedown", (event) => {
+      if (event.button !== 1) return;
+      const canvas = boardCanvas();
+      if (!canvas || event.target !== canvas) return;
+      const now = Date.now();
+      const previous = lastMiddleDown;
+      lastMiddleDown = { time: now, x: event.clientX, y: event.clientY };
+      if (
+        previous &&
+        now - previous.time <= DOUBLE_CLICK_MS &&
+        Math.hypot(event.clientX - previous.x, event.clientY - previous.y) <= DOUBLE_CLICK_MAX_MOVE_PX
+      ) {
+        lastMiddleDown = null;
+        const rect = canvas.getBoundingClientRect();
+        pingAtCanvasPoint(event.clientX - rect.left, event.clientY - rect.top);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (String(event.key).toLowerCase() !== "f") return;
+      const target = event.target;
+      if (
+        target &&
+        (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+      ) {
+        return;
+      }
+      if (!pointer) return; // cursor isn't over the board
+      event.preventDefault();
+      pingAtCanvasPoint(pointer.x, pointer.y);
+    });
+
     ChatManager.onMessage((messageData) => {
       const message = messageData?.message;
       const ping = parsePingMessage(message);
