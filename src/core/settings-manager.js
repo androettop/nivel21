@@ -437,6 +437,84 @@
       });
 
       this.registerSetting({
+        name: "chat-consent.spell-cast",
+        label: "Anunciar en el chat los conjuros lanzados",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.ambient-fx",
+        label: "Enviar al chat los efectos ambientales",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.turn-order",
+        label: "Enviar al chat el orden de turnos",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.ping",
+        label: "Enviar al chat los pings",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.send-to-chat",
+        label: "Compartir contenido al chat",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.token-notes",
+        label: "Enviar notas de tokens al chat",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
         name: "send-to-chat.modifier",
         label: "Tecla para compartir al chat",
         type: "select",

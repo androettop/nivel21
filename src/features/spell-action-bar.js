@@ -261,10 +261,16 @@
           const ChatManager = window._n21_.managers.ChatManager;
           const senderInfo = $(element).closest(".action-bar").attr("data-sender-info");
           const spellName = action.n21_spell_name || action.name;
-          ChatManager?.send(
-            `Lanza ${spellName}${action.n21_concentration ? " (concentración)" : ""}`,
-            senderInfo ? { sender_info: senderInfo } : {},
-          );
+          const message = `Lanza ${spellName}${action.n21_concentration ? " (concentración)" : ""}`;
+          // The spell is cast either way; only the chat notice is optional.
+          window._n21_.chatConsent
+            ?.confirm("spell-cast", {
+              title: "¿Anunciar el conjuro en el chat?",
+              description: `Se enviará «${message}».`,
+            })
+            .then((send) => {
+              if (send) ChatManager?.send(message, senderInfo ? { sender_info: senderInfo } : {});
+            });
         }
 
         if (action.n21_consume_slot && charId) spendSlot(charId, Number(action.n21_spell_level));

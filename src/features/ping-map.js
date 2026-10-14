@@ -414,7 +414,16 @@
         commandArgs += ` ${emoji}`;
       }
 
-      ChatManager.send(commandArgs, messageOptions);
+      // The ping reaches everyone (and shows) through this message.
+      window._n21_.chatConsent
+        ?.confirm("ping", {
+          title: "¿Enviar el ping al chat?",
+          description: "Los pings se muestran a todos mediante un mensaje en el chat.",
+          required: true,
+        })
+        .then((send) => {
+          if (send) ChatManager.send(commandArgs, messageOptions);
+        });
     }
 
     CanvasDropdownManager.registerOption({

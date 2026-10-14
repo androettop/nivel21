@@ -898,14 +898,29 @@
         closePanel();
       }
 
+      /**
+       * Turn changes reach players through the chat: ask first and only
+       * apply the change if it will be sent.
+       */
+      async function withChatConsent(action) {
+        const send = await window._n21_.chatConsent?.confirm("turn-order", {
+          title: "¿Enviar el orden de turnos al chat?",
+          description: "El orden de turnos se sincroniza con los jugadores mediante mensajes en el chat.",
+          required: true,
+        });
+        if (send === false) return false;
+        action();
+        return true;
+      }
+
       function bindDmEvents($panel) {
         $panel.off(".n21turn");
 
         $panel.on("click.n21turn", ".n21-turn-sort", () => sortByInitiative());
-        $panel.on("click.n21turn", ".n21-turn-end", () => finalize());
-        $panel.on("click.n21turn", ".n21-turn-update", () => sendRoster());
-        $panel.on("click.n21turn", ".n21-turn-prev", () => stepTurn(-1));
-        $panel.on("click.n21turn", ".n21-turn-next", () => stepTurn(1));
+        $panel.on("click.n21turn", ".n21-turn-end", () => withChatConsent(() => finalize()));
+        $panel.on("click.n21turn", ".n21-turn-update", () => withChatConsent(() => sendRoster()));
+        $panel.on("click.n21turn", ".n21-turn-prev", () => withChatConsent(() => stepTurn(-1)));
+        $panel.on("click.n21turn", ".n21-turn-next", () => withChatConsent(() => stepTurn(1)));
 
         $panel.on("click.n21turn", ".n21-turn-remove", function (event) {
           event.stopPropagation();
@@ -914,8 +929,15 @@
           removeTokens([roster[index].networkId]);
         });
 
-        $panel.on("change.n21turn", ".n21-turn-timer-input", function () {
-          setTimerSeconds(parseInt(this.value, 10));
+        $panel.on("change.n21turn", ".n21-turn-timer-input", async function () {
+          const value = parseInt(this.value, 10);
+          // Only a running combat broadcasts the change right away.
+          if (!timer.running || dirty) {
+            setTimerSeconds(value);
+            return;
+          }
+          const applied = await withChatConsent(() => setTimerSeconds(value));
+          if (!applied) this.value = timer.seconds;
         });
 
         // Clicking the countdown restarts the current turn's timer for everyone
@@ -928,7 +950,7 @@
               return;
             }
             if (!timer.running || !timer.seconds) return;
-            goToTurn(currentTurn);
+            withChatConsent(() => goToTurn(currentTurn));
           },
         );
 

@@ -40,6 +40,7 @@
     await injectScript("src/core/resource-icons.js");
     await injectScript("src/core/weather-renderer.js");
     await injectScript("src/core/action-bar-layout.js");
+    await injectScript("src/core/chat-consent.js");
 
     // 3. Load managers and features in parallel
     await Promise.all([

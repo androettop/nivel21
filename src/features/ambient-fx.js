@@ -211,8 +211,15 @@
       return senderInfoElement?.value || null;
     }
 
-    function sendCommandToChat(commandText, { debounce = false } = {}) {
+    async function sendCommandToChat(commandText, { debounce = false } = {}) {
       if (!commandText) return;
+      // The effect reaches everyone (and is applied) through this message.
+      const send = await window._n21_.chatConsent?.confirm("ambient-fx", {
+        title: "¿Enviar los efectos ambientales al chat?",
+        description: "Los efectos se sincronizan con los jugadores mediante un mensaje en el chat.",
+        required: true,
+      });
+      if (send === false) return;
       const senderInfo = getSenderInfo();
       const messageOptions = { visibility: "public" };
       if (senderInfo) {

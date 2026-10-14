@@ -2530,3 +2530,93 @@ span[n21-h] {
 	opacity: 1;
 	color: #e0a020;
 }
+
+/* ----------------------- Chat consent ----------------------- */
+
+.n21-chat-consent {
+	position: fixed;
+	inset: 0;
+	z-index: 13000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.n21-chat-consent-box {
+	width: min(420px, calc(100vw - 32px));
+	padding: 16px;
+	border: 1px solid #3a3d42;
+	border-radius: 10px;
+	background: #1d1e21;
+	color: #ecebe8;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+	font-size: 14px;
+}
+
+.n21-chat-consent-box h5 {
+	margin: 0 0 8px;
+	font-size: 16px;
+	font-weight: 700;
+	color: inherit;
+}
+
+.n21-chat-consent-box p {
+	margin: 0 0 8px;
+}
+
+.n21-chat-consent-warning {
+	color: #e0a020;
+}
+
+.n21-chat-consent-remember {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0 12px;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.n21-chat-consent-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.n21-chat-consent-actions button {
+	height: 34px;
+	padding: 0 14px;
+	border: 1px solid #3a3d42;
+	border-radius: 6px;
+	background: rgba(255, 255, 255, 0.06);
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.n21-chat-consent-actions .n21-chat-consent-yes {
+	background: #6e1a16;
+	border-color: #a3271f;
+}
+
+.n21-chat-consent-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 90px;
+	z-index: 13001;
+	transform: translateX(-50%);
+	max-width: min(520px, calc(100vw - 32px));
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: rgba(23, 24, 26, 0.95);
+	color: #ecebe8;
+	font-size: 14px;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+	transition: opacity 400ms ease;
+}
+
+.n21-chat-consent-toast--out {
+	opacity: 0;
+}

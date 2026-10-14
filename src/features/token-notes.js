@@ -200,17 +200,26 @@
 
         if (!name && !imageUrl && !description) return;
 
-        ChatManager.sendJsonMessage(
-          {
-            name,
-            imageUrl,
-            description,
-            border_type: borderType,
-            border_color: borderColor,
-          },
-          {},
-          TOKEN_NOTES_CHAT_KEY,
-        );
+        window._n21_.chatConsent
+          ?.confirm("token-notes", {
+            title: "¿Enviar las notas del token al chat?",
+            description: "Todos los jugadores verán el token y sus notas en el chat.",
+            required: true,
+          })
+          .then((send) => {
+            if (!send) return;
+            ChatManager.sendJsonMessage(
+              {
+                name,
+                imageUrl,
+                description,
+                border_type: borderType,
+                border_color: borderColor,
+              },
+              {},
+              TOKEN_NOTES_CHAT_KEY,
+            );
+          });
       },
     });
 

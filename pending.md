@@ -34,3 +34,4 @@
 - [x] **Inventario**: botón de editar que abre el equipo en la hoja (URL de la campaña).
 - Inventario: los objetos se reordenan arrastrando; el orden es local (localStorage por personaje, clave por id del objeto).
 - Lanzar un conjuro de nivel (botón «Lanzar» o el propio botón en conjuros de curación/utilidad) gasta un espacio de ese nivel; si no hay, uno de pacto de nivel igual o mayor; si no queda ninguno, no descuenta. Los ataques y los trucos no gastan.
+- Mensajes al chat: antes de enviar, se pregunta (Enviar / No enviar + «No volver a preguntar», que guarda la elección en Configuración > Chat y lo avisa). En clima, turnos, ping, compartir y notas de token, «No enviar» no aplica el cambio; en el anuncio de conjuros el conjuro se lanza igual.
