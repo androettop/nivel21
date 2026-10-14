@@ -172,10 +172,9 @@
     /**
      * Parse a "/turno ..." command from raw message text.
      * Returns one of:
-     *   { type: "roster", entries: [{ token, initiative }] }  (token = short id)
+     *   { type: "roster", entries: [{ token, initiative }], timerSeconds }  (token = short id)
      *   { type: "turn", turn: number }
      *   { type: "end" }
-     *   { type: "timer", seconds: number }
      *   null (not a turno command)
      */
     function parseTurnCommand(text) {
@@ -188,14 +187,6 @@
       const args = parts.slice(1).filter(Boolean);
       if (!args.length) return null;
 
-      // "/turno tiempo N": seconds per turn for the combat timer (0 = off).
-      // Clients without timer support ignore it (it isn't a roster nor a turn).
-      if (args.length === 2 && args[0].toLowerCase() === "tiempo") {
-        const seconds = parseInt(args[1], 10);
-        if (!Number.isFinite(seconds) || seconds < 0) return null;
-        return { type: "timer", seconds };
-      }
-
       if (args.length === 1) {
         const single = args[0].toLowerCase();
         if (single === "fin") return { type: "end" };
@@ -205,7 +196,17 @@
       }
 
       if (args.every((arg) => arg.includes(":"))) {
-        const entries = args.map((arg) => {
+        // The roster also carries the seconds per turn as "tiempo:N" (no
+        // extra chat message for the timer). Absent = no timer.
+        let timerSeconds = 0;
+        const tokens = args.filter((arg) => {
+          const [key, value] = arg.split(":");
+          if (key.toLowerCase() !== "tiempo") return true;
+          const seconds = parseInt(value, 10);
+          timerSeconds = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+          return false;
+        });
+        const entries = tokens.map((arg) => {
           const idx = arg.indexOf(":");
           const token = arg.slice(0, idx);
           const initiative = parseInt(arg.slice(idx + 1), 10);
@@ -214,7 +215,7 @@
             initiative: Number.isFinite(initiative) ? initiative : 0,
           };
         });
-        return { type: "roster", entries };
+        return { type: "roster", entries, timerSeconds };
       }
 
       return null;
@@ -223,7 +224,7 @@
     /* ----------------------- turn timer ----------------------- */
 
     // Purely visual countdown shared by DM and players. The DM picks the
-    // seconds per turn ("/turno tiempo N"); every client restarts its local
+    // seconds per turn (sent inside the roster as "tiempo:N"); every client restarts its local
     // countdown when the turn changes. Reaching 0 does nothing but turn red.
     const TIMER_STORAGE_KEY = "_n21_turn-order.timer-seconds";
     const TIMER_WARN_SECONDS = 10;
@@ -619,12 +620,8 @@
         return true;
       }
 
-      if (parsed.type === "timer") {
-        state.timerSeconds = parsed.seconds;
-        return true;
-      }
-
       if (parsed.type === "roster") {
+        state.timerSeconds = parsed.timerSeconds || 0;
         state.roster = parsed.entries.map((entry) => ({
           shortId: entry.token,
           initiative: entry.initiative,
@@ -728,8 +725,6 @@
       let roster = []; // [{ networkId, initiative }]
       let currentTurn = 0; // 1-based; 0 = not started
       let dirty = false;
-      // Timer seconds last broadcast to the table (null = never sent).
-      let sentTimerSeconds = null;
       timer.seconds = loadStoredTimerSeconds();
 
       // Debounced chat sender: only the latest message per channel is sent after
@@ -758,10 +753,9 @@
       }
 
       function buildRosterCommand() {
-        return (
-          "/turno " +
-          roster.map((e) => `${shortId(e.networkId)}:${e.initiative}`).join(" ")
-        );
+        const entries = roster.map((e) => `${shortId(e.networkId)}:${e.initiative}`);
+        if (timer.seconds > 0) entries.push(`tiempo:${timer.seconds}`);
+        return "/turno " + entries.join(" ");
       }
 
       function renderDm() {
@@ -793,21 +787,15 @@
         return entry ? `${currentTurn}|${entry.networkId}` : "";
       }
 
-      function sendTimerIfChanged() {
-        if (sentTimerSeconds === timer.seconds) return;
-        sentTimerSeconds = timer.seconds;
-        queueChat("timer", `/turno tiempo ${timer.seconds}`);
-      }
-
       function setTimerSeconds(seconds) {
         const value = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
         if (value === timer.seconds) return;
         timer.seconds = value;
         storeTimerSeconds(value);
-        // Only broadcast while a combat is running; otherwise it goes out with
-        // the next "Actualizar".
-        if (timer.running) {
-          sendTimerIfChanged();
+        // While a combat is running the roster is re-sent with the new value
+        // (a single message); otherwise it goes out with the next "Actualizar".
+        if (timer.running && !dirty) {
+          queueChat("roster", buildRosterCommand());
           restartTimer();
         } else {
           updateTimerDom();
@@ -873,7 +861,6 @@
         // Each channel debounces independently, so a pending turn change is
         // still sent (in the order it was made) instead of being dropped here.
         queueChat("roster", buildRosterCommand());
-        sendTimerIfChanged();
         if (currentTurn < 1) currentTurn = 1;
         dirty = false;
         renderDm();
@@ -1034,7 +1021,10 @@
           roster.length,
         );
         dirty = false;
-        sentTimerSeconds = state.timerSeconds;
+        if (state.timerSeconds) {
+          timer.seconds = state.timerSeconds;
+          storeTimerSeconds(state.timerSeconds);
+        }
         if (!timer.running) {
           // History has no timestamps: the countdown restarts on reload.
           timer.running = true;
@@ -1143,12 +1133,11 @@
         if (N21_MESSAGE_REGEX.test(text)) return;
         if (!isFromGameMaster(element)) return;
 
-        // A new turn (even the same one re-sent) or timer message restarts the
-        // countdown.
+        // A new turn message (even the same turn re-sent) restarts the countdown.
         if (!seenMessages.has(element)) {
           seenMessages.add(element);
           const parsed = parseTurnCommand(text);
-          if (parsed?.type === "turn" || parsed?.type === "timer") {
+          if (parsed?.type === "turn") {
             restartTimerPending = true;
           }
         }
