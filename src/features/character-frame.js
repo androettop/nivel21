@@ -111,18 +111,43 @@
     const SHIELD_ICON =
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>';
 
+    const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+    const SHORT_WORDS = new Set(["de", "del", "la", "el", "los", "las", "y", "a", "en"]);
+    const MAX_PIPS = 8;
+
+    /** Short label: roman numeral for slot levels, initials for the rest. */
+    function shortLabel(resource) {
+      if (resource.category === "spell_slots") return ROMAN[resource.id] || resource.id;
+      if (resource.category === "pact_spell_slots") return `P${ROMAN[resource.id] || resource.id}`;
+      const name = String(resource.label || resource.name || "");
+      const words = name.split(/\s+/).filter((w) => w && !SHORT_WORDS.has(w.toLowerCase()));
+      const initials = words
+        .map((w) => (/^\d+$/.test(w) ? w : w.charAt(0).toUpperCase()))
+        .join("")
+        .slice(0, 3);
+      return initials || name.slice(0, 2);
+    }
+
     function buildResourceHtml(resource, source) {
-      const remaining = resource.max - resource.used;
-      const empty = remaining <= 0 ? "n21-cframe-res--empty" : "";
+      const remaining = Math.max(resource.max - resource.used, 0);
+      const fullName = resource.label || resource.name;
       const attrs =
         source === "native"
           ? `data-source="native" data-category="${escapeHtml(resource.category)}" data-id="${escapeHtml(resource.id)}"`
           : `data-source="local" data-id="${escapeHtml(resource.id)}"`;
+      const pips =
+        resource.max <= MAX_PIPS
+          ? `<span class="n21-cframe-res-pips n21-cframe-res-pips--${Math.min(resource.max, 4)}">${Array.from(
+              { length: resource.max },
+              (_, i) => `<i class="${i < remaining ? "n21-cframe-pip--on" : ""}"></i>`,
+            ).join("")}</span>`
+          : `<span class="n21-cframe-res-count">${remaining}/${resource.max}</span>`;
       return `
-        <button type="button" class="n21-cframe-res ${empty}" ${attrs}
-          title="${escapeHtml(resource.label || resource.name)}: quedan ${remaining} de ${resource.max}. Click: gastar · Click derecho: recuperar">
-          <span class="n21-cframe-res-label">${escapeHtml(resource.label || resource.name)}</span>
-          <span class="n21-cframe-res-value">${remaining}/${resource.max}</span>
+        <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
+          title="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}. Click: gastar · Click derecho: recuperar"
+          aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
+          <span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>
+          ${pips}
         </button>`;
     }
 
