@@ -100,7 +100,7 @@
 
     _invalidate(charId) {
       this._sheetDocs.delete(String(charId));
-      this._invalidate(charId);
+      this._sheetManager.invalidate(`/characters/${charId}.json`);
     }
 
     async _fetchDocument(url) {
