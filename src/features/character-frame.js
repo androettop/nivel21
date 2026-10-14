@@ -112,22 +112,12 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>';
 
     const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
-    const SHORT_WORDS = new Set(["de", "del", "la", "el", "los", "las", "y", "a", "en"]);
     const MAX_PIPS = 8;
 
-    /** Short label: roman numeral for slot levels, initials for the rest. */
-    function shortLabel(resource) {
-      if (resource.category === "spell_slots") return ROMAN[resource.id] || resource.id;
-      if (resource.category === "pact_spell_slots") return `P${ROMAN[resource.id] || resource.id}`;
-      const name = String(resource.label || resource.name || "");
-      const level = /\bnivel\s*(\d)\b/i.exec(name);
-      if (level && ROMAN[level[1]]) return ROMAN[level[1]];
-      const words = name.split(/\s+/).filter((w) => w && !SHORT_WORDS.has(w.toLowerCase()));
-      const initials = words
-        .map((w) => (/^\d+$/.test(w) ? w : w.charAt(0).toUpperCase()))
-        .join("")
-        .slice(0, 3);
-      return initials || name.slice(0, 2);
+    /** Fallback "icon" for resources we don't recognize: their initial. */
+    function initialOf(resource) {
+      const name = String(resource.label || resource.name || "").trim();
+      return (name.match(/[\p{L}\p{N}]/u)?.[0] || "?").toUpperCase();
     }
 
     /** Roman numeral for spell slots (native, or custom named "... nivel N"). */
@@ -173,7 +163,7 @@
           ? `<span class="n21-cframe-res-icon" style="--n21-res-icon: url('${escapeHtml(
               icon.iconUrl,
             )}'); --n21-res-color: ${icon.color}"></span>`
-          : `<span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>`;
+          : `<span class="n21-cframe-res-initial">${escapeHtml(initialOf(resource))}</span>`;
         content = `${glyph}${
           resource.max > 1 ? `<span class="n21-cframe-res-bottom">${remaining}</span>` : ""
         }`;
@@ -181,7 +171,7 @@
 
       return `
         <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
-          title="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}. Click: gastar · Click derecho: recuperar"
+          title="${escapeHtml(fullName)} (${remaining}/${resource.max})&#10;Click: gastar · Click derecho: recuperar"
           aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
           ${content}
         </button>`;

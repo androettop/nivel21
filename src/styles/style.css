@@ -1376,7 +1376,7 @@ span[n21-h] {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	max-width: min(440px, calc(100% - 24px));
+	max-width: calc(100% - 24px);
 	color: var(--n21-cf-text);
 	font-size: 14px;
 	line-height: 1.3;
@@ -1583,11 +1583,14 @@ span[n21-h] {
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
+/* All resources in a single row; scrolls sideways if the screen is narrow. */
 .n21-cframe-resources {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 10px 4px;
-	padding: 7px 0 6px;
+	flex-wrap: nowrap;
+	gap: 4px;
+	padding: 2px 0;
+	overflow-x: auto;
+	scrollbar-width: thin;
 }
 
 /* BG3-like resource button: fixed size, content centered; slot levels sit
@@ -1598,9 +1601,10 @@ span[n21-h] {
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	width: 40px;
-	height: 40px;
+	width: 42px;
+	height: 42px;
 	padding: 0;
+	overflow: hidden;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 4px;
 	background: var(--n21-cf-surface);
@@ -1632,22 +1636,21 @@ span[n21-h] {
 }
 
 .n21-cframe-res-top {
-	top: -7px;
+	top: 1px;
 	font-family: Georgia, "Times New Roman", serif;
 }
 
 .n21-cframe-res-bottom {
-	bottom: -6px;
+	bottom: 1px;
 	font-variant-numeric: tabular-nums;
 }
 
-.n21-cframe-res-label {
-	font-size: 14px;
+.n21-cframe-res-initial {
+	font-size: 22px;
 	font-weight: 700;
-	line-height: 14px;
-	max-width: 100%;
-	overflow: hidden;
-	white-space: nowrap;
+	line-height: 1;
+	font-family: Georgia, "Times New Roman", serif;
+	color: #d9d6cf;
 }
 
 .n21-cframe-res-icon {
@@ -1681,6 +1684,17 @@ span[n21-h] {
 	font-size: 14px;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
+}
+
+/* Leave room for the label: slot squares sit a bit lower, icons a bit higher. */
+.n21-cframe-res-top ~ .n21-cframe-res-pips,
+.n21-cframe-res-top ~ .n21-cframe-res-count {
+	margin-top: 10px;
+}
+
+.n21-cframe-res-icon:not(:last-child),
+.n21-cframe-res-initial:not(:last-child) {
+	margin-bottom: 8px;
 }
 
 /* Out of uses: the whole button looks disabled. */
