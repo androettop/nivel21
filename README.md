@@ -72,12 +72,14 @@ Sistema de capas para organizar y posicionar tokens en profundidad. Permite que 
 
 ### Auras de Token
 
-Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados.
+Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos, terreno difícil, trampas o estados.
 
 - **Click derecho en token (DM)** - Opción "Modificar Aura"
+- **Forma** - Círculo, Rectángulo, Cono o Línea
 - **Color** - Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja o Púrpura
-- **Radio** - Define el tamaño del aura en celdas (admite decimales)
-- **Radio 0** - Elimina el aura del token
+- **Tamaño** - Radio, ancho/alto o longitud en casillas (admite decimales); los conos tienen apertura y los conos y líneas, dirección
+- **Solo aura** - Oculta el token a los jugadores y deja ver solo el área (el DM lo ve semitransparente): ideal para marcar zonas con un token
+- Las auras no se ven sobre tokens que el jugador no puede ver
 
 <a id="token-aura">
  <img src="popup/img/token-aura.png" alt="Auras de Token" />
@@ -122,9 +124,70 @@ Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma 
 - **Botón en el menú lateral** - Vuelve a abrir el panel cuando quieras, por si se cierra
 - **Tus tokens resaltados** - A cada jugador se le marcan sus propios tokens
 - **Resaltar en el mapa** - Pasa el mouse por una fila para ver de qué token se trata, marcado en el mapa
+- **Temporizador por turno (opcional)** - El DM define los segundos por turno; todos ven la cuenta regresiva, que se reinicia al cambiar de turno. Al llegar a 0 solo se pone en rojo
 
 <a id="turn-order">
  <img src="popup/img/turn-order.png" alt="Orden de Turnos" />
+</a>
+
+---
+
+### Marco de personaje
+
+Muestra en la esquina superior izquierda del tablero al personaje o criatura seleccionado (la misma lógica para el DM y los jugadores).
+
+- **Retrato** - Abre la hoja del personaje
+- **Vida y CA** - Click en la vida para curar, dañar o dar puntos temporales. Si tiene el estado Concentración y recibe daño, ofrece tirar la salvación de Constitución con la CD correcta
+- **Recursos** - Espacios de conjuro (con su número romano) y recursos con icono propio (Furia, Canalizar divinidad, Puntos de ki, Acciones legendarias…). Click gasta, click derecho recupera
+- **Estados** - Click derecho quita un estado; el botón **+** permite buscar y agregar uno
+
+Las ediciones solo están disponibles si tienes permiso para editar la vida de ese personaje en Nivel20, y se guardan con un pequeño retraso para no saturar el servidor si haces muchos clicks.
+
+<a id="character-frame">
+ <img src="popup/img/character-frame.png" alt="Marco de personaje" />
+</a>
+
+<a id="character-frame-hp">
+ <img src="popup/img/character-frame-hp.png" alt="Daño con salvación de concentración" />
+</a>
+
+---
+
+### Recursos de criaturas
+
+Las criaturas no tienen recursos en Nivel20: el DM puede crearles casillas propias (conjuros por nivel, acciones legendarias, usos de rasgos…) desde **Recursos de criaturas** en el menú lateral o con click derecho en un token asignado. Se guardan en el navegador del DM y también se muestran en el marco de personaje.
+
+<a id="creature-resources">
+ <img src="popup/img/creature-resources.png" alt="Recursos de criaturas" />
+</a>
+
+---
+
+### Barras de vida y estados en los tokens
+
+Los tokens asignados a un personaje o criatura muestran su barra de vida debajo y los iconos de sus estados sobre el borde derecho. Cada jugador solo los ve en los personajes y criaturas que puede ver en su panel (el DM los ve todos).
+
+Si el personaje o criatura tiene el estado **Invisible**, su token se oculta a quienes no lo ven en su panel; quienes sí lo ven, lo ven semitransparente. No se cambia nada en Nivel20: sin la extensión, todos siguen viendo el token.
+
+<a id="token-status">
+ <img src="popup/img/token-status.png" alt="Barras de vida y estados en los tokens" />
+</a>
+
+---
+
+### Editor de la barra de acciones
+
+En la página **Editar acciones** del personaje reemplaza la lista del formulario por un árbol:
+
+- **Arrastrar y soltar** - Ordena las acciones o suéltalas en el centro de una carpeta para meterlas dentro, con carpetas en varios niveles
+- **Icono y nombre** - Click en el icono para cambiarlo y en el nombre para renombrar
+- **Carpetas de Nivel21** - Conjuros, Acciones, Rasgos e Inventario se pueden reordenar y ocultar
+- **Acciones por defecto** - Pruebas de habilidad y Tiradas de salvación se pueden ocultar
+
+Se guarda en el mismo formulario de Nivel20 al pulsar «Actualizar Personaje». El orden de lo que Nivel20 no guarda (carpetas de Nivel21) queda por personaje en tu navegador.
+
+<a id="action-bar-editor">
+ <img src="popup/img/action-bar-editor.png" alt="Editor de la barra de acciones" />
 </a>
 
 ---
@@ -269,8 +332,16 @@ Evita que los tokens se desacomoden al arrastrar varios a la vez por largas dist
 
 Crea capas de color sobre el tablero para simular horas del día, clima o eventos astronómicos. El DM puede ajustar color, intensidad y modo de fusión para ambientar la escena.
 
+- **Clima animado** - Lluvia, tormenta, nieve, niebla, nubes o brasas, con su intensidad. Se mueve con la cámara y solo cubre el mapa
+- **Vista previa** - Muestra el color y el clima solo en tu pantalla antes de aplicarlos
+- **Equipos lentos** - Cada usuario puede desactivar el clima animado en Configuración > Avanzado
+
 <a id="ambient-fx">
  <img src="popup/img/ambient-fx.png" alt="Efectos Ambientales" />
+</a>
+
+<a id="ambient-weather">
+ <img src="popup/img/ambient-weather.png" alt="Clima animado" />
 </a>
 
 ---
@@ -373,6 +444,12 @@ Agrega automáticamente una carpeta "Rasgos" al final de la barra de un personaj
 Agrega un botón "Inventario" al final de la barra de un personaje que abre un panel flotante con sus objetos (armas, armaduras y equipo) en una grilla, con el dinero calculado en la parte inferior.
 
 - **Botón de refrescar** - Vuelve a descargar la hoja del personaje (limitado a una vez cada 10 segundos para no saturar el servidor)
+- **Botón de editar** - Abre el equipo en la hoja del personaje
+- **Cantidad** - Cada objeto muestra su cantidad sobre el icono
+- **Click derecho en un objeto** - Usar uno (−1), Añadir uno (+1) o Eliminar objeto
+- **Click derecho en el dinero** - Editar las monedas
+
+Los cambios usan los mismos formularios que la hoja del personaje. La cantidad se guarda como `[qty:N]` al final de la descripción del objeto (nunca se borra texto: si no hay espacio, no se guarda).
 
 <a id="inventory-panel">
  <img src="popup/img/inventory-panel.png" alt="Inventario en la barra de acciones" />
@@ -423,6 +500,7 @@ Herramientas para los DMs que permiten controlar la cámara del mapa mediante el
 Sistema de marcadores visuales animados para señalar ubicaciones en el mapa. Soporta múltiples presets con iconos animados y colores personalizados.
 
 - **Click derecho en mapa** - Menú de ping
+- **Doble click de la ruedita o tecla F** - Ping rápido donde apunta el cursor (la F solo funciona con el cursor sobre el tablero y sin escribir en ningún campo)
 - **Comando manual** - `/ping x z [color] [icon]`
 
 <a id="ping-map">

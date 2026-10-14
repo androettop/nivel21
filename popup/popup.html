@@ -138,10 +138,13 @@
         </button>
         <div class="feature-body">
           <div class="feature-description">
-            Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos o estados.
+            Asigna un aura de color alrededor de un token para representar zonas de efecto, rangos de hechizos, terreno difícil, trampas o estados.
           </div>
           <div class="feature-description">
-            <b>Click derecho en token (DM):</b> Opción "Modificar Aura" para elegir color (Blanco, Negro, Rojo, Verde, Azul, Amarillo, Naranja, Púrpura) y radio. Un radio de 0 elimina el aura.
+            <b>Click derecho en token (DM):</b> Opción "Modificar Aura" para elegir forma (círculo, rectángulo, cono o línea), color, tamaño en casillas y, en conos y líneas, la dirección.
+          </div>
+          <div class="feature-description">
+            <b>Solo aura:</b> oculta el token a los jugadores y deja ver solo el área (el DM lo ve semitransparente).
           </div>
           <img
             src="img/token-aura.png"
@@ -237,9 +240,103 @@
             Pasa el mouse por una fila para resaltar ese token en el mapa y saber
             de quién se trata.
           </div>
+          <div class="feature-description">
+            <b>Temporizador por turno (opcional):</b> el DM define los segundos
+            por turno y todos ven la cuenta regresiva, que se reinicia al
+            cambiar de turno. Al llegar a 0 solo se pone en rojo.
+          </div>
           <img
             src="img/turn-order.png"
             alt="Orden de Turnos"
+            class="feature-screenshot"
+          />
+        </div>
+      </div>
+
+      <!-- Marco de personaje -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Marco de personaje</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Muestra arriba a la izquierda del tablero al personaje o criatura seleccionado: retrato (abre la hoja), CA, vida, recursos y estados.
+          </div>
+          <div class="feature-description">
+            <b>Click en la vida:</b> curar, dañar o dar puntos temporales. Si tiene Concentración y recibe daño, ofrece tirar la salvación de Constitución.
+          </div>
+          <div class="feature-description">
+            <b>Recursos:</b> click gasta, click derecho recupera. <b>Estados:</b> click derecho para quitar, <b>+</b> para buscar y agregar.
+          </div>
+          <div class="feature-description">
+            Solo puedes editar si tienes permiso para editar la vida de ese personaje en Nivel20.
+          </div>
+          <img
+            src="img/character-frame.png"
+            alt="Marco de personaje"
+            class="feature-screenshot"
+          />
+          <img
+            src="img/character-frame-hp.png"
+            alt="Daño con salvación de concentración"
+            class="feature-screenshot"
+          />
+        </div>
+      </div>
+
+      <!-- Recursos de criaturas -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Recursos de criaturas</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            El DM puede crear casillas propias para sus criaturas (conjuros por nivel, acciones legendarias, usos de rasgos…). Se guardan en su navegador y se ven en el marco de personaje.
+          </div>
+          <img
+            src="img/creature-resources.png"
+            alt="Recursos de criaturas"
+            class="feature-screenshot"
+          />
+        </div>
+      </div>
+
+      <!-- Barras de vida y estados en los tokens -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Barras de vida y estados en los tokens</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Los tokens asignados a un personaje o criatura muestran su vida y los iconos de sus estados. Cada jugador solo los ve en los que puede ver en su panel.
+          </div>
+          <div class="feature-description">
+            <b>Estado Invisible:</b> el token se oculta a quienes no ven a ese personaje o criatura en su panel. Sin la extensión, todos siguen viendo el token.
+          </div>
+          <img
+            src="img/token-status.png"
+            alt="Barras de vida y estados en los tokens"
+            class="feature-screenshot"
+          />
+        </div>
+      </div>
+
+      <!-- Editor de la barra de acciones -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Editor de la barra de acciones</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            En "Editar acciones" del personaje: arrastra para ordenar y anidar carpetas en varios niveles, click en el icono o el nombre para cambiarlos, y muestra u oculta las carpetas de Nivel21 y las acciones por defecto.
+          </div>
+          <img
+            src="img/action-bar-editor.png"
+            alt="Editor de la barra de acciones"
             class="feature-screenshot"
           />
         </div>
@@ -536,9 +633,20 @@
             clima o eventos astronómicos. Puedes ajustar color, intensidad y modo
             de fusión para ambientar cada escena.
           </div>
+          <div class="feature-description">
+            <b>Clima animado:</b> lluvia, tormenta, nieve, niebla, nubes o
+            brasas. Se mueve con la cámara y solo cubre el mapa. Cada usuario
+            puede desactivarlo en Configuración &gt; Avanzado si su equipo es
+            lento.
+          </div>
           <img
             src="img/ambient-fx.png"
             alt="Efectos Ambientales"
+            class="feature-screenshot"
+          />
+          <img
+            src="img/ambient-weather.png"
+            alt="Clima animado"
             class="feature-screenshot"
           />
         </div>
@@ -738,6 +846,12 @@
           <div class="feature-description">
             <b>Botón de refrescar:</b> vuelve a descargar la hoja del personaje
             (limitado a una vez cada 10 segundos para no saturar el servidor).
+            El botón del lápiz abre el equipo en la hoja.
+          </div>
+          <div class="feature-description">
+            Cada objeto muestra su cantidad. <b>Click derecho</b> en un objeto
+            para usar uno, añadir uno o eliminarlo, y sobre el dinero para
+            editar las monedas. Se usan los mismos formularios de la hoja.
           </div>
           <img
             src="img/inventory-panel.png"
@@ -839,6 +953,10 @@
           <div class="hotkey">
             <span class="hotkey-key">Click derecho en mapa</span>
             <span class="hotkey-description">Menú de ping</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Doble click ruedita / F</span>
+            <span class="hotkey-description">Ping rápido en el cursor</span>
           </div>
           <div class="hotkey">
             <span class="hotkey-key">/ping x z [color] [icon]</span>

@@ -16,8 +16,8 @@
 
 ## Cierre
 - [ ] Revisar dependencias entre features: declararlas y desactivar automáticamente las que dependan de una feature desactivada.
-- [ ] Capturas con Playwright para README y popup
-- [ ] Documentación en README + entradas del popup
+- [x] Capturas con Playwright para README y popup
+- [x] Documentación en README + entradas del popup
 
 ## Notas / limitaciones
 - Temporizador: el historial del chat no tiene marcas de tiempo, así que al recargar la página la cuenta regresiva del turno actual se reinicia. Los segundos viajan dentro del mensaje del orden de turnos (`tiempo:N`), sin mensajes extra; versiones viejas de la extensión verían una fila «??» extra.
