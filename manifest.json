@@ -95,6 +95,7 @@
         "src/features/center-camera-here.js",
         "src/features/ping-map.js",
         "src/features/straighten-camera.js",
+        "src/features/camera-rotation-lock.js",
         "src/features/generate-spell-actions.js",
         "src/features/spell-action-bar.js",
         "src/features/actions-bar.js",

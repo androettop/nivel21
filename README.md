@@ -495,6 +495,9 @@ Herramientas para los DMs que permiten controlar la cámara del mapa mediante el
 - **Centrar cámara a todos** - Centra rápidamente la cámara de todos los jugadores en cualquier punto del mapa
 - **Enderezar cámara** - Restablece la rotación de la cámara a 0 grados para una vista ortogonal perfecta
 
+- **Enderezar cámara** solo aparece en el menú cuando la cámara está girada
+- **Bloquear rotación** - Botón con candado en el menú rápido (junto a «Mostrar/Ocultar distancia») que evita girar la cámara por accidente; desplazar y hacer zoom siguen funcionando. Activado por defecto
+
 <a id="camera-utilities">
  <img src="popup/img/camera-utilities.png" alt="Utilidades de cámara" />
 </a>

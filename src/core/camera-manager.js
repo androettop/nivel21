@@ -164,7 +164,66 @@
 
       if (!orbitCamera) return false;
       orbitCamera.yaw = 0;
+      // Straightening is allowed while rotation is locked: lock at 0.
+      if (this._lockedYaw !== null && this._lockedYaw !== undefined) this._lockedYaw = 0;
       return true;
+    }
+
+    /**
+     * Current camera rotation (yaw) in degrees, or null if unavailable.
+     * @returns {number|null}
+     */
+    getCameraYaw() {
+      const yaw = Number(this._getNativeManager()?.orbitCamera?.yaw);
+      return Number.isFinite(yaw) ? yaw : null;
+    }
+
+    /**
+     * Whether the camera is not rotated (yaw ~ 0, any number of full turns).
+     * @returns {boolean}
+     */
+    isCameraStraight() {
+      const yaw = this.getCameraYaw();
+      if (yaw === null) return true;
+      const normalized = ((yaw % 360) + 360) % 360;
+      return normalized < 0.5 || normalized > 359.5;
+    }
+
+    /**
+     * Lock (or unlock) the camera rotation: while locked, any yaw change
+     * (mouse, touch, keyboard...) is undone every frame, so the board can't be
+     * rotated by accident. Pan and zoom keep working.
+     * @param {boolean} locked
+     */
+    setRotationLocked(locked) {
+      if (!locked) {
+        this._lockedYaw = null;
+        if (this._lockFrame) cancelAnimationFrame(this._lockFrame);
+        this._lockFrame = null;
+        return;
+      }
+      if (this._lockedYaw === null || this._lockedYaw === undefined) {
+        this._lockedYaw = this.getCameraYaw() ?? 0;
+      }
+      if (this._lockFrame) return;
+      const enforce = () => {
+        this._lockFrame = null;
+        if (this._lockedYaw === null || this._lockedYaw === undefined) return;
+        const orbitCamera = this._getNativeManager()?.orbitCamera;
+        if (orbitCamera) {
+          const yaw = Number(orbitCamera.yaw);
+          if (Number.isFinite(yaw) && Math.abs(yaw - this._lockedYaw) > 0.001) {
+            orbitCamera.yaw = this._lockedYaw;
+          }
+        }
+        this._lockFrame = requestAnimationFrame(enforce);
+      };
+      this._lockFrame = requestAnimationFrame(enforce);
+    }
+
+    /** @returns {boolean} */
+    isRotationLocked() {
+      return this._lockedYaw !== null && this._lockedYaw !== undefined;
     }
 
     /**

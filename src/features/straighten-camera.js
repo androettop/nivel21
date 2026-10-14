@@ -21,6 +21,8 @@
       label: "Enderezar camara",
       showOn: ["always"],
       order: 41,
+      // Only useful when the camera is actually rotated.
+      isVisible: () => !CameraManager.isCameraStraight(),
       onClick: () => {
         CameraManager.straightenCameraYaw();
       },

@@ -372,6 +372,22 @@
       });
 
       this.registerSetting({
+        name: "feature.camera-rotation-lock.enabled",
+        label: "Bloquear rotación de la cámara",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "camera-rotation-lock.locked",
+        label: "Rotación de la cámara bloqueada",
+        type: "boolean",
+        defaultValue: true,
+        category: "advanced",
+      });
+
+      this.registerSetting({
         name: "ping-map.custom-color",
         label: "Color personalizado del ping (blanco = automático)",
         type: "color",
