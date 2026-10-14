@@ -484,6 +484,12 @@
 }
 
 /* Token Aura Panel Styles */
+.n21-aura-floating-panel .card-body,
+.n21-aura-floating-panel .floating-block {
+	min-height: 0;
+	overflow-y: auto;
+}
+
 .n21-aura-panel-content {
 	padding: 16px;
 	display: flex;

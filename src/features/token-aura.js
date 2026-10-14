@@ -468,7 +468,7 @@
         "#822020",
         html,
         "n21-aura-floating-panel n21-fixed-panel",
-        "min-width: 360px; max-width: 360px; min-height: 480px; max-height: 480px;",
+        "min-width: 360px; max-width: 360px; height: 560px; min-height: 560px; max-height: 90vh;",
       );
 
       if (!$panel || !$panel.length) return;
