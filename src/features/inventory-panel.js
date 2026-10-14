@@ -285,13 +285,18 @@
     }
 
     /** Build the (empty) panel body markup: scrollable grid + sticky footer. */
-    function panelBodyHtml() {
+    function panelBodyHtml(charId) {
       return (
         '<div class="n21-inventory">' +
         '<div class="n21-inventory-grid"></div>' +
         '<div class="n21-inventory-footer">' +
         '<button class="n21-inventory-refresh">' +
         '<i class="fa fa-refresh"></i></button>' +
+        // Nivel20 redirects the slug-less URL to the character's sheet.
+        `<a class="n21-inventory-edit" href="/characters/${encodeURIComponent(
+          charId,
+        )}?panel=items" target="_blank" rel="noopener" title="Editar el equipo en la hoja del personaje">` +
+        '<i class="fa fa-pencil"></i></a>' +
         '<div class="n21-inventory-money"></div>' +
         "</div>" +
         "</div>"
@@ -320,7 +325,7 @@
         title,
         "",
         "#4a3b2a",
-        panelBodyHtml(),
+        panelBodyHtml(charId),
         "n21-inventory-panel",
         "width: 269px; height: 420px; min-width: 269px; max-width: 269px; " +
           "min-height: 240px;",

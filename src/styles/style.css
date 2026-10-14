@@ -1268,6 +1268,20 @@ span[n21-h] {
 	border-radius: 4px;
 }
 
+.n21-inventory-edit {
+	flex: 0 0 auto;
+	color: inherit;
+	font-size: 14px;
+	padding: 4px 6px;
+	line-height: 1;
+	border-radius: 4px;
+}
+
+.n21-inventory-edit:hover {
+	color: inherit;
+	background: rgba(0, 0, 0, 0.1);
+}
+
 .n21-inventory-refresh:hover:not(:disabled) {
 	background: rgba(0, 0, 0, 0.1);
 }
