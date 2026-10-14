@@ -1361,8 +1361,8 @@ span[n21-h] {
 /* ----------------------- Character Frame ----------------------- */
 
 .n21-cframe {
-	--n21-cf-bg: #17181a;
-	--n21-cf-surface: #232528;
+	--n21-cf-bg: rgba(23, 24, 26, 0.8);
+	--n21-cf-surface: rgba(255, 255, 255, 0.06);
 	--n21-cf-border: #3a3d42;
 	--n21-cf-text: #ecebe8;
 	--n21-cf-muted: #a9a8a4;
@@ -1375,7 +1375,7 @@ span[n21-h] {
 	z-index: 1000;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 6px;
 	max-width: min(440px, calc(100% - 24px));
 	color: var(--n21-cf-text);
 	font-size: 14px;
@@ -1400,8 +1400,8 @@ span[n21-h] {
 
 .n21-cframe-main {
 	display: flex;
-	gap: 10px;
-	padding: 8px;
+	gap: 8px;
+	padding: 6px;
 	background: var(--n21-cf-bg);
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 10px;
@@ -1410,11 +1410,11 @@ span[n21-h] {
 
 .n21-cframe-portrait {
 	flex: 0 0 auto;
-	width: 88px;
-	height: 88px;
+	width: 64px;
+	height: 64px;
 	padding: 0;
 	border: 1px solid var(--n21-cf-border);
-	border-radius: 8px;
+	border-radius: 6px;
 	overflow: hidden;
 	background: var(--n21-cf-surface);
 	cursor: pointer;
@@ -1446,7 +1446,7 @@ span[n21-h] {
 .n21-cframe-body {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 4px;
 	min-width: 0;
 	flex: 1 1 auto;
 }
@@ -1459,12 +1459,14 @@ span[n21-h] {
 }
 
 .n21-cframe-name {
-	font-size: 18px;
+	font-size: 16px;
 	font-weight: 700;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	flex: 0 1 auto;
 	min-width: 0;
+	max-width: 100%;
 }
 
 .n21-cframe-sub {
@@ -1473,14 +1475,14 @@ span[n21-h] {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	min-width: 0;
-	flex: 1 1 auto;
+	flex: 1 1 0;
 }
 
 .n21-cframe-ac {
 	position: relative;
 	flex: 0 0 auto;
-	width: 30px;
-	height: 32px;
+	width: 24px;
+	height: 26px;
 	margin-left: auto;
 	align-self: center;
 	display: flex;
@@ -1527,7 +1529,7 @@ span[n21-h] {
 
 .n21-cframe-hp {
 	position: relative;
-	height: 28px;
+	height: 20px;
 	width: 100%;
 	padding: 0;
 	border: 1px solid var(--n21-cf-border);
@@ -1568,13 +1570,14 @@ span[n21-h] {
 .n21-cframe-hp-temp {
 	background: var(--n21-cf-temp);
 	opacity: 0.85;
-	height: 6px;
+	height: 4px;
 	top: auto;
 }
 
 .n21-cframe-hp-text {
 	position: relative;
-	font-size: 16px;
+	font-size: 14px;
+	line-height: 1;
 	font-weight: 700;
 	font-variant-numeric: tabular-nums;
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
@@ -1583,19 +1586,21 @@ span[n21-h] {
 .n21-cframe-resources {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px;
+	gap: 10px 4px;
+	padding: 7px 0 6px;
 }
 
-/* BG3-like slot cell: short label on top, red Nivel20-style squares below. */
+/* BG3-like resource button: fixed size, content centered; slot levels sit
+   on the top edge and use counts on the bottom edge, slightly overlapping. */
 .n21-cframe-res {
+	position: relative;
 	display: flex;
-	flex-direction: column;
 	align-items: center;
-	justify-content: space-between;
-	gap: 3px;
-	min-width: 46px;
-	min-height: 48px;
-	padding: 4px 6px 6px;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 40px;
+	height: 40px;
+	padding: 0;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 4px;
 	background: var(--n21-cf-surface);
@@ -1610,59 +1615,83 @@ span[n21-h] {
 	border-color: var(--n21-cf-text);
 }
 
-.n21-cframe-res-label {
+.n21-cframe-res-top,
+.n21-cframe-res-bottom {
+	position: absolute;
+	left: 0;
+	right: 0;
+	text-align: center;
 	font-size: 14px;
 	font-weight: 700;
-	line-height: 1;
-	letter-spacing: 0.02em;
+	line-height: 14px;
+	color: #f2f0ea;
+	text-shadow:
+		0 0 2px #000,
+		0 1px 2px #000;
+	pointer-events: none;
+}
+
+.n21-cframe-res-top {
+	top: -7px;
 	font-family: Georgia, "Times New Roman", serif;
 }
 
+.n21-cframe-res-bottom {
+	bottom: -6px;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-cframe-res-label {
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 14px;
+	max-width: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
 .n21-cframe-res-icon {
-	width: 22px;
-	height: 22px;
+	width: 24px;
+	height: 24px;
 	background-color: var(--n21-res-color, var(--n21-cf-text));
 	-webkit-mask: var(--n21-res-icon) center / contain no-repeat;
 	mask: var(--n21-res-icon) center / contain no-repeat;
 }
 
-.n21-cframe-res--empty .n21-cframe-res-icon {
-	opacity: 0.4;
-}
-
 .n21-cframe-res-pips {
 	display: grid;
-	grid-template-columns: repeat(4, 9px);
+	grid-template-columns: repeat(var(--n21-pip-cols, 1), 8px);
 	gap: 2px;
 	justify-content: center;
 }
 
-.n21-cframe-res-pips--1 { grid-template-columns: 9px; }
-.n21-cframe-res-pips--2 { grid-template-columns: repeat(2, 9px); }
-.n21-cframe-res-pips--3 { grid-template-columns: repeat(3, 9px); }
-
 .n21-cframe-res-pips i {
-	width: 9px;
-	height: 9px;
-	border: 1px solid #a3271f;
+	width: 8px;
+	height: 8px;
 	border-radius: 1px;
-	background: transparent;
+	background: #5a5c60;
 }
 
 .n21-cframe-res-pips i.n21-cframe-pip--on {
 	background: #d0342a;
-	border-color: #e2554b;
+	box-shadow: 0 0 3px rgba(208, 52, 42, 0.6);
 }
 
 .n21-cframe-res-count {
 	font-size: 14px;
 	font-weight: 700;
-	line-height: 1;
 	font-variant-numeric: tabular-nums;
 }
 
-.n21-cframe-res--empty .n21-cframe-res-label {
-	color: var(--n21-cf-muted);
+/* Out of uses: the whole button looks disabled. */
+.n21-cframe-res--empty > * {
+	filter: grayscale(1);
+	opacity: 0.45;
+}
+
+.n21-cframe-res--empty .n21-cframe-res-top,
+.n21-cframe-res--empty .n21-cframe-res-bottom {
+	opacity: 0.6;
 }
 
 .n21-cframe--readonly .n21-cframe-res {
@@ -1672,13 +1701,13 @@ span[n21-h] {
 .n21-cframe-conditions {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px;
+	gap: 4px;
 	pointer-events: auto;
 }
 
 .n21-cframe-condition {
-	width: 40px;
-	height: 40px;
+	width: 28px;
+	height: 28px;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 6px;
 	overflow: hidden;

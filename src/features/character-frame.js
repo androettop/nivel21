@@ -130,38 +130,60 @@
       return initials || name.slice(0, 2);
     }
 
+    /** Roman numeral for spell slots (native, or custom named "... nivel N"). */
+    function slotLevel(resource) {
+      if (resource.category === "spell_slots") return ROMAN[resource.id] || resource.id;
+      if (resource.category === "pact_spell_slots") return ROMAN[resource.id] || resource.id;
+      const level = /\bnivel\s*(\d)\b/i.exec(String(resource.label || resource.name || ""));
+      return level && ROMAN[level[1]] ? ROMAN[level[1]] : null;
+    }
+
+    function buildPips(resource, remaining) {
+      if (resource.max > MAX_PIPS) {
+        return `<span class="n21-cframe-res-count">${remaining}</span>`;
+      }
+      // 1-2 in one row, then always two rows (3-4: 2x2, 5-6: 3x2...).
+      const cols = resource.max <= 2 ? resource.max : Math.ceil(resource.max / 2);
+      return `<span class="n21-cframe-res-pips" style="--n21-pip-cols: ${cols}">${Array.from(
+        { length: resource.max },
+        (_, i) => `<i class="${i < remaining ? "n21-cframe-pip--on" : ""}"></i>`,
+      ).join("")}</span>`;
+    }
+
     function buildResourceHtml(resource, source) {
       const remaining = Math.max(resource.max - resource.used, 0);
       const fullName = resource.label || resource.name;
-      // Slot levels keep their roman numeral; named resources get an icon
-      // when they're a standard D&D resource (Furia, Canalizar divinidad...).
-      const icon =
-        resource.category === "spell_slots" || resource.category === "pact_spell_slots"
-          ? null
-          : window._n21_.resourceIcons?.match(fullName);
       const attrs =
         source === "native"
           ? `data-source="native" data-category="${escapeHtml(resource.category)}" data-id="${escapeHtml(resource.id)}"`
           : `data-source="local" data-id="${escapeHtml(resource.id)}"`;
-      const pips =
-        resource.max <= MAX_PIPS
-          ? `<span class="n21-cframe-res-pips n21-cframe-res-pips--${Math.min(resource.max, 4)}">${Array.from(
-              { length: resource.max },
-              (_, i) => `<i class="${i < remaining ? "n21-cframe-pip--on" : ""}"></i>`,
-            ).join("")}</span>`
-          : `<span class="n21-cframe-res-count">${remaining}/${resource.max}</span>`;
+
+      let content;
+      const level = slotLevel(resource);
+      if (level) {
+        // Spell slots: squares in the middle, roman numeral on the top edge.
+        content = `
+          <span class="n21-cframe-res-top">${escapeHtml(level)}</span>
+          ${buildPips(resource, remaining)}`;
+      } else {
+        // Named resources: icon (or initials) and, if more than one use, the
+        // remaining count over the bottom edge.
+        const icon = window._n21_.resourceIcons?.match(fullName);
+        const glyph = icon
+          ? `<span class="n21-cframe-res-icon" style="--n21-res-icon: url('${escapeHtml(
+              icon.iconUrl,
+            )}'); --n21-res-color: ${icon.color}"></span>`
+          : `<span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>`;
+        content = `${glyph}${
+          resource.max > 1 ? `<span class="n21-cframe-res-bottom">${remaining}</span>` : ""
+        }`;
+      }
+
       return `
         <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
           title="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}. Click: gastar · Click derecho: recuperar"
           aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
-          ${
-            icon
-              ? `<span class="n21-cframe-res-icon" style="--n21-res-icon: url('${escapeHtml(
-                  icon.iconUrl,
-                )}'); --n21-res-color: ${icon.color}"></span>`
-              : `<span class="n21-cframe-res-label">${escapeHtml(shortLabel(resource))}</span>`
-          }
-          ${pips}
+          ${content}
         </button>`;
     }
 
