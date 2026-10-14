@@ -1225,6 +1225,7 @@ span[n21-h] {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow-y: scroll;
+	overflow-x: hidden;
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 0;
