@@ -208,6 +208,14 @@
       });
 
       this.registerSetting({
+        name: "feature.creature-resources.enabled",
+        label: "Recursos de criaturas",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.notes-panel.enabled",
         label: "Panel de Notas",
         type: "boolean",

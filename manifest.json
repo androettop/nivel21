@@ -96,6 +96,7 @@
         "src/features/inventory-panel.js",
         "src/features/money-editor.js",
         "src/features/character-frame.js",
+        "src/features/creature-resources.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]

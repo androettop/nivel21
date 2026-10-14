@@ -101,6 +101,7 @@
       injectScript("src/features/inventory-panel.js"),
       injectScript("src/features/money-editor.js"),
       injectScript("src/features/character-frame.js"),
+      injectScript("src/features/creature-resources.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });
