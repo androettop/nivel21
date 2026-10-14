@@ -447,7 +447,15 @@
       canvas.id = CANVAS_ID;
       canvas.className = "n21-weather-overlay";
     }
-    if (canvas.parentElement !== container) container.appendChild(canvas);
+    // Right above the board canvas (and our token overlay), below the rest
+    // of Nivel20's UI that shares the container (token editor, toolbars...).
+    const anchor =
+      document.getElementById("n21-token-overlay") || document.getElementById("application-canvas");
+    if (anchor && anchor.parentElement === container) {
+      if (canvas.previousElementSibling !== anchor) anchor.insertAdjacentElement("afterend", canvas);
+    } else if (canvas.parentElement !== container) {
+      container.appendChild(canvas);
+    }
 
     const level = Math.min(Math.max(Number(intensity) || 0, 0), 1);
     if (state && state.canvas === canvas && state.type === type && state.intensity === level) {
