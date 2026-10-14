@@ -67,6 +67,7 @@
       injectScript("src/core/combat-tracking-manager.js"),
       injectScript("src/core/local-resources-manager.js"),
       injectScript("src/core/token-overlay-manager.js"),
+      injectScript("src/core/character-items-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features

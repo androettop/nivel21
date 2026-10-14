@@ -61,6 +61,7 @@
         "src/core/combat-tracking-manager.js",
         "src/core/local-resources-manager.js",
         "src/core/token-overlay-manager.js",
+        "src/core/character-items-manager.js",
         "src/core/money.js",
         "src/core/resource-icons.js",
         "src/core/main-menu-ui-manager.js",

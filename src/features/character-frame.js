@@ -142,7 +142,7 @@
       ).join("")}</span>`;
     }
 
-    function buildResourceHtml(resource, source) {
+    function buildResourceHtml(resource, source, editable = true) {
       const remaining = Math.max(resource.max - resource.used, 0);
       const fullName = resource.label || resource.name;
       const attrs =
@@ -174,7 +174,9 @@
       return `
         <button type="button" class="n21-cframe-res ${remaining <= 0 ? "n21-cframe-res--empty" : ""}" ${attrs}
           title="${escapeHtml(
-            `<h5>${escapeHtml(fullName)}</h5><p>Quedan ${remaining} de ${resource.max}</p><p><em>Click: gastar · Click derecho: recuperar</em></p>`,
+            `<h5>${escapeHtml(fullName)}</h5><p>Quedan ${remaining} de ${resource.max}</p>${
+              editable ? "<p><em>Click: gastar · Click derecho: recuperar</em></p>" : ""
+            }`,
           )}"
           aria-label="${escapeHtml(fullName)}: quedan ${remaining} de ${resource.max}">
           ${content}
@@ -186,8 +188,10 @@
         ? `<div class="n21-cframe-conditions">${entry.conditions
             .map(
               (c) =>
-                `<span class="n21-cframe-condition" title="${escapeHtml(
-                  `<h5>${escapeHtml(c.name)}</h5>${c.summary ? `<p>${escapeHtml(c.summary)}</p>` : ""}`,
+                `<span class="n21-cframe-condition" data-condition-id="${escapeHtml(c.id)}" title="${escapeHtml(
+                  `<h5>${escapeHtml(c.name)}</h5>${c.summary ? `<p>${escapeHtml(c.summary)}</p>` : ""}${
+                    entry.editable ? "<p><em>Click derecho: quitar estado</em></p>" : ""
+                  }`,
                 )}">${
                   c.icon
                     ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}" />`
@@ -210,7 +214,7 @@
         : `<span class="n21-cframe-portrait-empty">${escapeHtml(entry.name.charAt(0))}</span>`;
 
       const resources = [
-        ...entry.resources.map((r) => buildResourceHtml(r, "native")),
+        ...entry.resources.map((r) => buildResourceHtml(r, "native", entry.editable)),
         ...getLocalResources(entry).map((r) => buildResourceHtml(r, "local")),
       ].join("");
 
@@ -457,6 +461,16 @@
       });
 
       root.addEventListener("contextmenu", (event) => {
+        const condition = event.target.closest(".n21-cframe-condition");
+        if (condition) {
+          event.preventDefault();
+          // Only users allowed to open Nivel20's status modal can edit.
+          if (current?.editable) {
+            $(condition).tooltipster?.("close");
+            CombatTrackingManager.removeCondition(current, condition.dataset.conditionId);
+          }
+          return;
+        }
         const resource = event.target.closest(".n21-cframe-res");
         if (!resource) return;
         event.preventDefault();

@@ -1302,6 +1302,130 @@ span[n21-h] {
 	object-fit: contain;
 }
 
+/* Quantity badge (WoW-like) on inventory items. */
+.n21-inventory-item .action-bar-button {
+	position: relative;
+}
+
+.n21-inventory-qty {
+	position: absolute;
+	right: 7px;
+	bottom: 6px;
+	z-index: 3;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	color: #fff;
+	text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000;
+	pointer-events: none;
+}
+
+/* Names only in the tooltip: the cell shows just the icon and quantity. */
+.n21-inventory-item .action-bar-text {
+	display: none;
+}
+
+.n21-inventory-item--empty .action-bar-image {
+	filter: grayscale(1);
+	opacity: 0.5;
+}
+
+.n21-inventory-item--busy {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.n21-inventory-money {
+	cursor: context-menu;
+}
+
+.n21-inventory-money-empty {
+	font-size: 14px;
+	opacity: 0.6;
+}
+
+.n21-inventory-menu .n21-canvas-dropdown-item {
+	font-size: 14px;
+	color: #ecebe8;
+}
+
+.n21-inventory-menu .n21-canvas-dropdown-item:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.n21-inventory-menu .n21-inventory-menu-danger {
+	color: #ff8a80;
+}
+
+.n21-inventory-money-editor {
+	flex: 0 0 auto;
+	padding: 8px;
+	border-top: 1px solid #999;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-inventory-money-fields {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 6px;
+}
+
+.n21-inventory-money-field {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+}
+
+.n21-inventory-money-field img {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
+}
+
+.n21-inventory-money-field input {
+	width: 100%;
+	min-width: 0;
+	font-size: 14px;
+	padding: 2px 4px;
+}
+
+.n21-inventory-money-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.n21-inventory {
+	position: relative;
+}
+
+.n21-inventory-message {
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: 40px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	background: rgba(16, 16, 18, 0.92);
+	color: #ecebe8;
+	font-size: 14px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 200ms ease;
+}
+
+.n21-inventory-message--visible {
+	opacity: 1;
+}
+
 /* ------------------------------ Money editor ------------------------------- */
 
 .n21-money-editor {
@@ -1412,8 +1536,8 @@ span[n21-h] {
 
 .n21-cframe-portrait {
 	flex: 0 0 auto;
-	width: 48px;
-	height: 48px;
+	width: 56px;
+	height: 56px;
 	padding: 0;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 6px;
@@ -1484,8 +1608,8 @@ span[n21-h] {
 .n21-cframe-ac {
 	position: relative;
 	flex: 0 0 auto;
-	width: 24px;
-	height: 26px;
+	width: 30px;
+	height: 32px;
 	margin-left: auto;
 	align-self: center;
 	display: flex;
@@ -1505,8 +1629,11 @@ span[n21-h] {
 
 .n21-cframe-ac span {
 	position: relative;
+	margin-top: -3px;
 	font-size: 14px;
 	font-weight: 700;
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
 }
 
 .n21-cframe-instances {
@@ -1725,6 +1852,7 @@ span[n21-h] {
 }
 
 .n21-cframe-condition {
+	cursor: context-menu;
 	width: 28px;
 	height: 28px;
 	border: 1px solid var(--n21-cf-border);

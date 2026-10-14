@@ -34,12 +34,14 @@
     const [
       ActionBarManager,
       CharacterSheetManager,
+      CharacterItemsManager,
       FloatingPanelManager,
       TooltipManager,
       SettingsManager,
     ] = await loadManagers(
       "ActionBarManager",
       "CharacterSheetManager",
+      "CharacterItemsManager",
       "FloatingPanelManager",
       "TooltipManager",
       "SettingsManager",
@@ -117,30 +119,23 @@
 
     /* ----------------------------- Inventory ------------------------------ */
 
-    /** Flatten the character's `items` categories into a single ordered list. */
-    function collectItems(ph) {
-      const items = ph?.items;
-      if (!items || typeof items !== "object") return [];
-      const flat = [];
-      for (const list of Object.values(items)) {
-        if (Array.isArray(list)) flat.push(...list);
-      }
-      return flat;
-    }
-
     /**
      * Build a single read-only inventory cell reusing the native action-bar
      * icon markup (same frame + tooltip), so it looks identical to the bar.
      * @returns {jQuery}
      */
-    function buildItemCell(item) {
+    function buildItemCell(item, index) {
       const name = item?.name || "";
       const icon = item?.icon_url || "";
+      const description = item?.cleanDescription ?? item?.description;
+      const quantity = item?.quantity;
 
       let tooltipHtml = `<h5>${escapeHtml(item?.tooltip_title || name)}</h5>`;
       if (item?.group) tooltipHtml += `<p><em>${escapeHtml(item.group)}</em></p>`;
-      if (item?.description)
-        tooltipHtml += `<p>${escapeHtml(item.description)}</p>`;
+      if (quantity != null)
+        tooltipHtml += `<p><strong>Cantidad: ${escapeHtml(quantity)}</strong></p>`;
+      if (description)
+        tooltipHtml += `<p>${escapeHtml(description)}</p>`;
       if (item?.location_text)
         tooltipHtml += `<p><strong>${escapeHtml(item.location_text)}</strong></p>`;
 
@@ -149,8 +144,10 @@
         : "";
 
       const $cell = $("<div>")
-        .addClass("action-bar-element")
-        .attr("data-action-type", "none");
+        .addClass("action-bar-element n21-inventory-item")
+        .toggleClass("n21-inventory-item--empty", quantity === 0)
+        .attr("data-action-type", "none")
+        .attr("data-index", index);
 
       $cell.html(`
         <div class="action-bar-button tooltipstered" data-toggle="tooltip">
@@ -166,6 +163,11 @@
             <i class="selected-indicator-icon d-none"></i>
           </div>
           <div class="action-bar-frame"></div>
+          ${
+            quantity != null
+              ? `<span class="n21-inventory-qty">${escapeHtml(quantity)}</span>`
+              : ""
+          }
         </div>
       `);
 
@@ -177,21 +179,35 @@
     }
 
     /** Render the grid + money into the panel body. */
-    function renderInventory($body, ph) {
+    function renderInventory($body, items, ph) {
       const $grid = $body.find(".n21-inventory-grid");
       $grid.empty();
+      $body.closest(".n21-inventory-panel").data("n21InventoryItems", items);
+      $body.closest(".n21-inventory-panel").data("n21InventoryMoney", money.parse(ph?.equipment));
 
-      const items = collectItems(ph);
       if (!items.length) {
         $grid.append(
           '<div class="n21-inventory-empty">Sin objetos en el inventario.</div>',
         );
       } else {
-        items.forEach((item) => $grid.append(buildItemCell(item)));
+        items.forEach((item, index) => $grid.append(buildItemCell(item, index)));
       }
 
       const totals = money.parse(ph?.equipment);
-      $body.find(".n21-inventory-money").html(buildMoneyHtml(totals));
+      $body
+        .find(".n21-inventory-money")
+        .html(buildMoneyHtml(totals) || '<span class="n21-inventory-money-empty">Sin dinero</span>')
+        .attr("title", "Click derecho: editar dinero");
+    }
+
+    /** Load items (with ids/quantities) + sheet and render them. */
+    async function loadAndRender($panel, charId) {
+      const jsonUrl = `/characters/${charId}.json`;
+      const [items, ph] = await Promise.all([
+        CharacterItemsManager.getItems(charId),
+        CharacterSheetManager.fetchCharacter(jsonUrl),
+      ]);
+      renderInventory($panel.find(".n21-inventory"), items, ph);
     }
 
     // Default tooltip shown when hovering the refresh button.
@@ -258,8 +274,7 @@
         $button.addClass("loading").prop("disabled", true);
         try {
           CharacterSheetManager.invalidate(jsonUrl);
-          const ph = await CharacterSheetManager.fetchCharacter(jsonUrl);
-          renderInventory($body, ph);
+          await loadAndRender($panel, charId);
         } catch (error) {
           window._n21_.utils?.registerFeatureError?.("inventory-panel", error);
           flashButtonTooltip($button, "No se pudo actualizar el inventario.");
@@ -312,16 +327,204 @@
       );
       if (!$panel || !$panel.length) return;
 
-      // If the panel already existed (still open), just refresh its contents.
-      const $body = $panel.find(".n21-inventory");
-      renderInventory($body, ph);
+      $panel.data("n21CharId", String(charId));
 
       // Bind refresh once per freshly created panel.
       if (!$panel.data("n21InventoryBound")) {
         $panel.data("n21InventoryBound", true);
         bindRefresh($panel, charId, jsonUrl);
+        bindEditing($panel, charId);
+      }
+
+      // If the panel already existed (still open), just refresh its contents.
+      try {
+        await loadAndRender($panel, charId);
+      } catch (error) {
+        window._n21_.utils?.registerFeatureError?.("inventory-panel", error);
       }
     }
+
+    /* ------------------------------ Editing ------------------------------- */
+
+    let $contextMenu = null;
+
+    function closeContextMenu() {
+      if ($contextMenu) $contextMenu.remove();
+      $contextMenu = null;
+    }
+
+    /** Small context menu with the same look as the board's dropdown. */
+    function showContextMenu(x, y, options) {
+      closeContextMenu();
+      $contextMenu = $('<div class="n21-canvas-dropdown-menu n21-inventory-menu" role="menu"></div>');
+      options.forEach((option) => {
+        const $item = $(
+          `<button type="button" class="n21-canvas-dropdown-item" role="menuitem">${escapeHtml(option.label)}</button>`,
+        );
+        if (option.danger) $item.addClass("n21-inventory-menu-danger");
+        if (option.disabled) $item.prop("disabled", true);
+        $item.on("click", (event) => {
+          event.stopPropagation();
+          closeContextMenu();
+          if (!option.disabled) option.onClick?.();
+        });
+        $contextMenu.append($item);
+      });
+      $("body").append($contextMenu);
+      const width = $contextMenu.outerWidth();
+      const height = $contextMenu.outerHeight();
+      $contextMenu.css({
+        display: "block",
+        left: Math.min(x, window.innerWidth - width - 8),
+        top: Math.min(y, window.innerHeight - height - 8),
+      });
+    }
+
+    $(document).on("mousedown.n21InventoryMenu", (event) => {
+      if ($contextMenu && !$(event.target).closest(".n21-inventory-menu").length) {
+        closeContextMenu();
+      }
+    });
+    $(document).on("keydown.n21InventoryMenu", (event) => {
+      if (event.key === "Escape") closeContextMenu();
+    });
+
+    function flashMessage($panel, text) {
+      const $msg = $panel.find(".n21-inventory-message");
+      $msg.text(text).addClass("n21-inventory-message--visible");
+      clearTimeout($msg.data("timer"));
+      $msg.data(
+        "timer",
+        setTimeout(() => $msg.removeClass("n21-inventory-message--visible"), 3500),
+      );
+    }
+
+    function changeQuantity($panel, charId, index, delta) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const item = items[index];
+      if (!item) return;
+      const current = item.quantity ?? 1;
+      const next = Math.max(0, current + delta);
+      if (next === current && item.quantity != null) return;
+      if (!CharacterItemsManager.setQuantity(charId, item, next)) {
+        flashMessage($panel, "No se puede editar este objeto.");
+        return;
+      }
+      // Optimistic update: redraw just this cell.
+      item.quantity = next;
+      const $old = $panel.find(`.n21-inventory-item[data-index="${index}"]`);
+      $old.replaceWith(buildItemCell(item, index));
+    }
+
+    async function deleteItem($panel, charId, index) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const item = items[index];
+      if (!item) return;
+      if (!window.confirm(`¿Eliminar «${item.name}» del inventario?`)) return;
+      try {
+        $panel.find(`.n21-inventory-item[data-index="${index}"]`).addClass("n21-inventory-item--busy");
+        await CharacterItemsManager.deleteItem(charId, item);
+      } catch (error) {
+        flashMessage($panel, "No se pudo eliminar el objeto.");
+        $panel.find(`.n21-inventory-item[data-index="${index}"]`).removeClass("n21-inventory-item--busy");
+      }
+    }
+
+    function openMoneyEditor($panel, charId) {
+      const totals = $panel.data("n21InventoryMoney") || {};
+      const fields = money.CURRENCIES.map(
+        (currency) => `
+          <label class="n21-inventory-money-field" title="${escapeHtml(currency.label)}">
+            <img src="${money.iconUrl(currency)}" alt="${escapeHtml(currency.key)}" />
+            <input type="number" min="0" step="1" inputmode="numeric" data-currency="${escapeHtml(
+              currency.key,
+            )}" value="${escapeHtml(totals[currency.key.toLowerCase()] || 0)}" />
+          </label>`,
+      ).join("");
+      const $editor = $(`
+        <form class="n21-inventory-money-editor">
+          <div class="n21-inventory-money-fields">${fields}</div>
+          <div class="n21-inventory-money-actions">
+            <button type="button" class="btn btn-sm btn-secondary n21-inventory-money-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-success">Guardar</button>
+          </div>
+        </form>`);
+      $panel.find(".n21-inventory-money-editor").remove();
+      $panel.find(".n21-inventory-footer").before($editor);
+      $editor.find("input").first().trigger("focus").trigger("select");
+      $editor.on("keydown keyup keypress", "input", (event) => event.stopPropagation());
+      $editor.on("click", ".n21-inventory-money-cancel", () => $editor.remove());
+      $editor.on("submit", async (event) => {
+        event.preventDefault();
+        const next = {};
+        $editor.find("input[data-currency]").each(function () {
+          next[this.dataset.currency.toLowerCase()] = Math.max(0, parseInt(this.value, 10) || 0);
+        });
+        $editor.find("button").prop("disabled", true);
+        try {
+          const saved = await CharacterItemsManager.updateEquipmentText(charId, (text, max) => {
+            const updated = money.setInText(text, next);
+            // Never drop player text: skip if the field can't hold the tag.
+            return max && updated.length > max ? null : updated;
+          });
+          if (!saved) flashMessage($panel, "No hay espacio en «Otras posesiones» para guardar el dinero.");
+          $editor.remove();
+        } catch (error) {
+          flashMessage($panel, "No se pudo guardar el dinero.");
+          $editor.find("button").prop("disabled", false);
+        }
+      });
+    }
+
+    function bindEditing($panel, charId) {
+      $panel.find(".n21-inventory").append('<div class="n21-inventory-message" role="status"></div>');
+
+      $panel.on("contextmenu", ".n21-inventory-item", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const index = Number($(this).attr("data-index"));
+        const item = ($panel.data("n21InventoryItems") || [])[index];
+        if (!item) return;
+        const editable = !!item.itemId;
+        const quantity = item.quantity ?? 1;
+        showContextMenu(event.clientX, event.clientY, [
+          {
+            label: "Usar uno (−1)",
+            disabled: !editable || quantity <= 0,
+            onClick: () => changeQuantity($panel, charId, index, -1),
+          },
+          {
+            label: "Añadir uno (+1)",
+            disabled: !editable,
+            onClick: () => changeQuantity($panel, charId, index, 1),
+          },
+          {
+            label: "Eliminar objeto",
+            danger: true,
+            disabled: !item.deleteUrl,
+            onClick: () => deleteItem($panel, charId, index),
+          },
+        ]);
+      });
+
+      $panel.on("contextmenu", ".n21-inventory-money", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showContextMenu(event.clientX, event.clientY, [
+          { label: "Editar dinero", onClick: () => openMoneyEditor($panel, charId) },
+        ]);
+      });
+
+    }
+
+    // Reload open panels once an edit has been saved.
+    CharacterItemsManager.onChange((charId) => {
+      $(".n21-inventory-panel").each(function () {
+        const $panel = $(this);
+        if ($panel.data("n21CharId") !== String(charId)) return;
+        loadAndRender($panel, charId).catch(() => {});
+      });
+    });
 
     /* ------------------------- Action bar wiring -------------------------- */
 

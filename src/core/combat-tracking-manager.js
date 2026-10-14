@@ -381,6 +381,7 @@
       const next = { ...entry };
       if (changes.currentHp !== undefined) next.currentHp = changes.currentHp;
       if (changes.tempHp !== undefined) next.tempHp = changes.tempHp;
+      if (changes.conditions !== undefined) next.conditions = changes.conditions;
       const used = changes.used || {};
       next.resources = entry.resources.map((r) => {
         const value = used[r.category]?.[r.id];
@@ -422,6 +423,7 @@
       const merged = { ...pending.changes };
       if (changes.currentHp !== undefined) merged.currentHp = changes.currentHp;
       if (changes.tempHp !== undefined) merged.tempHp = changes.tempHp;
+      if (changes.conditions !== undefined) merged.conditions = changes.conditions;
       if (changes.used) {
         merged.used = { ...(merged.used || {}) };
         Object.entries(changes.used).forEach(([category, values]) => {
@@ -507,7 +509,8 @@
         resources[category] = { ...(resources[category] || {}), ...values };
       });
 
-      const conditionIds = entry.conditions.map((c) => c.id).filter((v) => v != null);
+      const conditions = changes.conditions ?? entry.conditions;
+      const conditionIds = conditions.map((c) => c.id).filter((v) => v != null);
 
       const payload = {
         row_id: entry.id,
@@ -599,6 +602,13 @@
       const max = resource ? resource.max : usedCount;
       const value = Math.max(Math.min(toInt(usedCount, 0), max), 0);
       return this.queueStatus(entry, { used: { [category]: { [id]: value } } });
+    }
+
+    /** Remove a condition (by id) from an entry. */
+    removeCondition(entry, conditionId) {
+      const conditions = entry.conditions.filter((c) => String(c.id) !== String(conditionId));
+      if (conditions.length === entry.conditions.length) return false;
+      return this.queueStatus(entry, { conditions });
     }
 
     /**
