@@ -476,6 +476,11 @@
       { passive: true },
     );
 
+    // Leaving the window doesn't fire mousemove on another element.
+    document.addEventListener("mouseout", (event) => {
+      if (!event.relatedTarget) pointer = null;
+    });
+
     document.addEventListener("mousedown", (event) => {
       if (event.button !== 1) return;
       const canvas = boardCanvas();
@@ -497,13 +502,10 @@
     document.addEventListener("keydown", (event) => {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       if (String(event.key).toLowerCase() !== "f") return;
-      const target = event.target;
-      if (
-        target &&
-        (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
-      ) {
-        return;
-      }
+      // Never while typing anywhere (chat, forms, editors...).
+      const isEditable = (el) =>
+        !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+      if (isEditable(event.target) || isEditable(document.activeElement)) return;
       if (!pointer) return; // cursor isn't over the board
       event.preventDefault();
       pingAtCanvasPoint(pointer.x, pointer.y);
