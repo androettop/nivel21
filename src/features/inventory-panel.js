@@ -286,7 +286,7 @@
 
     /**
      * Place items in slots: saved positions first, the rest (new items) in
-     * the first free slots. Always leaves at least one empty row at the end.
+     * the first free slots. Shows as many slots as fit in the window.
      * @returns {Array<Object|null>}
      */
     /** Columns and visible rows that fit in the (resizable) panel. */
@@ -326,9 +326,9 @@
       for (let i = 0; i < slots.length; i += 1) if (slots[i] === undefined) slots[i] = null;
       let last = slots.length - 1;
       while (last >= 0 && !slots[last]) last -= 1;
-      // Fill the visible area, plus one free row after the last item.
+      // Exactly what fits in the window (more only if items don't fit).
       const { columns, rows } = capacity;
-      const total = Math.max(columns * rows, Math.ceil((last + 1) / columns) * columns + columns);
+      const total = Math.max(columns * rows, Math.ceil((last + 1) / columns) * columns);
       while (slots.length < total) slots.push(null);
       return slots.slice(0, total);
     }
