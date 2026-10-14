@@ -45,7 +45,7 @@
     // the per-frame loop only re-scales the aura when the token scale changes.
     // This keeps the aura world-relative regardless of who resizes the token
     // (local, network, animation, etc.).
-    const activeAuras = new Map(); // networkId -> { size, lastScale: {x,y,z} }
+    const activeAuras = new Map(); // networkId -> { scale: {x,y,z}, lastScale: {x,y,z} }
     let auraSyncFrame = null;
 
     function toText(value) {
@@ -62,33 +62,104 @@
       }
     }
 
+    // Shapes the aura can take. The tag keeps the legacy circle format
+    // ([a:color-radius]) and appends a shape segment for the others:
+    //   q<height>  -> rectangle (width = size)      e.g. [a:g-4-q2]
+    //   c<angle>   -> cone (length = size)          e.g. [a:r-3-c53-d90]
+    //   l<width>   -> line (length = size)          e.g. [a:a-6-l1-d180]
+    // plus optional flags:
+    //   d<deg>     -> direction for cones/lines (0 = up, clockwise)
+    //   s          -> "solo aura": the token itself is hidden, only the area shows
+    const AURA_SHAPES = {
+      circle: { label: "Círculo", kind: "cone" },
+      rect: { label: "Rectángulo", kind: "box" },
+      cone: { label: "Cono", kind: "cone" },
+      line: { label: "Línea", kind: "line" },
+    };
+
+    const DIRECTIONS = [
+      { deg: 0, label: "Arriba" },
+      { deg: 45, label: "Arriba a la derecha" },
+      { deg: 90, label: "Derecha" },
+      { deg: 135, label: "Abajo a la derecha" },
+      { deg: 180, label: "Abajo" },
+      { deg: 225, label: "Abajo a la izquierda" },
+      { deg: 270, label: "Izquierda" },
+      { deg: 315, label: "Arriba a la izquierda" },
+    ];
+
+    const DEFAULT_CONE_ANGLE = 53;
+    const VISIBILITY_SOURCE = "token-aura-only";
+
+    function toNumber(value, fallback) {
+      const n = parseFloat(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
     /**
-     * Parse aura tag from description: [a:colorKey-radius]
-     * Returns { color, radius } or null
-     * Supports decimal radii (e.g., b-1.5, r-2.25)
+     * Parse aura tag from description.
+     * Returns { color, shape, size, height, angle, width, direction, auraOnly }
+     * or null. Supports decimal sizes (e.g., b-1.5, r-2.25).
      */
     function parseAuraFromDescription(description) {
       const tag = window._n21_.utils.parseTokenTag(description, "a");
       if (!tag) return null;
 
-      // Pattern: color key (one or more letters) + dash + radius (integers or decimals)
-      const match = /^([a-z]+)-([\d.]+)$/.exec(tag);
-      if (!match) return null;
+      const parts = String(tag).split("-");
+      if (parts.length < 2) return null;
 
-      const radius = parseFloat(match[2]);
-      if (isNaN(radius) || radius < 0) return null;
+      const color = parts[0];
+      if (!/^[a-z]+$/.test(color)) return null;
 
-      return {
-        color: match[1],
-        radius: radius,
+      const size = parseFloat(parts[1]);
+      if (!/^[\d.]+$/.test(parts[1]) || isNaN(size) || size < 0) return null;
+
+      const aura = {
+        color,
+        shape: "circle",
+        size,
+        height: size,
+        angle: DEFAULT_CONE_ANGLE,
+        width: 1,
+        direction: 0,
+        auraOnly: false,
       };
+
+      for (const segment of parts.slice(2)) {
+        const key = segment.charAt(0);
+        const value = segment.slice(1);
+        if (key === "q") {
+          aura.shape = "rect";
+          aura.height = Math.max(toNumber(value, size), 0);
+        } else if (key === "c") {
+          aura.shape = "cone";
+          aura.angle = Math.min(Math.max(toNumber(value, DEFAULT_CONE_ANGLE), 1), 360);
+        } else if (key === "l") {
+          aura.shape = "line";
+          aura.width = Math.max(toNumber(value, 1), 0.1);
+        } else if (key === "d") {
+          aura.direction = ((toNumber(value, 0) % 360) + 360) % 360;
+        } else if (segment === "s") {
+          aura.auraOnly = true;
+        }
+      }
+
+      return aura;
     }
 
     /**
-     * Format aura config for tag storage: colorKey-radius
+     * Format aura config for tag storage (see AURA_SHAPES comment).
      */
-    function formatAuraTag(color, radius) {
-      return `${color}-${radius}`;
+    function formatAuraTag(aura) {
+      const parts = [aura.color, aura.size];
+      if (aura.shape === "rect") parts.push(`q${aura.height}`);
+      if (aura.shape === "cone") parts.push(`c${aura.angle}`);
+      if (aura.shape === "line") parts.push(`l${aura.width}`);
+      if ((aura.shape === "cone" || aura.shape === "line") && aura.direction) {
+        parts.push(`d${aura.direction}`);
+      }
+      if (aura.auraOnly) parts.push("s");
+      return parts.join("-");
     }
 
     /**
@@ -105,60 +176,82 @@
       return parseAuraFromDescription(description);
     }
 
+    function removeAuraShape(networkId) {
+      const auraShape = TokenManager.getTokenChildByName(networkId, "TokenAura");
+      if (auraShape) {
+        TokenManager.removeChildFromToken(networkId, auraShape);
+        if (typeof auraShape.destroy === "function") auraShape.destroy();
+      }
+      activeAuras.delete(networkId);
+    }
+
     /**
-     * Get or create TokenAura shape on the token
+     * Get or create the TokenAura shape on the token, re-creating it when the
+     * native template needed for the shape kind changes.
      */
-    function getOrCreateAuraShape(networkId) {
-      // Find existing TokenAura child
+    function getOrCreateAuraShape(networkId, kind) {
       const existingAura = TokenManager.getTokenChildByName(networkId, "TokenAura");
-      if (existingAura) {
+      if (existingAura && MeasurementManager.getAuraShapeKind(existingAura) === kind) {
         return existingAura;
       }
+      if (existingAura) removeAuraShape(networkId);
 
-      // Create new aura shape using MeasurementManager
-      const shape = MeasurementManager.createAuraShape();
+      const shape = MeasurementManager.createAuraShape(kind);
       if (!shape) return null;
 
-      // Add to token as child
       if (!TokenManager.addChildToToken(networkId, shape)) return null;
 
       return shape;
     }
 
     /**
-     * Apply aura configuration to token
-     * If radius is 0, removes the aura
+     * "Solo aura": hide the token itself on every client with the extension
+     * (the DM keeps seeing it translucent so it can still be moved/edited).
      */
-    function applyAuraToToken(networkId, color, radius) {
+    function syncAuraOnlyVisibility(networkId, aura) {
+      const mode = aura?.auraOnly
+        ? PlayerManager.isGameMaster()
+          ? "translucent"
+          : "hidden"
+        : null;
+      TokenManager.setLocalVisibilityOverride(networkId, VISIBILITY_SOURCE, mode);
+      TokenManager.setSelectionBlocked(
+        networkId,
+        VISIBILITY_SOURCE,
+        !!aura?.auraOnly && !PlayerManager.isGameMaster(),
+      );
+    }
+
+    /**
+     * Apply aura configuration to token. A null aura (or size 0) removes it.
+     */
+    function applyAuraToToken(networkId, aura) {
       const token = TokenManager.getToken(networkId);
       if (!token) return;
 
-      // If radius is 0, remove the aura
-      if (radius === 0) {
-        const auraShape = TokenManager.getTokenChildByName(networkId, "TokenAura");
-        if (auraShape) {
-          TokenManager.removeChildFromToken(networkId, auraShape);
-        }
-        activeAuras.delete(networkId);
+      if (!aura || !(aura.size > 0)) {
+        removeAuraShape(networkId);
         return;
       }
 
-      // Get or create the aura shape
-      const shape = getOrCreateAuraShape(networkId);
-      if (!shape) return;
-
-      // Get color configuration
-      const colorConfig = AURA_COLORS[color];
+      const shapeDef = AURA_SHAPES[aura.shape] || AURA_SHAPES.circle;
+      const colorConfig = AURA_COLORS[aura.color];
       if (!colorConfig) return;
 
-      // Prepare color values
+      const shape = getOrCreateAuraShape(networkId, shapeDef.kind);
+      if (!shape) return;
+
       const [r, g, b] = colorConfig.rgb;
       const fillAlpha = colorConfig.alpha;
       const borderAlpha = Math.min(fillAlpha + 0.2, 1.0);
 
-      // Configure material using MeasurementManager
+      const isRect = aura.shape === "rect";
       MeasurementManager.configureAuraMaterial(shape, {
-        radius: radius,
+        radius: aura.size,
+        width: isRect ? aura.size : aura.width,
+        height: aura.height,
+        angle: aura.shape === "cone" ? aura.angle : 360,
+        direction: aura.direction,
         borderColor: [r, g, b, borderAlpha],
         fillColor: [r, g, b, fillAlpha],
       });
@@ -166,10 +259,15 @@
       // The aura is a child of the token, so its world scale is multiplied by
       // the token's scale. Track it and let the per-frame loop keep it
       // counter-scaled so it stays relative to the world.
-      const size = radius * 2;
-      activeAuras.set(networkId, { size, lastScale: null });
-      applyWorldScale(networkId, shape, size);
+      const scale = isRect
+        ? { x: aura.size, y: aura.height, z: aura.height }
+        : { x: aura.size * 2, y: aura.size * 2, z: aura.size * 2 };
+      activeAuras.set(networkId, { scale, lastScale: null });
+      applyWorldScale(networkId, shape, scale);
       startAuraScaleSync();
+
+      // Keep the name label next to the token instead of above the aura.
+      TokenManager.excludeChildFromLabelBounds(networkId, shape);
     }
 
     /**
@@ -177,7 +275,7 @@
      * aura keeps a constant world size. Returns false if the token/shape is
      * gone (so the caller can stop tracking it).
      */
-    function applyWorldScale(networkId, shape, size) {
+    function applyWorldScale(networkId, shape, scale) {
       const tokenScale = TokenManager.getTokenScale(networkId);
       if (!tokenScale) return false;
 
@@ -194,9 +292,9 @@
 
       MeasurementManager.setShapeScale(
         shape,
-        size / (tokenScale.x || 1),
-        size / (tokenScale.y || 1),
-        size / (tokenScale.z || 1)
+        scale.x / (tokenScale.x || 1),
+        scale.y / (tokenScale.y || 1),
+        scale.z / (tokenScale.z || 1)
       );
 
       if (entry) entry.lastScale = tokenScale;
@@ -215,7 +313,7 @@
       const sync = () => {
         for (const [networkId, entry] of activeAuras.entries()) {
           const shape = TokenManager.getTokenChildByName(networkId, "TokenAura");
-          if (!shape || !applyWorldScale(networkId, shape, entry.size)) {
+          if (!shape || !applyWorldScale(networkId, shape, entry.scale)) {
             // Token or aura shape is gone; stop tracking it.
             activeAuras.delete(networkId);
           }
@@ -233,38 +331,63 @@
     }
 
     /**
-     * Apply aura based on token visibility and current aura tag
-     * Hidden and non-translucent tokens should not display aura.
+     * Apply aura based on token visibility and current aura tag.
+     * Tokens hidden by Nivel20 (and not translucent) don't display their aura;
+     * "solo aura" tokens hide only the token, never their own aura.
      */
     function syncAuraWithVisibility(networkId, hidden, translucent) {
       const aura = getAuraFromToken(networkId);
-      if (!aura || aura.radius <= 0) {
-        applyAuraToToken(networkId, "b", 0);
+      syncAuraOnlyVisibility(networkId, aura);
+
+      if (!aura || aura.size <= 0) {
+        applyAuraToToken(networkId, null);
         return;
       }
 
-      if (hidden && !translucent) {
-        applyAuraToToken(networkId, "b", 0);
+      const hiddenByUs =
+        TokenManager.getLocalVisibilityOverride(networkId, VISIBILITY_SOURCE) !== null;
+      if (hidden && !translucent && !hiddenByUs) {
+        applyAuraToToken(networkId, null);
         return;
       }
 
-      applyAuraToToken(networkId, aura.color, aura.radius);
+      applyAuraToToken(networkId, aura);
     }
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = String(value ?? "");
+      return div.innerHTML;
+    }
+
+    const SHAPE_ICONS = {
+      circle: '<circle cx="12" cy="12" r="8" />',
+      rect: '<rect x="3" y="6" width="18" height="12" rx="1" />',
+      cone: '<path d="M12 21 L4 5 A 9 9 0 0 1 20 5 Z" />',
+      line: '<rect x="10" y="2" width="4" height="20" rx="1" />',
+    };
 
     /**
      * Open aura configuration panel for a specific token
      */
     function openAuraPanel(networkId) {
-      const currentAura = getAuraFromToken(networkId);
-      const currentColor = currentAura?.color || "b";
-      const currentRadius = currentAura?.radius || 1;
+      const current = getAuraFromToken(networkId) || {
+        color: "b",
+        shape: "circle",
+        size: 1,
+        height: 1,
+        angle: DEFAULT_CONE_ANGLE,
+        width: 1,
+        direction: 0,
+        auraOnly: false,
+      };
 
       // Build color swatches HTML
       const colorSwatchesHtml = Object.entries(AURA_COLORS)
         .map(([key, config]) => {
           const [r, g, b] = config.rgb;
           const rgbStr = `rgb(${r * 255}, ${g * 255}, ${b * 255})`;
-          const isSelected = key === currentColor ? "n21-aura-color-selected" : "";
+          const isSelected = key === current.color ? "n21-aura-color-selected" : "";
           return `
             <div 
               class="n21-aura-color-swatch ${isSelected}" 
@@ -276,25 +399,61 @@
         })
         .join("");
 
+      const shapeButtonsHtml = Object.entries(AURA_SHAPES)
+        .map(
+          ([key, def]) => `
+            <button type="button" class="n21-aura-shape-btn ${
+              key === current.shape ? "n21-aura-shape-selected" : ""
+            }" data-shape="${key}" title="${def.label}" aria-label="${def.label}">
+              <svg viewBox="0 0 24 24" aria-hidden="true">${SHAPE_ICONS[key]}</svg>
+              <span>${def.label}</span>
+            </button>`,
+        )
+        .join("");
+
+      const directionOptionsHtml = DIRECTIONS.map(
+        (d) =>
+          `<option value="${d.deg}" ${
+            d.deg === current.direction ? "selected" : ""
+          }>${d.label}</option>`,
+      ).join("");
+
+      const field = (id, label, value, attrs, shapes) => `
+        <div class="n21-aura-field" data-shapes="${shapes}">
+          <label for="${id}" class="n21-aura-section-label">${label}</label>
+          <input type="number" id="${id}" class="form-control" value="${escapeHtml(
+            value,
+          )}" ${attrs} />
+        </div>`;
+
       const html = `
         <div class="n21-aura-panel-content">
           <div class="n21-aura-panel-section">
-            <label class="n21-aura-section-label">Color:</label>
+            <label class="n21-aura-section-label">Forma</label>
+            <div class="n21-aura-shape-grid">${shapeButtonsHtml}</div>
+          </div>
+          <div class="n21-aura-panel-section">
+            <label class="n21-aura-section-label">Color</label>
             <div class="n21-aura-color-grid">
               ${colorSwatchesHtml}
             </div>
           </div>
-          <div class="n21-aura-panel-section">
-            <label for="n21-aura-radius" class="n21-aura-section-label">Radio:</label>
-            <input 
-              type="number" 
-              id="n21-aura-radius" 
-              class="form-control" 
-              value="${currentRadius}" 
-              min="0" 
-              step="0.5"
-            />
+          <div class="n21-aura-fields">
+            ${field("n21-aura-radius", "Radio (casillas)", current.size, 'min="0" step="0.5"', "circle")}
+            ${field("n21-aura-width", "Ancho (casillas)", current.size, 'min="0" step="0.5"', "rect")}
+            ${field("n21-aura-height", "Alto (casillas)", current.height, 'min="0" step="0.5"', "rect")}
+            ${field("n21-aura-length", "Longitud (casillas)", current.size, 'min="0" step="0.5"', "cone line")}
+            ${field("n21-aura-angle", "Apertura (grados)", current.angle, 'min="1" max="360" step="1"', "cone")}
+            ${field("n21-aura-line-width", "Ancho (casillas)", current.width, 'min="0.5" step="0.5"', "line")}
+            <div class="n21-aura-field" data-shapes="cone line">
+              <label for="n21-aura-direction" class="n21-aura-section-label">Dirección</label>
+              <select id="n21-aura-direction" class="form-control">${directionOptionsHtml}</select>
+            </div>
           </div>
+          <label class="n21-aura-check">
+            <input type="checkbox" id="n21-aura-only" ${current.auraOnly ? "checked" : ""} />
+            <span>Solo aura: ocultar el token a los jugadores (para terreno difícil, trampas o zonas)</span>
+          </label>
           <div class="n21-aura-panel-buttons">
             <button id="n21-aura-apply-btn" class="btn btn-success">Aplicar</button>
             <button id="n21-aura-remove-btn" class="btn btn-danger">Eliminar</button>
@@ -309,39 +468,80 @@
         "#822020",
         html,
         "n21-aura-floating-panel n21-fixed-panel",
-        "min-width: 320px; min-height: 292px; max-width: 320px; max-height: 292px;",
+        "min-width: 360px; max-width: 360px; min-height: 480px; max-height: 480px;",
       );
 
       if (!$panel || !$panel.length) return;
 
-      // Track selected color
-      let selectedColor = currentColor;
+      let selectedColor = current.color;
+      let selectedShape = current.shape;
 
-      // Get form elements
       const $colorSwatches = $panel.find(".n21-aura-color-swatch");
-      const $radiusInput = $panel.find("#n21-aura-radius");
+      const $shapeButtons = $panel.find(".n21-aura-shape-btn");
       const $applyBtn = $panel.find("#n21-aura-apply-btn");
       const $removeBtn = $panel.find("#n21-aura-remove-btn");
 
-      // Color swatch click handler
+      function syncFields() {
+        $panel.find(".n21-aura-field").each(function () {
+          const shapes = String($(this).attr("data-shapes") || "").split(" ");
+          $(this).toggle(shapes.includes(selectedShape));
+        });
+      }
+      syncFields();
+
       $colorSwatches.on("click", function () {
-        // Remove selection from all swatches
         $colorSwatches.removeClass("n21-aura-color-selected");
-        
-        // Add selection to clicked swatch
         $(this).addClass("n21-aura-color-selected");
-        
-        // Update selected color
         selectedColor = $(this).attr("data-color-key");
       });
 
-      // Apply button handler
-      $applyBtn.on("click", async () => {
-        const color = selectedColor;
-        const radius = parseFloat($radiusInput.val());
+      $shapeButtons.on("click", function () {
+        $shapeButtons.removeClass("n21-aura-shape-selected");
+        $(this).addClass("n21-aura-shape-selected");
+        selectedShape = $(this).attr("data-shape");
+        syncFields();
+      });
 
-        if (!color || isNaN(radius) || radius < 0) {
-          alert("El valor de radio no es valido. Ingresa un numero mayor o igual a 0.");
+      function readNumber(selector) {
+        return parseFloat($panel.find(selector).val());
+      }
+
+      function readAura() {
+        const aura = {
+          color: selectedColor,
+          shape: selectedShape,
+          size: 0,
+          height: 0,
+          angle: DEFAULT_CONE_ANGLE,
+          width: 1,
+          direction: parseInt($panel.find("#n21-aura-direction").val(), 10) || 0,
+          auraOnly: $panel.find("#n21-aura-only").is(":checked"),
+        };
+        if (selectedShape === "circle") aura.size = readNumber("#n21-aura-radius");
+        if (selectedShape === "rect") {
+          aura.size = readNumber("#n21-aura-width");
+          aura.height = readNumber("#n21-aura-height");
+        }
+        if (selectedShape === "cone" || selectedShape === "line") {
+          aura.size = readNumber("#n21-aura-length");
+        }
+        if (selectedShape === "cone") aura.angle = readNumber("#n21-aura-angle");
+        if (selectedShape === "line") aura.width = readNumber("#n21-aura-line-width");
+        return aura;
+      }
+
+      $applyBtn.on("click", async () => {
+        const aura = readAura();
+        const invalid =
+          !aura.color ||
+          isNaN(aura.size) ||
+          aura.size < 0 ||
+          (aura.shape === "rect" && (isNaN(aura.height) || aura.height <= 0)) ||
+          (aura.shape === "cone" && (isNaN(aura.angle) || aura.angle < 1 || aura.angle > 360)) ||
+          (aura.shape === "line" && (isNaN(aura.width) || aura.width <= 0));
+
+        if (invalid) {
+          alert("Algún valor no es válido. Revisa los tamaños (números mayores o iguales a 0) y la apertura (entre 1 y 360).");
           return;
         }
 
@@ -352,10 +552,10 @@
         }
 
         // Only modify tag - the metadata change listener will apply the visual changes
-        if (radius === 0) {
+        if (aura.size === 0) {
           await EditTokenUIManager.removeTokenTag(networkId, "a");
         } else {
-          await EditTokenUIManager.setTokenTag(networkId, "a", formatAuraTag(color, radius));
+          await EditTokenUIManager.setTokenTag(networkId, "a", formatAuraTag(aura));
         }
       });
 
@@ -369,9 +569,6 @@
 
         // Only remove tag - the metadata change listener will remove the visual aura
         await EditTokenUIManager.removeTokenTag(networkId, "a");
-        
-        // Reset form
-        $radiusInput.val(0);
       });
     }
 

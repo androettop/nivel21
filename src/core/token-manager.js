@@ -320,6 +320,235 @@
 
       return () => {};
     }
+
+    /* ----------------- Local visibility overrides ----------------- */
+
+    /**
+     * Hide (or make translucent) a token ONLY on this client, on top of what
+     * Nivel20 decides. It can never reveal a token the server hides: the
+     * effective state is always the most restrictive of the native state and
+     * every active override. Several features can override the same token
+     * independently (keyed by `source`).
+     *
+     * Implemented by re-emitting the token's native "hidden" event, which
+     * Nivel20's own handlers use to hide the image, border and name label.
+     *
+     * @param {string} networkId
+     * @param {string} source - Feature key owning this override
+     * @param {"hidden"|"translucent"|null} mode - null removes the override
+     */
+    setLocalVisibilityOverride(networkId, source, mode) {
+      if (!networkId || !source) return;
+      this._ensureVisibilityOverrides();
+
+      let sources = this._visibilityOverrides.get(networkId);
+      if (mode) {
+        if (!sources) {
+          sources = new Map();
+          this._visibilityOverrides.set(networkId, sources);
+        }
+        if (sources.get(source) === mode) return;
+        sources.set(source, mode);
+      } else {
+        if (!sources || !sources.has(source)) return;
+        sources.delete(source);
+        if (!sources.size) this._visibilityOverrides.delete(networkId);
+      }
+
+      this._applyVisibilityOverride(networkId);
+    }
+
+    /**
+     * Current local override mode for a token from a given source.
+     * @returns {"hidden"|"translucent"|null}
+     */
+    getLocalVisibilityOverride(networkId, source) {
+      return this._visibilityOverrides?.get(networkId)?.get(source) || null;
+    }
+
+    _ensureVisibilityOverrides() {
+      if (this._visibilityOverrides) return;
+      this._visibilityOverrides = new Map(); // networkId -> Map(source -> mode)
+      this._nativeVisibility = new Map(); // networkId -> { hidden, translucent }
+      this._visibilityHooked = new WeakSet(); // token entities with a listener
+      this._applyingOverride = false;
+
+      const schemaRoot = this._getEntityManager()?.schema?.();
+      if (schemaRoot && typeof schemaRoot.onAdd === "function") {
+        // Tokens can be re-created by Nivel20 (e.g. after an edit); hook every
+        // new instance and re-apply its override.
+        schemaRoot.onAdd((_schema, networkId) => {
+          if (!networkId) return;
+          setTimeout(() => {
+            this._hookTokenVisibility(networkId);
+            if (this._visibilityOverrides.has(networkId)) {
+              this._applyVisibilityOverride(networkId);
+            }
+          }, 0);
+        });
+      }
+    }
+
+    _hookTokenVisibility(networkId) {
+      const token = this.getToken(networkId);
+      if (!token || typeof token.on !== "function") return null;
+      if (this._visibilityHooked.has(token)) return token;
+      this._visibilityHooked.add(token);
+
+      if (!this._nativeVisibility.has(networkId)) {
+        this._nativeVisibility.set(networkId, {
+          hidden: !!token.hidden,
+          translucent: !!token.translucent,
+        });
+      }
+
+      token.on("hidden", (hidden, translucent) => {
+        // Ignore the events we emit ourselves; track the real native state.
+        if (this._applyingOverride) return;
+        this._nativeVisibility.set(networkId, {
+          hidden: !!hidden,
+          translucent: !!translucent,
+        });
+        if (this._visibilityOverrides.has(networkId)) {
+          // Re-apply after Nivel20 finished handling its own event.
+          Promise.resolve().then(() => this._applyVisibilityOverride(networkId));
+        }
+      });
+      return token;
+    }
+
+    _applyVisibilityOverride(networkId) {
+      const token = this._hookTokenVisibility(networkId);
+      if (!token || typeof token.fire !== "function") return;
+
+      const native = this._nativeVisibility.get(networkId) || {
+        hidden: false,
+        translucent: false,
+      };
+      const modes = Array.from(this._visibilityOverrides.get(networkId)?.values() || []);
+
+      let hidden = native.hidden;
+      let translucent = native.translucent;
+      const nativeFullyHidden = native.hidden && !native.translucent;
+
+      if (!nativeFullyHidden) {
+        if (modes.includes("hidden")) {
+          hidden = true;
+          translucent = false;
+        } else if (modes.includes("translucent")) {
+          hidden = true;
+          translucent = true;
+        }
+      }
+
+      this._applyingOverride = true;
+      try {
+        token.fire("hidden", hidden, translucent);
+      } catch (_error) {
+      } finally {
+        this._applyingOverride = false;
+      }
+    }
+
+    /**
+     * Prevent this client from selecting a token (removes Nivel20's
+     * "selectable" tag locally) for a given reason. The tag is restored only
+     * when no reason blocks it anymore and only if we were the ones removing it.
+     * @param {string} networkId
+     * @param {string} reason - Feature key
+     * @param {boolean} blocked
+     */
+    setSelectionBlocked(networkId, reason, blocked) {
+      if (!networkId || !reason) return;
+      if (!this._selectionBlocks) {
+        this._selectionBlocks = new Map(); // networkId -> Set(reason)
+        this._removedSelectable = new Set(); // networkIds we stripped
+      }
+
+      let reasons = this._selectionBlocks.get(networkId);
+      if (blocked) {
+        if (!reasons) {
+          reasons = new Set();
+          this._selectionBlocks.set(networkId, reasons);
+        }
+        reasons.add(reason);
+      } else if (reasons) {
+        reasons.delete(reason);
+        if (!reasons.size) this._selectionBlocks.delete(networkId);
+      }
+
+      this.refreshSelectionBlock(networkId);
+    }
+
+    /**
+     * Re-apply the selection block of a token (Nivel20 re-adds "selectable"
+     * when it resets a token's tags, e.g. after an edit).
+     * @param {string} networkId
+     */
+    refreshSelectionBlock(networkId) {
+      const tags = this.getToken(networkId)?.tags;
+      if (!tags || !this._selectionBlocks) return;
+
+      const blocked = this._selectionBlocks.has(networkId);
+      if (blocked) {
+        if (tags.has?.("selectable")) {
+          tags.remove?.("selectable");
+          this._removedSelectable.add(networkId);
+        }
+      } else if (this._removedSelectable.has(networkId)) {
+        this._removedSelectable.delete(networkId);
+        if (!tags.has?.("selectable")) tags.add?.("selectable");
+      }
+    }
+
+    /**
+     * Keep a decoration child (e.g. an aura) out of the bounds Nivel20 uses to
+     * place and size the token's name label, so big auras don't push the name
+     * away from the token. Wraps the label handler once per token entity.
+     * @param {string} networkId
+     * @param {Object} child - Child entity to ignore
+     */
+    excludeChildFromLabelBounds(networkId, child) {
+      const token = this.getToken(networkId);
+      if (!token || !child) return;
+      child.n21ExcludeFromLabelBounds = true;
+
+      const handler = token.script?.scripts?.find(
+        (script) => typeof script?.updateFollowTargetPosition === "function",
+      );
+      if (!handler) return;
+
+      if (!handler.n21LabelPatched) {
+        handler.n21LabelPatched = true;
+        const original = handler.updateFollowTargetPosition;
+        handler.updateFollowTargetPosition = function (...args) {
+          const excluded = (token.children || []).filter(
+            (c) => c?.n21ExcludeFromLabelBounds && c.enabled,
+          );
+          excluded.forEach((c) => {
+            c.enabled = false;
+          });
+          try {
+            return original.apply(this, args);
+          } finally {
+            excluded.forEach((c) => {
+              c.enabled = true;
+            });
+          }
+        };
+      }
+
+      handler.needsUpdate = true;
+    }
+
+    /**
+     * Whether a token is blocked from selection by any reason.
+     * @param {string} networkId
+     * @returns {boolean}
+     */
+    isSelectionBlocked(networkId) {
+      return !!this._selectionBlocks?.has(networkId);
+    }
   }
 
   // Register TokenManager

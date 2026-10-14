@@ -6,6 +6,13 @@
   const { BaseManager } = window._n21_?.managers || {};
   const { loadManagers } = window._n21_ || {};
 
+  // Native measurement templates used to draw each aura shape kind.
+  const AURA_TEMPLATES = {
+    cone: "coneTemplate",
+    box: "boxTemplate",
+    line: "lineTemplate",
+  };
+
   /**
    * MeasurementManager provides a unified interface for managing measurements
    * Abstracts the native measurementManager from nivel20
@@ -149,23 +156,37 @@
     }
 
     /**
-     * Create an aura shape using the cone template
+     * Create an aura shape from one of Nivel20's measurement templates.
+     * - "cone": circles (angle 360) and cones
+     * - "box":  squares / rectangles
+     * - "line": lines
+     * @param {"cone"|"box"|"line"} [kind="cone"]
      * @returns {Object|null} The aura shape entity or null if creation failed
      */
-    createAuraShape() {
+    createAuraShape(kind = "cone") {
       const native = this._getNative();
-      if (!native || !native.shapeTemplate || !native.shapeTemplate.coneTemplate || !native.app) {
-        return null;
-      }
+      const templateName = AURA_TEMPLATES[kind];
+      const template = templateName && native?.shapeTemplate?.[templateName];
+      if (!template || !native.app) return null;
 
       try {
-        const shape = native.shapeTemplate.coneTemplate.instantiateEntity(native.app);
+        const shape = template.instantiateEntity(native.app);
         shape.setName("TokenAura");
         shape.setLocalEulerAngles(90, 0, 0);
+        shape.n21AuraKind = kind;
         return shape;
       } catch (error) {
         return null;
       }
+    }
+
+    /**
+     * Kind of an aura shape created with createAuraShape.
+     * @param {Object} shape
+     * @returns {"cone"|"box"|"line"|null}
+     */
+    getAuraShapeKind(shape) {
+      return shape?.n21AuraKind || (shape ? "cone" : null);
     }
 
     /**
@@ -191,22 +212,50 @@
      * Configure aura material parameters on a shape
      * @param {Object} shape - The shape entity
      * @param {Object} config - Configuration object
-     * @param {number} config.radius - The radius of the aura
+     * @param {number} config.radius - Radius (circle/cone) or length (line) in cells
+     * @param {number} [config.width] - Box width / line width in cells
+     * @param {number} [config.height] - Box height in cells
+     * @param {number} [config.angle=360] - Cone opening angle in degrees
+     * @param {number} [config.direction=0] - Cone/line direction in degrees,
+     *   0 = up (north), clockwise
      * @param {Array<number>} config.borderColor - [r, g, b, a] for border
      * @param {Array<number>} config.fillColor - [r, g, b, a] for fill
      * @returns {boolean} True if material was configured successfully
      */
     configureAuraMaterial(shape, config) {
       if (!shape || !shape.render || !shape.render.material) return false;
-      if (!config || typeof config.radius !== "number") return false;
+      if (!config) return false;
+
+      const kind = this.getAuraShapeKind(shape);
 
       try {
         const material = shape.render.material;
-        const size = config.radius * 2;
         shape.render.castShadows = false;
-        material.setParameter("uAngle", 360);
-        material.setParameter("uBorderPx", 2 / size);
-        material.setParameter("uFigureSize", [63.9, 63.9]);
+
+        // The native shaders measure rotation counter-clockwise from the
+        // west; convert from a compass bearing (0 = north, clockwise).
+        const rotation = (((270 - (config.direction || 0)) % 360) + 360) % 360;
+
+        if (kind === "box") {
+          const width = Math.max(config.width || 1, 0.01);
+          const height = Math.max(config.height || 1, 0.01);
+          // 64 shader px per cell keeps the border as thick as other auras.
+          material.setParameter("uSize", [width * 64, height * 64]);
+          material.setParameter("uBorderPx", 2);
+          material.setParameter("uRotation", 0);
+        } else {
+          if (typeof config.radius !== "number") return false;
+          const size = config.radius * 2;
+          material.setParameter("uBorderPx", 2 / size);
+          material.setParameter("uFigureSize", [63.9, 63.9]);
+          material.setParameter("uRotation", rotation);
+          if (kind === "line") {
+            const width = Math.max(config.width || 1, 0.01);
+            material.setParameter("uWidth", (width * 64) / size);
+          } else {
+            material.setParameter("uAngle", config.angle || 360);
+          }
+        }
 
         if (config.borderColor && Array.isArray(config.borderColor)) {
           material.setParameter("uGeomBorderColor", config.borderColor);
