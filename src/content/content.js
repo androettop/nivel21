@@ -65,6 +65,7 @@
       injectScript("src/core/character-sheet-manager.js"),
       injectScript("src/core/combat-tracking-manager.js"),
       injectScript("src/core/local-resources-manager.js"),
+      injectScript("src/core/token-overlay-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
@@ -102,6 +103,7 @@
       injectScript("src/features/money-editor.js"),
       injectScript("src/features/character-frame.js"),
       injectScript("src/features/creature-resources.js"),
+      injectScript("src/features/token-health-bar.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

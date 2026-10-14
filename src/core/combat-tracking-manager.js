@@ -53,6 +53,101 @@
 
     async init() {
       super.init();
+      this._statusData = null; // last payload of Nivel20's campaign status
+      this._hookStatusRefresh();
+    }
+
+    /**
+     * Keep a copy of every campaign status payload Nivel20 applies to the
+     * panel (it includes rows this client may not see in its panel).
+     * @private
+     */
+    _hookStatusRefresh() {
+      const original = window.refreshCampaignStatus;
+      if (typeof original !== "function") {
+        setTimeout(() => this._hookStatusRefresh(), 1000);
+        return;
+      }
+      if (original.__n21Hooked) return;
+      const self = this;
+      const hooked = function (data, ...args) {
+        if (data && typeof data === "object") self._statusData = data;
+        const result = original.call(this, data, ...args);
+        self._scheduleNotify();
+        return result;
+      };
+      hooked.__n21Hooked = true;
+      window.refreshCampaignStatus = hooked;
+
+      // Initial snapshot: the same request the panel makes to refresh itself.
+      const baseUrl = this.getBaseUrl();
+      if (baseUrl) {
+        $.ajax({ url: `${baseUrl}/status`, type: "get", dataType: "json" })
+          .done((data) => {
+            if (!this._statusData) this._statusData = data;
+            this._scheduleNotify();
+          })
+          .fail(() => {});
+      }
+    }
+
+    /**
+     * Resolve a row id (as stored in a token's [char:id] tag) to its type.
+     * Rows visible in the panel win; otherwise the last status payload is
+     * used (it may include rows hidden from this client).
+     * @param {string} rowId
+     * @returns {{type: string, id: string}|null}
+     */
+    resolveRow(rowId) {
+      const id = String(rowId || "").trim();
+      if (!id) return null;
+      for (const type of ["character", "creature"]) {
+        if (this._getRow(type, id).length) return { type, id };
+      }
+      if (this._statusData?.characters?.[id]) return { type: "character", id };
+      if (this._statusData?.creatures?.[id]) return { type: "creature", id };
+      return null;
+    }
+
+    /**
+     * Conditions of an entry, read from the panel when visible or from the
+     * last campaign status payload otherwise.
+     * @returns {Array<Object>}
+     */
+    getConditions(type, id, index = 0) {
+      const entry = this.getEntry(type, id, index);
+      if (entry) return entry.conditions;
+      const group = type === "creature" ? this._statusData?.creatures : this._statusData?.characters;
+      const status = group?.[id];
+      if (!status) return [];
+      const instance = status.list ? status.list[index] || status.list[String(index)] : status;
+      return Array.isArray(instance?.conditions) ? instance.conditions : [];
+    }
+
+    /**
+     * Map tokens assigned to rows (via [char:id]) to concrete entries. Tokens
+     * assigned to the same creature group are spread over its instances in a
+     * stable order (sorted by networkId) so every client agrees.
+     * @param {Array<{networkId: string, rowId: string}>} assignments
+     * @returns {Map<string, {type: string, id: string, index: number}>}
+     */
+    mapTokensToEntries(assignments) {
+      const result = new Map();
+      const byRow = new Map();
+      (assignments || []).forEach(({ networkId, rowId }) => {
+        const row = this.resolveRow(rowId);
+        if (!row || !networkId) return;
+        const key = `${row.type}:${row.id}`;
+        if (!byRow.has(key)) byRow.set(key, { row, ids: [] });
+        byRow.get(key).ids.push(networkId);
+      });
+      byRow.forEach(({ row, ids }) => {
+        ids.sort().forEach((networkId, i) => {
+          const count = this.getInstanceCount(row.type, row.id);
+          result.set(networkId, { ...row, index: count > 1 ? i % count : 0 });
+        });
+      });
+      return result;
     }
 
     isReady() {

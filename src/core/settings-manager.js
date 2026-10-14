@@ -216,6 +216,14 @@
       });
 
       this.registerSetting({
+        name: "feature.token-health-bar.enabled",
+        label: "Barras de vida en los tokens",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.notes-panel.enabled",
         label: "Panel de Notas",
         type: "boolean",

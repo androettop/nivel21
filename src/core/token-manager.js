@@ -46,6 +46,19 @@
     }
 
     /**
+     * Root schema collection of tokens (null until the room state is ready).
+     * @returns {Object|null}
+     */
+    _getSchemaRoot() {
+      try {
+        const root = this._getEntityManager()?.schema?.();
+        return root && typeof root.onAdd === "function" ? root : null;
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    /**
      * Get a specific token by its networkId
      * @param {string} networkId - The network ID of the token
      * @returns {Object|null} The token instance or null if not found
@@ -97,6 +110,52 @@
     }
 
     /**
+     * Read a [key:value] tag from a token's description.
+     * @param {string} networkId
+     * @param {string} key
+     * @returns {string|null}
+     */
+    getTokenTag(networkId, key) {
+      const schema = this.getTokenSchema(networkId);
+      if (!schema) return null;
+      let description = "";
+      try {
+        description = JSON.parse(
+          typeof schema.metadata === "string" ? schema.metadata : "{}",
+        )?.description || "";
+      } catch (_error) {}
+      return window._n21_.utils.parseTokenTag(String(description), key);
+    }
+
+    /**
+     * Screen rectangle (canvas CSS pixels) covered by a token, or null.
+     * @param {string} networkId
+     * @param {Object} cameraManager - CameraManager (for worldToScreen)
+     * @returns {{x: number, y: number, width: number, height: number}|null}
+     */
+    getTokenScreenRect(networkId, cameraManager) {
+      const pos = this.getTokenPosition(networkId);
+      if (!pos || !cameraManager) return null;
+      const scale = this.getTokenScale(networkId) || { x: 1, z: 1 };
+      const halfX = Math.abs(scale.x || 1) / 2;
+      const halfZ = Math.abs(scale.z || 1) / 2;
+      const corners = [
+        [pos.x - halfX, pos.z - halfZ],
+        [pos.x + halfX, pos.z - halfZ],
+        [pos.x + halfX, pos.z + halfZ],
+        [pos.x - halfX, pos.z + halfZ],
+      ]
+        .map(([wx, wz]) => cameraManager.worldToScreen(wx, wz, 0))
+        .filter(Boolean);
+      if (corners.length !== 4) return null;
+      const xs = corners.map((p) => p.x);
+      const ys = corners.map((p) => p.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+    }
+
+    /**
      * Subscribe to token metadata changes
      * Automatically registers listeners on all tokens (current and future)
      * @param {Function} callback - Called with (networkId, metadataString) when metadata changes
@@ -105,10 +164,10 @@
     onTokenMetadataChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenMetadataChange(callback), 500);
         return () => {};
       }
 
@@ -152,10 +211,10 @@
     onTokenTagsChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenTagsChange(callback), 500);
         return () => {};
       }
 
@@ -307,10 +366,10 @@
     onTokenVisibilityChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenVisibilityChange(callback), 500);
         return () => {};
       }
 
@@ -391,8 +450,8 @@
       this._visibilityHooked = new WeakSet(); // token entities with a listener
       this._applyingOverride = false;
 
-      const schemaRoot = this._getEntityManager()?.schema?.();
-      if (schemaRoot && typeof schemaRoot.onAdd === "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (schemaRoot) {
         // Tokens can be re-created by Nivel20 (e.g. after an edit); hook every
         // new instance and re-apply its override.
         schemaRoot.onAdd((_schema, networkId) => {
