@@ -82,12 +82,13 @@
       // Initial snapshot: the same request the panel makes to refresh itself.
       const baseUrl = this.getBaseUrl();
       if (baseUrl) {
-        $.ajax({ url: `${baseUrl}/status`, type: "get", dataType: "json" })
-          .done((data) => {
+        window._n21_.utils
+          .queueRequest(() => $.ajax({ url: `${baseUrl}/status`, type: "get", dataType: "json" }))
+          .then((data) => {
             if (!this._statusData) this._statusData = data;
             this._scheduleNotify();
           })
-          .fail(() => {});
+          .catch(() => {});
       }
     }
 
@@ -527,7 +528,7 @@
       // The server rewrites the whole campaign status on each save, so
       // concurrent saves of different rows overwrite each other. Send them
       // one at a time.
-      const run = () => this._postStatus(baseUrl, payload);
+      const run = () => window._n21_.utils.queueRequest(() => this._postStatus(baseUrl, payload));
       this._saveChain = (this._saveChain || Promise.resolve()).then(run, run);
       return this._saveChain;
     }
@@ -618,6 +619,21 @@
      * @returns {Promise<Array<{id, name, icon, summary, condition_type}>>}
      */
     async searchConditions(query) {
+      // The catalog is small: download it once per page and filter locally,
+      // so typing in the search box doesn't hit Nivel20 on every key.
+      if (!this._conditionsCatalog) {
+        this._conditionsCatalog = this._loadConditionsCatalog().catch((error) => {
+          this._conditionsCatalog = null;
+          throw error;
+        });
+      }
+      const all = await this._conditionsCatalog;
+      const q = normalizeText(query);
+      return q ? all.filter((c) => normalizeText(c.name).includes(q)) : all;
+    }
+
+    /** @private */
+    async _loadConditionsCatalog() {
       let url = $("#edit-health-modal .char_conditions select").data("url");
       if (!url) {
         const game = /^\/games\/([^/]+)/.exec(this.getBaseUrl() || "");
@@ -626,11 +642,11 @@
       }
       const results = [];
       const seen = new Set();
-      for (let page = 1; page <= 3; page += 1) {
-        const response = await fetch(
-          `${url}?q=${encodeURIComponent(query || "")}&page=${page}`,
-          { credentials: "include", headers: { Accept: "application/json" } },
-        );
+      for (let page = 1; page <= 10; page += 1) {
+        const response = await window._n21_.utils.queuedFetch(`${url}?q=&page=${page}`, {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
         if (!response.ok) break;
         const data = await response.json();
         const list = Array.isArray(data?.results) ? data.results : [];

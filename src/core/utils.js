@@ -246,6 +246,57 @@
       .trim();
   }
 
+  /* ---------- Shared request queue for Nivel20 ---------- */
+
+  // Nivel20's firewall challenges bursts of requests. Every request the
+  // extension makes goes through this queue: few at a time and spaced out.
+  const REQUEST_MAX_CONCURRENT = 2;
+  const REQUEST_MIN_GAP_MS = 350;
+  const requestQueue = [];
+  let requestsRunning = 0;
+  let lastRequestStart = 0;
+  let requestTimer = null;
+
+  function pumpRequests() {
+    requestTimer = null;
+    while (requestQueue.length && requestsRunning < REQUEST_MAX_CONCURRENT) {
+      const wait = lastRequestStart + REQUEST_MIN_GAP_MS - Date.now();
+      if (wait > 0) {
+        requestTimer = setTimeout(pumpRequests, wait);
+        return;
+      }
+      const job = requestQueue.shift();
+      requestsRunning += 1;
+      lastRequestStart = Date.now();
+      Promise.resolve()
+        .then(job.run)
+        .then(job.resolve, job.reject)
+        .finally(() => {
+          requestsRunning -= 1;
+          if (!requestTimer) pumpRequests();
+        });
+    }
+  }
+
+  /**
+   * Run a request-making function through the shared queue.
+   * @param {Function} run - () => Promise
+   * @returns {Promise}
+   */
+  function queueRequest(run) {
+    return new Promise((resolve, reject) => {
+      requestQueue.push({ run, resolve, reject });
+      if (!requestTimer) pumpRequests();
+    });
+  }
+
+  /** fetch() through the shared queue. */
+  function queuedFetch(url, options) {
+    return queueRequest(() => fetch(url, options));
+  }
+
+  window._n21_.utils.queueRequest = queueRequest;
+  window._n21_.utils.queuedFetch = queuedFetch;
   window._n21_.utils.uuid = uuid;
   window._n21_.utils.isTabletopUrl = isTabletopUrl;
   window._n21_.utils.getEmojiImageUrl = getEmojiImageUrl;

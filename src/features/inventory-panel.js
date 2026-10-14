@@ -524,13 +524,22 @@
 
     }
 
-    // Reload open panels once an edit has been saved.
+    // Reload open panels once edits have been saved (several edits in a row
+    // cause a single reload).
+    const reloadTimers = new Map();
     CharacterItemsManager.onChange((charId) => {
-      $(".n21-inventory-panel").each(function () {
-        const $panel = $(this);
-        if ($panel.data("n21CharId") !== String(charId)) return;
-        loadAndRender($panel, charId).catch(() => {});
-      });
+      clearTimeout(reloadTimers.get(charId));
+      reloadTimers.set(
+        charId,
+        setTimeout(() => {
+          reloadTimers.delete(charId);
+          $(".n21-inventory-panel").each(function () {
+            const $panel = $(this);
+            if ($panel.data("n21CharId") !== String(charId)) return;
+            loadAndRender($panel, charId).catch(() => {});
+          });
+        }, 800),
+      );
     });
 
     /* ------------------------- Action bar wiring -------------------------- */

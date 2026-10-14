@@ -33,6 +33,7 @@
       super();
       this._sheetManager = null;
       this._pendingQty = new Map(); // itemId -> { qty, timer, item, charId }
+      this._sheetDocs = new Map(); // charId -> Promise<{doc, url}> (until an edit)
       this._listeners = new Set();
     }
 
@@ -81,11 +82,32 @@
 
     /* ----------------------- reading ----------------------- */
 
+    /**
+     * The character sheet page (item links, equipment form). Cached and shared
+     * until something is edited, so opening/refreshing panels doesn't refetch.
+     */
+    _getSheetDoc(charId) {
+      const key = String(charId);
+      if (!this._sheetDocs.has(key)) {
+        const request = this._fetchDocument(`/characters/${key}`);
+        this._sheetDocs.set(key, request);
+        request.catch(() => {
+          if (this._sheetDocs.get(key) === request) this._sheetDocs.delete(key);
+        });
+      }
+      return this._sheetDocs.get(key);
+    }
+
+    _invalidate(charId) {
+      this._sheetDocs.delete(String(charId));
+      this._invalidate(charId);
+    }
+
     async _fetchDocument(url) {
       // Nivel20's firewall answers bursts with an empty 202: retry a bit.
       const waits = [2000, 5000];
       for (let attempt = 0; ; attempt += 1) {
-        const response = await fetch(url, { credentials: "include" });
+        const response = await window._n21_.utils.queuedFetch(url, { credentials: "include" });
         const html = response.ok ? await response.text() : "";
         if (response.ok && response.status !== 202 && html) {
           return {
@@ -113,7 +135,7 @@
 
       let links = [];
       try {
-        const { doc } = await this._fetchDocument(`/characters/${charId}`);
+        const { doc } = await this._getSheetDoc(charId);
         links = [...doc.querySelectorAll('a[href*="/items/"][href$="/edit"]')].map((a) => {
           const wrapper = a.closest(".accordion-wrapper");
           const editUrl = a.getAttribute("href");
@@ -151,7 +173,7 @@
     /* ----------------------- writing ----------------------- */
 
     async _submitForm(form, action) {
-      const response = await fetch(action || form.getAttribute("action"), {
+      const response = await window._n21_.utils.queuedFetch(action || form.getAttribute("action"), {
         method: "POST",
         credentials: "include",
         body: new URLSearchParams(new FormData(form)),
@@ -215,7 +237,7 @@
         console.warn("[CharacterItemsManager] Could not save quantity:", error);
       }
       if (this._pendingQty.get(itemId)?.qty === qty) this._pendingQty.delete(itemId);
-      this._sheetManager.invalidate(`/characters/${pending.charId}.json`);
+      this._invalidate(pending.charId);
       this._notify(pending.charId);
     }
 
@@ -225,13 +247,13 @@
       const body = new URLSearchParams();
       body.set("_method", "delete");
       body.set("authenticity_token", this._csrfToken());
-      const response = await fetch(item.deleteUrl, {
+      const response = await window._n21_.utils.queuedFetch(item.deleteUrl, {
         method: "POST",
         credentials: "include",
         body,
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      this._sheetManager.invalidate(`/characters/${charId}.json`);
+      this._invalidate(charId);
       this._notify(charId);
       return true;
     }
@@ -242,7 +264,9 @@
      * @param {(text: string, maxLength: number|null) => string|null} transform
      */
     async updateEquipmentText(charId, transform) {
-      const { doc } = await this._fetchDocument(`/characters/${charId}`);
+      // Fresh copy: the form must carry the current text.
+      this._sheetDocs.delete(String(charId));
+      const { doc } = await this._getSheetDoc(charId);
       const form = doc.querySelector('form[action$="/update_field"] [name="character[attribute]"][value="equipment"]')
         ?.closest("form");
       const field = form?.querySelector('[name="character[value]"]');
@@ -254,7 +278,7 @@
       field.value = next;
       field.textContent = next;
       await this._submitForm(form);
-      this._sheetManager.invalidate(`/characters/${charId}.json`);
+      this._invalidate(charId);
       this._notify(charId);
       return true;
     }

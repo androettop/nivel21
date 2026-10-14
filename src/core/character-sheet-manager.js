@@ -78,7 +78,7 @@
         // (a challenge); retry a few times with growing waits.
         const waits = [2000, 5000, 10000];
         for (let attempt = 0; ; attempt += 1) {
-          const response = await fetch(url, {
+          const response = await window._n21_.utils.queuedFetch(url, {
             method: "GET",
             credentials: "include",
             headers: { Accept: "application/json" },
