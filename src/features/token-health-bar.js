@@ -56,11 +56,8 @@
       rebuildTimer = setTimeout(rebuild, 100);
     }
 
-    function barColor(ratio) {
-      if (ratio > 0.5) return "#3fa34d";
-      if (ratio > 0.25) return "#e0a020";
-      return "#d23a2f";
-    }
+    // Same red as Nivel20's health bars.
+    const BAR_COLOR = "#c62828";
 
     function draw(ctx, helpers) {
       bars.forEach((hp, networkId) => {
@@ -90,7 +87,7 @@
         ctx.fillRect(x - 1, y - 1, width + 2, height + 2);
         ctx.fillStyle = "#3a3c40";
         ctx.fillRect(x, y, width, height);
-        ctx.fillStyle = barColor(ratio);
+        ctx.fillStyle = BAR_COLOR;
         ctx.fillRect(x, y, width * ratio, height);
         if (tempRatio > 0) {
           ctx.fillStyle = "#4a90d9";
