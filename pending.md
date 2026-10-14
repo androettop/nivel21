@@ -10,7 +10,7 @@
 - [x] **Menú contextual en el panel de inventario**: click derecho en cada objeto → sumar/restar cantidad, eliminar; editar dinero. Usar las mismas llamadas a la API que las vistas del personaje.
 - [x] **Efectos ambientales animados**: lluvia, nubes, tormenta, etc.; capa liviana sobre el canvas.
 - [x] **Barra de vida sobre los tokens**: el DM en todos los tokens asignados; los jugadores solo en los que ven en su panel.
-- [x] **Estado invisible**: según la ESTADO «Invisible» del personaje/criatura (no el invisible nativo del DM): ocultar el token a quienes no ven al personaje/criatura en su panel (solo del lado del cliente). Quienes sí lo ven, lo ven semitransparente con un iconito que indica que es invisible por el estado (no por el invisible del DM).
+- [x] **Estado invisible**: según el estado «Invisible» del personaje/criatura (no el invisible nativo del DM): ocultar el token a quienes no ven al personaje/criatura en su panel (solo del lado del cliente). Quienes sí lo ven, lo ven semitransparente con el ícono del estado (feature «Estados en los tokens»).
 - [x] **Formulario mejorado de la barra de acciones**: árbol multinivel, arrastrar y soltar, carpetas de la extensión (acciones, conjuros, inventario…) reordenables/activables, ajuste por personaje al guardar.
 - [x] **Ping rápido**: además del menú contextual, doble click de la ruedita o tecla F (donde apunta el cursor), con el mismo debounce del ping.
 
