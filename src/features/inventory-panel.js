@@ -35,6 +35,7 @@
       ActionBarManager,
       CharacterSheetManager,
       CharacterItemsManager,
+      CombatTrackingManager,
       FloatingPanelManager,
       TooltipManager,
       SettingsManager,
@@ -42,6 +43,7 @@
       "ActionBarManager",
       "CharacterSheetManager",
       "CharacterItemsManager",
+      "CombatTrackingManager",
       "FloatingPanelManager",
       "TooltipManager",
       "SettingsManager",
@@ -292,9 +294,9 @@
         '<div class="n21-inventory-footer">' +
         '<button class="n21-inventory-refresh">' +
         '<i class="fa fa-refresh"></i></button>' +
-        // Nivel20 redirects the slug-less URL to the character's sheet.
-        `<a class="n21-inventory-edit" href="/characters/${encodeURIComponent(
-          charId,
+        // The items tab only opens on the campaign URL of the sheet.
+        `<a class="n21-inventory-edit" href="${escapeHtml(
+          CombatTrackingManager.getCharacterSheetUrl(charId),
         )}?panel=items" target="_blank" rel="noopener" title="Editar el equipo en la hoja del personaje">` +
         '<i class="fa fa-pencil"></i></a>' +
         '<div class="n21-inventory-money"></div>' +

@@ -665,6 +665,20 @@
     }
 
     /**
+     * Full sheet URL of a character (with its campaign), as linked from the
+     * tracking panel. Falls back to the slug-less URL Nivel20 redirects.
+     * @param {string|number} charId
+     * @returns {string}
+     */
+    getCharacterSheetUrl(charId) {
+      const href = this._getRow("character", String(charId))
+        .find('a[href*="/characters/"]')
+        .first()
+        .attr("href");
+      return href ? href.split(/[?#]/)[0] : `/characters/${charId}`;
+    }
+
+    /**
      * Open an entry's sheet the way the panel does (Nivel20 floating panel).
      */
     openSheet(type, id) {
