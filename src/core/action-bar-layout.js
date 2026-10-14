@@ -126,11 +126,15 @@
     const isHolder = (item) => !item?.n21Key && item?.action_type === "none";
     for (let i = 0; i < items.length; i += 1) {
       const folder = items[i];
-      if (!folder?.n21Key) continue;
+      // Extension folders and Nivel20's default folders (not user records).
+      const takesHolder =
+        folder?.n21Key ||
+        (folder?.action_type === "folder" && folder.id != null && !/^\d+$/.test(String(folder.id)));
+      if (!takesHolder) continue;
       const holderIndex = items.findIndex((it) => isHolder(it) && it.name === folder.name);
       if (holderIndex === -1) continue;
       const [holder] = items.splice(holderIndex, 1);
-      if (hidden.has(folder.n21Key)) {
+      if (folder.n21Key && hidden.has(folder.n21Key)) {
         if (holderIndex < i) i -= 1;
         continue;
       }

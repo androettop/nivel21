@@ -82,13 +82,20 @@
     /* ----------------------- reading ----------------------- */
 
     async _fetchDocument(url) {
-      const response = await fetch(url, { credentials: "include" });
-      if (!response.ok) throw new Error(`HTTP ${response.status} at ${url}`);
-      const html = await response.text();
-      return {
-        doc: new DOMParser().parseFromString(html, "text/html"),
-        url: response.url,
-      };
+      // Nivel20's firewall answers bursts with an empty 202: retry a bit.
+      const waits = [2000, 5000];
+      for (let attempt = 0; ; attempt += 1) {
+        const response = await fetch(url, { credentials: "include" });
+        const html = response.ok ? await response.text() : "";
+        if (response.ok && response.status !== 202 && html) {
+          return {
+            doc: new DOMParser().parseFromString(html, "text/html"),
+            url: response.url,
+          };
+        }
+        if (attempt >= waits.length) throw new Error(`HTTP ${response.status} at ${url}`);
+        await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
+      }
     }
 
     /**

@@ -200,6 +200,7 @@
     /* ---------- tree model ---------- */
 
     let uidCounter = 0;
+    let loadProblems = false;
     const nodes = new Map(); // uid -> node
     let root = [];
     const removedFrags = [];
@@ -271,11 +272,14 @@
 
     async function buildModel() {
       let phActions = [];
+      loadProblems = false;
       try {
         // Shared (cached) request with the spell/trait providers.
         const ph = await CharacterSheetManager.fetchCharacter(`/characters/${charId}.json`);
         phActions = Array.isArray(ph?.actions) ? ph.actions : [];
-      } catch (_error) {}
+      } catch (_error) {
+        loadProblems = true;
+      }
       const iconById = new Map();
       phActions.forEach((a) => {
         iconById.set(String(a.id), a.icon);
@@ -353,7 +357,7 @@
 
       // "Sin acción" records named like an extension folder are that folder's
       // icon: shown as part of the folder, not as separate rows.
-      ext.forEach((extNode) => {
+      [...ext, ...others.filter((n) => n.kind === "default" && n.type === "folder")].forEach((extNode) => {
         const index = nativeLevel.findIndex(
           (n) => n.kind === "native" && n.type === "none" && n.label === extNode.label && n.frag,
         );
@@ -413,6 +417,19 @@
       return node.kind === "native" || node.kind === "sub";
     }
 
+    // Folders whose icon comes from the extension itself.
+    function isIconLocked(node) {
+      return (
+        node.kind === "ext" &&
+        (node.key === "n21:actions" || node.key === "n21:inventory" || node.key?.startsWith("n21:spells:"))
+      );
+    }
+
+    /** Folders whose icon is set through a "Sin acción" record with their name. */
+    function usesIconHolder(node) {
+      return (node.kind === "ext" && !isIconLocked(node)) || (node.kind === "default" && node.type === "folder");
+    }
+
     /* ---------- rendering ---------- */
 
     let $card = null;
@@ -470,12 +487,17 @@
                   : ""
               }
               ${
-                node.kind === "ext"
+                usesIconHolder(node)
                   ? `<button type="button" class="n21-abe-btn n21-abe-edit" title="Elegir el icono de la carpeta">Icono</button>`
                   : ""
               }
               ${editable ? `<button type="button" class="n21-abe-btn n21-abe-edit" title="Editar">Editar</button>` : ""}
               ${editable ? `<button type="button" class="n21-abe-btn n21-abe-delete" title="Eliminar">✕</button>` : ""}
+            </span>
+            <span class="n21-abe-confirm" hidden>
+              <span>¿Eliminar${node.children.length ? " con su contenido" : ""}?</span>
+              <button type="button" class="n21-abe-btn n21-abe-confirm-yes">Eliminar</button>
+              <button type="button" class="n21-abe-btn n21-abe-confirm-no">Cancelar</button>
             </span>
           </div>
           <div class="n21-abe-details" ${openUid === node.uid ? "" : "hidden"}></div>
@@ -506,17 +528,32 @@
       openUid = uid;
       $details.prop("hidden", false).empty();
 
-      if (node.kind === "sub" && !node.frag) {
+      const showHolder = (holder) => {
+        holder.style.display = "";
+        holder.classList.add("n21-abe-icon-holder");
+        $details.append(holder);
+        $(holder).find(".accordion-content").addClass("show in");
+      };
+
+      if (node.kind === "sub") {
+        // Name + icon. The icon lives in a "Sin acción" placeholder named
+        // like the sub-folder (created on demand).
         $details.append(`
           <div class="n21-abe-sub-form">
             <label>Nombre de la subcarpeta
               <input type="text" class="form-control n21-abe-sub-name" maxlength="60" value="${escapeHtml(node.label)}" />
             </label>
+            <span class="n21-abe-sub-icon-label">Icono</span>
           </div>`);
+        if (!node.frag) {
+          node.frag = createTopFrag("none");
+          if (node.frag) writeField(node.frag, "name", node.label);
+        }
+        if (node.frag) showHolder(node.frag);
         return;
       }
 
-      if (node.kind === "ext") {
+      if (usesIconHolder(node)) {
         // The folder's icon lives in a "Sin acción" record with its name.
         if (!node.iconFrag) {
           node.iconFrag = createTopFrag("none");
@@ -581,13 +618,6 @@
     function deleteNode(uid) {
       const node = nodes.get(uid);
       if (!node) return;
-      const count = (n) => 1 + n.children.reduce((s, c) => s + count(c), 0);
-      const total = count(node);
-      const text =
-        total > 1
-          ? `¿Eliminar «${node.label}» y las ${total - 1} acciones que contiene?`
-          : `¿Eliminar «${node.label}»?`;
-      if (!window.confirm(text)) return;
       if (openUid) closeDetails();
       const collect = (n) => {
         if (n.frag) removedFrags.push(n.frag);
@@ -650,7 +680,20 @@
           openDetails(uid);
         }
       });
+      // Inline confirmation (Nivel20 replaces window.confirm with its own
+      // asynchronous dialogs).
       $card.on("click", ".n21-abe-delete", function () {
+        const $row = $(this).closest(".n21-abe-row");
+        $row.find("> .n21-abe-actions").prop("hidden", true);
+        $row.find("> .n21-abe-confirm").prop("hidden", false);
+        $row.find(".n21-abe-confirm-no").trigger("focus");
+      });
+      $card.on("click", ".n21-abe-confirm-no", function () {
+        const $row = $(this).closest(".n21-abe-row");
+        $row.find("> .n21-abe-confirm").prop("hidden", true);
+        $row.find("> .n21-abe-actions").prop("hidden", false);
+      });
+      $card.on("click", ".n21-abe-confirm-yes", function () {
         deleteNode($(this).closest(".n21-abe-node").attr("data-uid"));
       });
       $card.on("click", ".n21-abe-collapse", function () {
@@ -755,6 +798,13 @@
       return created;
     }
 
+    /** A new icon placeholder the user didn't give an icon to: drop it. */
+    function dropIfEmptyHolder(frag) {
+      if (!frag || recordId(frag) || fieldOf(frag, "icon_id")?.value) return frag;
+      destroyFrag(frag);
+      return null;
+    }
+
     function serialize() {
       closeDetails();
       removedFrags.forEach(destroyFrag);
@@ -766,7 +816,8 @@
       root.forEach((node) => {
         if (node.kind === "ext" || node.kind === "default" || node.kind === "item") {
           order.push(node.key);
-          if (node.kind === "ext" && node.iconFrag) {
+          node.iconFrag = dropIfEmptyHolder(node.iconFrag);
+          if (node.iconFrag) {
             node.iconFrag = ensureTop(node.iconFrag, "none");
             writeField(node.iconFrag, "name", node.label);
             writeField(node.iconFrag, "order", (topOrder += 1));
@@ -784,6 +835,7 @@
           return;
         }
 
+        if (node.kind === "sub") node.frag = dropIfEmptyHolder(node.frag);
         const folderFrag = ensureTop(node.frag, "folder");
         node.frag = folderFrag;
         writeField(folderFrag, "name", node.label);
@@ -797,6 +849,7 @@
             if (child.type === "folder") {
               const path = `${prefix}${child.label}`;
               // A placeholder keeps the sub-folder's icon and position.
+              child.frag = dropIfEmptyHolder(child.frag);
               if (child.frag) {
                 child.frag = ensureChild(child.frag, folderFrag, "none");
                 writeField(child.frag, "name", path);
@@ -824,10 +877,17 @@
       }
 
       // What Nivel20 can't store: saved for this character in this browser.
-      layoutApi.saveLayout(charId, {
-        order,
-        hidden: root.filter((n) => n.kind === "ext" && !n.enabled).map((n) => n.key),
+      // Entries that couldn't be loaded this time keep their previous state.
+      const previous = layoutApi.getLayout(charId) || { order: [], hidden: [] };
+      const shown = new Set(root.map((n) => n.key).filter(Boolean));
+      const hidden = root.filter((n) => n.kind === "ext" && !n.enabled).map((n) => n.key);
+      previous.hidden.forEach((key) => {
+        if (!shown.has(key) && !hidden.includes(key)) hidden.push(key);
       });
+      previous.order.forEach((key) => {
+        if (!shown.has(key) && !order.includes(key)) order.push(key);
+      });
+      layoutApi.saveLayout(charId, { order, hidden });
     }
 
     form.addEventListener(
@@ -861,6 +921,11 @@
           (puedes anidar carpetas en varios niveles). Las carpetas de Nivel21 y las acciones por defecto se
           pueden ocultar. Los cambios se aplican al pulsar «Actualizar Personaje».
         </p>
+        ${
+          loadProblems
+            ? `<p class="n21-abe-warning">No se pudieron cargar todos los datos del personaje (Nivel20 limitó las consultas). Algunas carpetas pueden faltar: recarga la página en unos segundos antes de reorganizarlas.</p>`
+            : ""
+        }
         <ul class="n21-abe-tree"></ul>
       </div>`);
     nativeCard.parentElement.insertBefore($card[0], nativeCard);

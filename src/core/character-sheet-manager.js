@@ -74,18 +74,27 @@
       if (cached) return cached;
 
       const request = (async () => {
-        const response = await fetch(url, {
-          method: "GET",
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) {
-          throw new Error(
-            `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
-          );
+        // Nivel20's firewall answers bursts of requests with an empty 202
+        // (a challenge); retry a few times with growing waits.
+        const waits = [2000, 5000, 10000];
+        for (let attempt = 0; ; attempt += 1) {
+          const response = await fetch(url, {
+            method: "GET",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+          const text = response.ok ? await response.text() : "";
+          if (response.ok && response.status !== 202 && text) {
+            const data = JSON.parse(text);
+            return data?.printable_hash || data;
+          }
+          if (attempt >= waits.length || (!response.ok && response.status !== 429)) {
+            throw new Error(
+              `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
+            );
+          }
+          await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
         }
-        const data = await response.json();
-        return data?.printable_hash || data;
       })();
 
       // Cache the in-flight promise so concurrent callers reuse it; drop it on
