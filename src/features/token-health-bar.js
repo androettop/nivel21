@@ -87,19 +87,35 @@
           return;
         }
 
-        const fontSize = Math.round(Math.min(Math.max(rect.width * 0.15, 9), 14));
-        ctx.font = `700 ${fontSize}px sans-serif`;
-        ctx.textBaseline = "middle";
-
         const main = String(hp.currentHp);
         const temp = hp.tempHp > 0 ? `+${hp.tempHp}` : "";
         const rest = `/${hp.maxHp}`;
-        const wMain = ctx.measureText(main).width;
-        const wTemp = temp ? ctx.measureText(temp).width : 0;
-        const wRest = ctx.measureText(rest).width;
-        const textWidth = wMain + wTemp + wRest;
+        // Never wider than the token: shrink padding first, then the text.
+        const maxWidth = rect.width * 0.9;
+        let fontSize = Math.round(Math.min(Math.max(rect.width * 0.15, 9), 14));
+        let wMain;
+        let wTemp;
+        let wRest;
+        let textWidth;
+        const measure = () => {
+          ctx.font = `700 ${fontSize}px sans-serif`;
+          wMain = ctx.measureText(main).width;
+          wTemp = temp ? ctx.measureText(temp).width : 0;
+          wRest = ctx.measureText(rest).width;
+          textWidth = wMain + wTemp + wRest;
+        };
+        measure();
+        const minPad = fontSize * 0.3;
+        if (textWidth + minPad * 2 > maxWidth) {
+          fontSize = Math.max(6, Math.floor(fontSize * (maxWidth - minPad * 2) / textWidth));
+          measure();
+        }
+        ctx.textBaseline = "middle";
 
-        const padX = fontSize * 0.9;
+        const padX = Math.max(
+          Math.min(fontSize * 0.9, (maxWidth - textWidth) / 2),
+          fontSize * 0.3,
+        );
         const boxW = textWidth + padX * 2;
         const boxH = fontSize * 1.25;
         const x = rect.x + (rect.width - boxW) / 2;
