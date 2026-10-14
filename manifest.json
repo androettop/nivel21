@@ -35,6 +35,7 @@
         "src/assets/inventory/currency/*",
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
+        "src/injected/version-check.js",
         "src/core/utils.js",
         "src/core/base-manager.js",
         "src/core/app-root-manager.js",

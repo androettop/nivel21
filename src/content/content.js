@@ -24,6 +24,19 @@
     injectScript("src/injected/jquery-checker.js");
   }
 
+  // Check the Nivel20 version before loading anything that depends on its
+  // internals. Resolves to false if the extension shouldn't load.
+  function checkNivel20Version() {
+    return new Promise((resolve) => {
+      document.addEventListener(
+        "n21VersionChecked",
+        () => resolve(document.documentElement.dataset.n21VersionOk === "1"),
+        { once: true },
+      );
+      injectScript("src/injected/version-check.js");
+    });
+  }
+
   // Wait for jQuery, then inject core and features in order
   waitForJQuery(async () => {
     // 0. Load DOMPurify
@@ -34,6 +47,10 @@
 
     // 2. Load base manager
     await injectScript("src/core/base-manager.js");
+
+    // 2a. From here on the code depends on Nivel20's internals: stop if the
+    // version isn't supported and the user chose not to load anyway.
+    if (!(await checkNivel20Version())) return;
 
     // 2b. Load shared, manager-less helpers used by multiple features.
     await injectScript("src/core/money.js");
