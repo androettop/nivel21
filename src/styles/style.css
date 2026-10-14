@@ -1634,6 +1634,25 @@ span[n21-h] {
 	pointer-events: auto;
 }
 
+/* Frame, HP dropdown and conditions each keep their own width. */
+.n21-cframe {
+	align-items: flex-start;
+}
+
+.n21-cframe-card,
+.n21-cframe-conditions-wrap {
+	max-width: 100%;
+}
+
+.n21-cframe-dropdown {
+	width: max-content;
+	max-width: min(420px, 100%);
+}
+
+.n21-cframe-hp-msg p {
+	overflow-wrap: break-word;
+}
+
 .n21-cframe-card {
 	display: flex;
 	flex-direction: column;
