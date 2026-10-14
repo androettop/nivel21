@@ -13,6 +13,7 @@
       ChatUIManager,
       ChatManager,
       SettingsManager,
+      CameraManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
@@ -21,6 +22,7 @@
       "ChatUIManager",
       "ChatManager",
       "SettingsManager",
+      "CameraManager",
     );
 
     // Check if feature is enabled
@@ -109,7 +111,10 @@
         weather?.stop();
         return;
       }
-      weather.start(container, currentWeather.type, currentWeather.intensity);
+      // Particles live on the board and follow the camera.
+      weather.start(container, currentWeather.type, currentWeather.intensity, {
+        project: (x, z) => CameraManager.worldToScreen(x, z, 0),
+      });
     }
 
     function syncWeatherInputs() {
