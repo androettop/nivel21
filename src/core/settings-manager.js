@@ -224,6 +224,14 @@
       });
 
       this.registerSetting({
+        name: "feature.invisible-condition.enabled",
+        label: "Ocultar tokens con el estado Invisible",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.notes-panel.enabled",
         label: "Panel de Notas",
         type: "boolean",

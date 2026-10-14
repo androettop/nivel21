@@ -105,6 +105,7 @@
       injectScript("src/features/character-frame.js"),
       injectScript("src/features/creature-resources.js"),
       injectScript("src/features/token-health-bar.js"),
+      injectScript("src/features/invisible-condition.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });
