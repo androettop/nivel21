@@ -57,6 +57,8 @@
         "src/core/canvas-dropdown-manager.js",
         "src/core/character-manager.js",
         "src/core/character-sheet-manager.js",
+        "src/core/combat-tracking-manager.js",
+        "src/core/local-resources-manager.js",
         "src/core/money.js",
         "src/core/main-menu-ui-manager.js",
         "src/core/quick-menu-ui-manager.js",
@@ -93,6 +95,7 @@
         "src/features/floating-panel-action.js",
         "src/features/inventory-panel.js",
         "src/features/money-editor.js",
+        "src/features/character-frame.js",
         "src/features/error-report.js"
       ],
       "matches": ["https://nivel20.com/*"]

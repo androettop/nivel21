@@ -46,6 +46,25 @@
     }
 
     /**
+     * Roll dice through Nivel20's own roller (same path as clicking a
+     * [data-dice-roll] element), so modifiers, visibility and 3D dice apply.
+     * @param {string} notation - e.g. "1d20+3"
+     * @param {Object} [options]
+     * @param {string} [options.name] - Roll name shown in chat
+     * @param {string} [options.senderInfo] - e.g. "Character-123" to roll as
+     * @returns {boolean} True if the roll was requested
+     */
+    roll(notation, options = {}) {
+      if (typeof window.diceRoll !== "function" || !notation) return false;
+      const data = {};
+      if (options.name) data.roll_name = options.name;
+      if (options.type) data.roll_type = options.type;
+      if (options.senderInfo) data.sender_info = options.senderInfo;
+      window.diceRoll(String(notation), data);
+      return true;
+    }
+
+    /**
      * Hook into the global diceRoll function
      * This is called automatically during initialization
      */

@@ -145,6 +145,27 @@
     }
 
     /**
+     * Total saving throw bonus for an ability slug ("fue", "des", "con"...).
+     * @param {Object} ph
+     * @param {string} slug
+     * @returns {number|null} null if unknown
+     */
+    getSavingThrowBonus(ph, slug) {
+      const total = ph?.saving_throw?.[slug]?.total;
+      return Number.isFinite(total) ? total : null;
+    }
+
+    /**
+     * Armor class from a printable_hash.
+     * @param {Object} ph
+     * @returns {number|null}
+     */
+    getArmorClass(ph) {
+      const value = ph?.armor?.normal;
+      return Number.isFinite(value) ? value : null;
+    }
+
+    /**
      * The character's spell books (one per spellcasting profession).
      * @param {Object} ph
      * @returns {Array<Object>}

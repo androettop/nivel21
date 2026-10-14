@@ -200,6 +200,14 @@
       });
 
       this.registerSetting({
+        name: "feature.character-frame.enabled",
+        label: "Marco de personaje",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.notes-panel.enabled",
         label: "Panel de Notas",
         type: "boolean",

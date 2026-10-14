@@ -63,6 +63,8 @@
       injectScript("src/core/canvas-dropdown-manager.js"),
       injectScript("src/core/character-manager.js"),
       injectScript("src/core/character-sheet-manager.js"),
+      injectScript("src/core/combat-tracking-manager.js"),
+      injectScript("src/core/local-resources-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
@@ -98,6 +100,7 @@
       injectScript("src/features/floating-panel-action.js"),
       injectScript("src/features/inventory-panel.js"),
       injectScript("src/features/money-editor.js"),
+      injectScript("src/features/character-frame.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });
