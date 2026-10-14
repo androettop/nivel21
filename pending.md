@@ -32,3 +32,4 @@
 - Dependencias: barras de vida, estados en tokens e Invisible requieren «Asignar tokens a personajes»; el editor de la barra requiere «Carpetas anidadas». Si falta una dependencia la feature se desactiva sola y el panel de configuración lo indica.
 - [x] **Lanzar conjuros**: botón «Lanzar» (icono del conjuro) primero en los conjuros con ataque/daño; los conjuros sin tiradas se lanzan con su propio botón. Envía un mensaje al chat y, si es de concentración, activa el estado Concentración (también con sus botones de ataque y al usar conjuros de curación/utilidad de concentración). Carpetas renombradas a «Conjuros de nivel N» con iconos de número romano.
 - [x] **Inventario**: botón de editar que abre el equipo en la hoja (URL de la campaña).
+- Inventario: los objetos se reordenan arrastrando; el orden es local (localStorage por personaje, clave por id del objeto).

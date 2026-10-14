@@ -1355,6 +1355,19 @@ span[n21-h] {
 	opacity: 0.5;
 }
 
+.n21-inventory-item {
+	cursor: grab;
+}
+
+.n21-inventory-item--dragging {
+	opacity: 0.4;
+}
+
+.n21-inventory-item--drop .action-bar-button {
+	box-shadow: 0 0 0 2px #822020;
+	border-radius: 4px;
+}
+
 .n21-inventory-item--busy {
 	opacity: 0.4;
 	pointer-events: none;

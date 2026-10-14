@@ -149,7 +149,8 @@
         .addClass("action-bar-element n21-inventory-item")
         .toggleClass("n21-inventory-item--empty", quantity === 0)
         .attr("data-action-type", "none")
-        .attr("data-index", index);
+        .attr("data-index", index)
+        .attr("draggable", "true");
 
       $cell.html(`
         <div class="action-bar-button tooltipstered" data-toggle="tooltip">
@@ -180,10 +181,49 @@
       return $cell;
     }
 
+    /* ------------------------- Local item order -------------------------- */
+
+    // The order of the icons is purely local, per character.
+    const ORDER_PREFIX = "_n21_inventory-order:";
+
+    function itemKey(item) {
+      return item?.itemId ? `id:${item.itemId}` : `name:${item?.name || ""}`;
+    }
+
+    function loadOrder(charId) {
+      try {
+        const list = JSON.parse(localStorage.getItem(ORDER_PREFIX + charId) || "[]");
+        return Array.isArray(list) ? list : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveOrder(charId, items) {
+      try {
+        localStorage.setItem(ORDER_PREFIX + charId, JSON.stringify(items.map(itemKey)));
+      } catch (_) {}
+    }
+
+    /** Items sorted by the saved order; new items keep their place at the end. */
+    function applyOrder(charId, items) {
+      const order = loadOrder(charId);
+      if (!order.length) return items;
+      return items
+        .map((item, index) => {
+          const rank = order.indexOf(itemKey(item));
+          return { item, index, rank: rank === -1 ? Infinity : rank };
+        })
+        .sort((a, b) => (a.rank === b.rank ? a.index - b.index : a.rank - b.rank))
+        .map((entry) => entry.item);
+    }
+
     /** Render the grid + money into the panel body. */
     function renderInventory($body, items, ph) {
       const $grid = $body.find(".n21-inventory-grid");
       $grid.empty();
+      const charId = $body.closest(".n21-inventory-panel").data("n21CharId");
+      if (charId) items = applyOrder(charId, items);
       $body.closest(".n21-inventory-panel").data("n21InventoryItems", items);
       $body.closest(".n21-inventory-panel").data("n21InventoryMoney", money.parse(ph?.equipment));
 
@@ -512,6 +552,40 @@
             onClick: () => deleteItem($panel, charId, index),
           },
         ]);
+      });
+
+      // Drag & drop to reorder (saved locally for this character).
+      let dragIndex = null;
+      $panel.on("dragstart", ".n21-inventory-item", function (event) {
+        dragIndex = Number($(this).attr("data-index"));
+        event.originalEvent.dataTransfer.effectAllowed = "move";
+        event.originalEvent.dataTransfer.setData("text/plain", String(dragIndex));
+        $(this).addClass("n21-inventory-item--dragging");
+      });
+      $panel.on("dragend", ".n21-inventory-item", function () {
+        dragIndex = null;
+        $panel.find(".n21-inventory-item--dragging, .n21-inventory-item--drop").removeClass(
+          "n21-inventory-item--dragging n21-inventory-item--drop",
+        );
+      });
+      $panel.on("dragover", ".n21-inventory-item", function (event) {
+        if (dragIndex === null) return;
+        event.preventDefault();
+        $panel.find(".n21-inventory-item--drop").removeClass("n21-inventory-item--drop");
+        $(this).addClass("n21-inventory-item--drop");
+      });
+      $panel.on("drop", ".n21-inventory-item", function (event) {
+        event.preventDefault();
+        const target = Number($(this).attr("data-index"));
+        const items = ($panel.data("n21InventoryItems") || []).slice();
+        if (dragIndex === null || dragIndex === target || !items[dragIndex]) return;
+        const [moved] = items.splice(dragIndex, 1);
+        items.splice(target, 0, moved);
+        saveOrder(charId, items);
+        const $grid = $panel.find(".n21-inventory-grid");
+        $panel.data("n21InventoryItems", items);
+        $grid.empty();
+        items.forEach((item, index) => $grid.append(buildItemCell(item, index)));
       });
 
       $panel.on("contextmenu", ".n21-inventory-money", (event) => {

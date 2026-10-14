@@ -449,6 +449,7 @@ Agrega un botón "Inventario" al final de la barra de un personaje que abre un p
 - **Botón de refrescar** - Vuelve a descargar la hoja del personaje (limitado a una vez cada 10 segundos para no saturar el servidor)
 - **Botón de editar** - Abre el equipo en la hoja del personaje
 - **Cantidad** - Cada objeto muestra su cantidad sobre el icono
+- **Reordenar** - Arrastra los objetos para ordenarlos (el orden se guarda en tu navegador, por personaje)
 - **Click derecho en un objeto** - Usar uno (−1), Añadir uno (+1) o Eliminar objeto
 - **Click derecho en el dinero** - Editar las monedas
 
