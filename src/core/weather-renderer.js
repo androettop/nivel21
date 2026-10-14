@@ -22,9 +22,10 @@
 
        Exposed as `window._n21_.weather`:
          weather.TYPES
-         weather.start(container, type, intensity, { project })
+         weather.start(container, type, intensity, { project, clip })
            project(worldX, worldZ) -> {x, y} in canvas CSS pixels (optional;
            without it the effect is drawn in screen space)
+           clip() -> [{x, z}...] world polygon to limit the effect to (the map)
          weather.stop()
     ======================================================================= */
 
@@ -335,19 +336,37 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, s.width, s.height);
 
-    // Screen-space tints.
+    const view = computeView();
+    ctx.save();
+    ctx.setTransform(...view.t);
+
+    // Only cover the map, not the infinite board around it.
+    let corners = null;
+    try {
+      corners = s.clip?.() || null;
+    } catch (_error) {}
+    if (corners && corners.length >= 3) {
+      ctx.beginPath();
+      ctx.moveTo(corners[0].x, corners[0].z);
+      for (let i = 1; i < corners.length; i += 1) ctx.lineTo(corners[i].x, corners[i].z);
+      ctx.closePath();
+      ctx.clip();
+    }
+
+    const fillView = () =>
+      ctx.fillRect(view.minX, view.minZ, view.maxX - view.minX, view.maxZ - view.minZ);
+
+    // Tints.
     if (s.type === "tormenta") {
       ctx.fillStyle = `rgba(8, 12, 28, ${0.12 + 0.18 * s.intensity})`;
-      ctx.fillRect(0, 0, s.width, s.height);
+      fillView();
     }
     if (s.type === "niebla") {
       ctx.fillStyle = `rgba(210, 214, 220, ${0.05 + 0.12 * s.intensity})`;
-      ctx.fillRect(0, 0, s.width, s.height);
+      fillView();
     }
 
     // Texture layers, in world space through the camera.
-    const view = computeView();
-    ctx.setTransform(...view.t);
     const weights = lodWeights(view.pxPerUnit);
     s.layers.forEach((layer) => {
       layer.lods.forEach((lod, i) => {
@@ -367,14 +386,13 @@
         ctx.globalAlpha = weight * layer.alpha * (0.35 + 0.65 * s.intensity);
         ctx.globalCompositeOperation = layer.additive ? "lighter" : "source-over";
         ctx.fillStyle = lod.pattern;
-        ctx.fillRect(view.minX, view.minZ, view.maxX - view.minX, view.maxZ - view.minZ);
+        fillView();
       });
     });
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
 
-    // Storm flashes (screen space, soft, never full white).
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // Storm flashes (soft, never full white), also limited to the map.
     if (s.type === "tormenta" && !reducedMotion) {
       s.nextFlash -= dt;
       if (s.nextFlash <= 0) {
@@ -384,10 +402,11 @@
       if (s.flash > 0) {
         const a = 0.28 * s.flash * (s.flash > 0.5 ? 1 : 0.6);
         ctx.fillStyle = `rgba(225, 232, 255, ${a})`;
-        ctx.fillRect(0, 0, s.width, s.height);
+        fillView();
         s.flash = Math.max(0, s.flash - dt * 3.2);
       }
     }
+    ctx.restore();
 
     frame = requestAnimationFrame(render);
   }
@@ -433,6 +452,7 @@
     const level = Math.min(Math.max(Number(intensity) || 0, 0), 1);
     if (state && state.canvas === canvas && state.type === type && state.intensity === level) {
       if (options.project) state.project = options.project;
+      if (options.clip) state.clip = options.clip;
       return; // already running
     }
 
@@ -442,6 +462,7 @@
       type,
       intensity: level,
       project: options.project || state?.project || null,
+      clip: options.clip || state?.clip || null,
       layers: layersFor(type),
       width: 0,
       height: 0,

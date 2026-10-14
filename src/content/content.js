@@ -55,6 +55,7 @@
       injectScript("src/core/token-manager.js"),
       injectScript("src/core/measurement-manager.js"),
       injectScript("src/core/camera-manager.js"),
+      injectScript("src/core/map-manager.js"),
       injectScript("src/core/network-manager.js"),
       injectScript("src/core/dice-manager.js"),
       injectScript("src/core/floating-panel-manager.js"),

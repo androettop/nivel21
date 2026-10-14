@@ -14,6 +14,7 @@
       ChatManager,
       SettingsManager,
       CameraManager,
+      MapManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
@@ -23,6 +24,7 @@
       "ChatManager",
       "SettingsManager",
       "CameraManager",
+      "MapManager",
     );
 
     // Check if feature is enabled
@@ -114,6 +116,8 @@
       // Tileable textures on the board plane: they follow the camera.
       weather.start(container, currentWeather.type, currentWeather.intensity, {
         project: (x, z) => CameraManager.worldToScreen(x, z, 0),
+        // Only over the map area.
+        clip: () => MapManager.getMapCorners(),
       });
     }
 
