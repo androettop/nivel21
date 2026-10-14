@@ -11,7 +11,10 @@
            with time (falling rain, drifting fog...),
          - the fill goes through the camera's world->screen transform, so the
            weather pans, rotates and zooms with the board (3 projected points
-           per frame give the affine map; the board is a plane).
+           per frame give the affine map; the board is a plane),
+         - particle effects have near/mid/far LOD textures picked by zoom
+           (cross-faded around each threshold), so they stay readable when
+           the camera moves away.
 
        Cheap enough for modest devices: ~30 fps cap, paused while the tab is
        hidden, CSS resolution, and "prefers-reduced-motion" removes the storm
@@ -37,8 +40,6 @@
   const CANVAS_ID = "n21-weather-overlay";
   const TILE = 512; // texture size in pixels
   const FRAME_MS = 1000 / 30;
-  // On-screen size particle tiles aim for, whatever the zoom.
-  const TARGET_TILE_PX = 512;
   // Screen-space fallback: 1 world unit = 100 px.
   const FALLBACK_SCALE = 100;
 
@@ -80,16 +81,16 @@
     }
   }
 
-  function rainTile(count, alpha, seed) {
+  function rainTile(count, alpha, seed, minLen = 14, maxLen = 36, width = 1.4) {
     return makeTile((ctx, rnd) => {
       ctx.strokeStyle = `rgba(190, 210, 240, ${alpha})`;
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = width;
       ctx.lineCap = "round";
       ctx.beginPath();
       for (let i = 0; i < count; i += 1) {
         const x = rnd() * TILE;
         const y = rnd() * TILE;
-        const len = 14 + rnd() * 22;
+        const len = minLen + rnd() * (maxLen - minLen);
         wrapped(x, y, len, (px, py) => {
           ctx.moveTo(px, py);
           ctx.lineTo(px - len * 0.18, py - len);
@@ -136,77 +137,143 @@
   }
 
   // Generated lazily the first time each effect is used.
+  // Texture factories, generated lazily the first time they're used.
+  // "*-near/-mid/-far" are the LOD versions of the particle effects.
+  const TILE_FACTORIES = {
+    "rain-near": () => rainTile(140, 0.55, 11),
+    "rain-near-2": () => rainTile(90, 0.3, 12),
+    "rain-mid": () => rainTile(420, 0.45, 13, 10, 20, 1.2),
+    "rain-far": () => rainTile(1100, 0.35, 14, 5, 11, 1),
+    "storm-near": () => rainTile(260, 0.6, 21),
+    "storm-near-2": () => rainTile(180, 0.35, 22),
+    "storm-mid": () => rainTile(700, 0.5, 23, 10, 22, 1.2),
+    "storm-far": () => rainTile(1600, 0.4, 24, 6, 12, 1),
+    "snow-near": () => dotsTile(70, 2.2, 4, "rgba(255, 255, 255, 0.9)", 31),
+    "snow-near-2": () => dotsTile(110, 1.2, 2.4, "rgba(255, 255, 255, 0.6)", 32),
+    "snow-mid": () => dotsTile(320, 1.2, 2.2, "rgba(255, 255, 255, 0.8)", 33),
+    "snow-far": () => dotsTile(900, 0.8, 1.4, "rgba(255, 255, 255, 0.7)", 34),
+    "ember-near": () => dotsTile(26, 1.6, 3.2, "rgba(255, 150, 60, 0.9)", 41),
+    "ember-near-2": () => dotsTile(40, 1, 2, "rgba(255, 110, 40, 0.6)", 42),
+    "ember-mid": () => dotsTile(110, 1.1, 2, "rgba(255, 140, 55, 0.85)", 43),
+    "ember-far": () => dotsTile(320, 0.8, 1.3, "rgba(255, 130, 50, 0.8)", 44),
+    "fog-1": () => blobTile(9, "220, 224, 230", 0.55, 51),
+    "fog-2": () => blobTile(7, "205, 210, 218", 0.4, 52),
+    "clouds": () => blobTile(6, "0, 0, 0", 0.55, 61),
+  };
+
   const tiles = {};
-  function getTiles(type) {
-    if (tiles[type]) return tiles[type];
-    switch (type) {
-      case "lluvia":
-        tiles[type] = [rainTile(140, 0.55, 11), rainTile(90, 0.3, 12)];
-        break;
-      case "tormenta":
-        tiles[type] = [rainTile(260, 0.6, 21), rainTile(180, 0.35, 22)];
-        break;
-      case "nieve":
-        tiles[type] = [
-          dotsTile(70, 2.2, 4, "rgba(255, 255, 255, 0.9)", 31),
-          dotsTile(110, 1.2, 2.4, "rgba(255, 255, 255, 0.6)", 32),
-        ];
-        break;
-      case "brasas":
-        tiles[type] = [
-          dotsTile(26, 1.6, 3.2, "rgba(255, 150, 60, 0.9)", 41),
-          dotsTile(40, 1, 2, "rgba(255, 110, 40, 0.6)", 42),
-        ];
-        break;
-      case "niebla":
-        tiles[type] = [blobTile(9, "220, 224, 230", 0.55, 51), blobTile(7, "205, 210, 218", 0.4, 52)];
-        break;
-      case "nubes":
-        tiles[type] = [blobTile(6, "0, 0, 0", 0.55, 61)];
-        break;
-      default:
-        tiles[type] = [];
-    }
-    return tiles[type];
+  function getTile(key) {
+    if (!tiles[key] && TILE_FACTORIES[key]) tiles[key] = TILE_FACTORIES[key]();
+    return tiles[key] || null;
   }
 
   /* ----------------------- layers ----------------------- */
 
-  // Per effect: tile world size (cells), velocity (cells/s) and opacity.
-  // A lower-res slower layer behind a faster one gives a parallax depth.
+  // LOD thresholds, in screen pixels per board cell: >= NEAR uses "near",
+  // >= MID uses "mid", below that "far". Near a threshold both LODs are
+  // cross-faded so switching doesn't pop.
+  const LOD_NEAR_PX = 60;
+  const LOD_MID_PX = 22;
+  const LOD_BLEND = 1.35;
+
+  /**
+   * Layers of an effect. Each layer has one or three LODs; each LOD is a
+   * texture key, its world size (cells) and velocity (cells/s). Far LODs
+   * cover more cells and move faster in world units, so on screen they keep
+   * the feel of the near ones.
+   */
   function layersFor(type) {
     const slow = reducedMotion ? 0.4 : 1;
+    const lods = (prefix, near, mid, far) => [
+      { tile: `${prefix}-near`, ...near },
+      { tile: `${prefix}-mid`, ...mid },
+      { tile: `${prefix}-far`, ...far },
+    ];
     switch (type) {
       case "lluvia":
         return [
-          { tile: 0, size: 4, vx: 1.2 * slow, vz: 7 * slow, alpha: 1, particles: true },
-          { tile: 1, size: 2.6, vx: 0.8 * slow, vz: 5 * slow, alpha: 0.8, particles: true },
+          {
+            alpha: 1,
+            lods: lods(
+              "rain",
+              { size: 4, vx: 1.2 * slow, vz: 7 * slow },
+              { size: 12, vx: 3 * slow, vz: 18 * slow },
+              { size: 36, vx: 8 * slow, vz: 48 * slow },
+            ),
+          },
+          { alpha: 0.8, near: true, lods: [{ tile: "rain-near-2", size: 2.6, vx: 0.8 * slow, vz: 5 * slow }] },
         ];
       case "tormenta":
         return [
-          { tile: 0, size: 4, vx: 2.6 * slow, vz: 10 * slow, alpha: 1, particles: true },
-          { tile: 1, size: 2.8, vx: 1.8 * slow, vz: 7.5 * slow, alpha: 0.85, particles: true },
+          {
+            alpha: 1,
+            lods: lods(
+              "storm",
+              { size: 4, vx: 2.6 * slow, vz: 10 * slow },
+              { size: 12, vx: 6.5 * slow, vz: 25 * slow },
+              { size: 36, vx: 17 * slow, vz: 66 * slow },
+            ),
+          },
+          { alpha: 0.85, near: true, lods: [{ tile: "storm-near-2", size: 2.8, vx: 1.8 * slow, vz: 7.5 * slow }] },
         ];
       case "nieve":
         return [
-          { tile: 0, size: 6, vx: 0.15, vz: 0.6 * slow, sway: 0.35, alpha: 1, particles: true },
-          { tile: 1, size: 4, vx: 0.1, vz: 0.4 * slow, sway: 0.25, alpha: 0.9, particles: true },
+          {
+            alpha: 1,
+            lods: lods(
+              "snow",
+              { size: 6, vx: 0.15, vz: 0.6 * slow, sway: 0.35 },
+              { size: 16, vx: 0.4, vz: 1.6 * slow, sway: 0.9 },
+              { size: 48, vx: 1.2, vz: 4.8 * slow, sway: 2.6 },
+            ),
+          },
+          { alpha: 0.9, near: true, lods: [{ tile: "snow-near-2", size: 4, vx: 0.1, vz: 0.4 * slow, sway: 0.25 }] },
         ];
       case "brasas":
         return [
-          { tile: 0, size: 6, vx: 0.05, vz: -0.5 * slow, sway: 0.3, alpha: 1, particles: true },
-          { tile: 1, size: 4.5, vx: 0.08, vz: -0.35 * slow, sway: 0.2, alpha: 0.9, additive: true, particles: true },
+          {
+            alpha: 1,
+            lods: lods(
+              "ember",
+              { size: 6, vx: 0.05, vz: -0.5 * slow, sway: 0.3 },
+              { size: 16, vx: 0.15, vz: -1.3 * slow, sway: 0.8 },
+              { size: 48, vx: 0.4, vz: -4 * slow, sway: 2.4 },
+            ),
+          },
+          {
+            alpha: 0.9,
+            additive: true,
+            near: true,
+            lods: [{ tile: "ember-near-2", size: 4.5, vx: 0.08, vz: -0.35 * slow, sway: 0.2 }],
+          },
         ];
       case "niebla":
         return [
-          { tile: 0, size: 16, vx: 0.18 * slow, vz: 0.03, alpha: 1 },
-          { tile: 1, size: 11, vx: -0.12 * slow, vz: 0.05, alpha: 1 },
+          { alpha: 1, lods: [{ tile: "fog-1", size: 16, vx: 0.18 * slow, vz: 0.03 }] },
+          { alpha: 1, lods: [{ tile: "fog-2", size: 11, vx: -0.12 * slow, vz: 0.05 }] },
         ];
       case "nubes":
-        return [{ tile: 0, size: 24, vx: 0.35 * slow, vz: 0.1, alpha: 1 }];
+        return [{ alpha: 1, lods: [{ tile: "clouds", size: 24, vx: 0.35 * slow, vz: 0.1 }] }];
       default:
         return [];
     }
+  }
+
+  /**
+   * Weights of each LOD (near, mid, far) for a zoom level, with a short
+   * log-scale cross-fade around each threshold.
+   */
+  function lodWeights(pxPerUnit) {
+    const fade = (threshold) => {
+      const lo = threshold / LOD_BLEND;
+      const hi = threshold * LOD_BLEND;
+      if (pxPerUnit <= lo) return 0;
+      if (pxPerUnit >= hi) return 1;
+      return Math.log(pxPerUnit / lo) / Math.log(hi / lo);
+    };
+    const aboveNear = fade(LOD_NEAR_PX);
+    const aboveMid = fade(LOD_MID_PX);
+    return [aboveNear, aboveMid * (1 - aboveNear), 1 - aboveMid];
   }
 
   /* ----------------------- camera transform ----------------------- */
@@ -281,29 +348,27 @@
     // Texture layers, in world space through the camera.
     const view = computeView();
     ctx.setTransform(...view.t);
-    const textures = getTiles(s.type);
+    const weights = lodWeights(view.pxPerUnit);
     s.layers.forEach((layer) => {
-      const texture = textures[layer.tile];
-      if (!texture) return;
-      if (!layer.pattern) layer.pattern = ctx.createPattern(texture, "repeat");
-      // Small particles (rain, snow, embers) keep a readable on-screen size:
-      // their tile grows/shrinks in powers of two with the zoom.
-      let size = layer.size;
-      let speed = 1;
-      if (layer.particles) {
-        const k = Math.round(Math.log2(TARGET_TILE_PX / (layer.size * view.pxPerUnit)));
-        speed = 2 ** k;
-        size = layer.size * speed;
-      }
-      const sway = layer.sway ? Math.sin(s.time * 0.9) * layer.sway * speed : 0;
-      const ox = (layer.vx * speed * s.time + sway) % size;
-      const oz = (layer.vz * speed * s.time) % size;
-      const scale = size / TILE;
-      layer.pattern.setTransform(new DOMMatrix().translateSelf(ox, oz).scaleSelf(scale, scale));
-      ctx.globalAlpha = layer.alpha * (0.35 + 0.65 * s.intensity);
-      ctx.globalCompositeOperation = layer.additive ? "lighter" : "source-over";
-      ctx.fillStyle = layer.pattern;
-      ctx.fillRect(view.minX, view.minZ, view.maxX - view.minX, view.maxZ - view.minZ);
+      layer.lods.forEach((lod, i) => {
+        // Single-LOD layers always draw; "near" extras only when close.
+        let weight = layer.lods.length > 1 ? weights[i] : 1;
+        if (layer.near) weight = weights[0];
+        if (weight <= 0.01) return;
+
+        const texture = getTile(lod.tile);
+        if (!texture) return;
+        if (!lod.pattern) lod.pattern = ctx.createPattern(texture, "repeat");
+        const sway = lod.sway ? Math.sin(s.time * 0.9) * lod.sway : 0;
+        const ox = (lod.vx * s.time + sway) % lod.size;
+        const oz = (lod.vz * s.time) % lod.size;
+        const scale = lod.size / TILE;
+        lod.pattern.setTransform(new DOMMatrix().translateSelf(ox, oz).scaleSelf(scale, scale));
+        ctx.globalAlpha = weight * layer.alpha * (0.35 + 0.65 * s.intensity);
+        ctx.globalCompositeOperation = layer.additive ? "lighter" : "source-over";
+        ctx.fillStyle = lod.pattern;
+        ctx.fillRect(view.minX, view.minZ, view.maxX - view.minX, view.maxZ - view.minZ);
+      });
     });
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
