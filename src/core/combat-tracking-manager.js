@@ -604,6 +604,48 @@
       return this.queueStatus(entry, { used: { [category]: { [id]: value } } });
     }
 
+    /** Add a condition (object from searchConditions) to an entry. */
+    addCondition(entry, condition) {
+      if (!condition?.id) return false;
+      if (entry.conditions.some((c) => String(c.id) === String(condition.id))) return false;
+      return this.queueStatus(entry, { conditions: [...entry.conditions, condition] });
+    }
+
+    /**
+     * Search conditions with the same endpoint the native status modal uses
+     * for its selector (e.g. /games/dnd-2024/conditions.json).
+     * @param {string} query
+     * @returns {Promise<Array<{id, name, icon, summary, condition_type}>>}
+     */
+    async searchConditions(query) {
+      let url = $("#edit-health-modal .char_conditions select").data("url");
+      if (!url) {
+        const game = /^\/games\/([^/]+)/.exec(this.getBaseUrl() || "");
+        if (!game) return [];
+        url = `/games/${game[1]}/conditions.json`;
+      }
+      const results = [];
+      const seen = new Set();
+      for (let page = 1; page <= 3; page += 1) {
+        const response = await fetch(
+          `${url}?q=${encodeURIComponent(query || "")}&page=${page}`,
+          { credentials: "include", headers: { Accept: "application/json" } },
+        );
+        if (!response.ok) break;
+        const data = await response.json();
+        const list = Array.isArray(data?.results) ? data.results : [];
+        let added = 0;
+        list.forEach((c) => {
+          if (!c?.id || seen.has(c.id)) return;
+          seen.add(c.id);
+          results.push(c);
+          added += 1;
+        });
+        if (!added || !data?.pagination?.more) break;
+      }
+      return results;
+    }
+
     /** Remove a condition (by id) from an entry. */
     removeCondition(entry, conditionId) {
       const conditions = entry.conditions.filter((c) => String(c.id) !== String(conditionId));

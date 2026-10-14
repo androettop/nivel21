@@ -184,22 +184,23 @@
     }
 
     function buildConditionsHtml(entry) {
-      return entry.conditions.length
-        ? `<div class="n21-cframe-conditions">${entry.conditions
-            .map(
-              (c) =>
-                `<span class="n21-cframe-condition" data-condition-id="${escapeHtml(c.id)}" title="${escapeHtml(
-                  `<h5>${escapeHtml(c.name)}</h5>${c.summary ? `<p>${escapeHtml(c.summary)}</p>` : ""}${
-                    entry.editable ? "<p><em>Click derecho: quitar estado</em></p>" : ""
-                  }`,
-                )}">${
-                  c.icon
-                    ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}" />`
-                    : escapeHtml(c.name)
-                }</span>`,
-            )
-            .join("")}</div>`
-        : "";
+      const items = entry.conditions.map(
+        (c) =>
+          `<span class="n21-cframe-condition" data-condition-id="${escapeHtml(c.id)}" title="${escapeHtml(
+            `<h5>${escapeHtml(c.name)}</h5>${c.summary ? `<p>${escapeHtml(c.summary)}</p>` : ""}${
+              entry.editable ? "<p><em>Click derecho: quitar estado</em></p>" : ""
+            }`,
+          )}">${
+            c.icon ? `<img src="${escapeHtml(c.icon)}" alt="${escapeHtml(c.name)}" />` : escapeHtml(c.name)
+          }</span>`,
+      );
+      // Only users allowed to edit the status can add conditions.
+      if (entry.editable) {
+        items.push(
+          `<button type="button" class="n21-cframe-condition n21-cframe-condition-add" title="Agregar estado" aria-label="Agregar estado">+</button>`,
+        );
+      }
+      return items.length ? `<div class="n21-cframe-conditions">${items.join("")}</div>` : "";
     }
 
     function buildCardHtml(entry) {
@@ -311,6 +312,7 @@
       if (!dropdown) return;
       dropdownOpen = true;
       dropdown.hidden = false;
+      dropdown.dataset.mode = "hp";
       dropdown.innerHTML = `
         <div class="n21-cframe-hp-form">
           <input type="number" min="0" step="1" inputmode="numeric" class="n21-cframe-hp-input" aria-label="Cantidad" placeholder="0" />
@@ -321,6 +323,62 @@
         <div class="n21-cframe-hp-msg" hidden></div>`;
       dropdown.querySelector("input").focus();
       document.querySelector(`#${ROOT_ID} .n21-cframe-hp`)?.setAttribute("aria-expanded", "true");
+    }
+
+    let conditionSearchTimer = null;
+    let conditionSearchToken = 0;
+
+    function renderConditionResults(results) {
+      const list = getDropdown()?.querySelector(".n21-cframe-cond-results");
+      if (!list || !current) return;
+      const owned = new Set(current.conditions.map((c) => String(c.id)));
+      const available = results.filter((c) => !owned.has(String(c.id)));
+      list.innerHTML = available.length
+        ? available
+            .slice(0, 40)
+            .map(
+              (c) => `
+            <button type="button" class="n21-cframe-cond-option" data-condition-id="${escapeHtml(c.id)}">
+              ${c.icon ? `<img src="${escapeHtml(c.icon)}" alt="" />` : "<span></span>"}
+              <span>${escapeHtml(c.name)}</span>
+            </button>`,
+            )
+            .join("")
+        : `<div class="n21-cframe-cond-empty">Sin resultados</div>`;
+      list._results = available;
+    }
+
+    function searchConditions(query) {
+      clearTimeout(conditionSearchTimer);
+      const token = ++conditionSearchToken;
+      conditionSearchTimer = setTimeout(async () => {
+        try {
+          const results = await CombatTrackingManager.searchConditions(query);
+          if (token !== conditionSearchToken) return;
+          const q = CombatTrackingManager.normalizeText(query);
+          renderConditionResults(
+            q ? results.filter((c) => CombatTrackingManager.normalizeText(c.name).includes(q)) : results,
+          );
+        } catch (_error) {
+          renderConditionResults([]);
+        }
+      }, 250);
+    }
+
+    function openConditionsDropdown() {
+      if (!current?.editable) return;
+      const dropdown = getDropdown();
+      if (!dropdown) return;
+      dropdownOpen = true;
+      dropdown.hidden = false;
+      dropdown.dataset.mode = "conditions";
+      dropdown.innerHTML = `
+        <input type="search" class="n21-cframe-cond-input" placeholder="Buscar estado…" aria-label="Buscar estado" autocomplete="off" />
+        <div class="n21-cframe-cond-results" role="listbox"><div class="n21-cframe-cond-empty">Buscando…</div></div>`;
+      const input = dropdown.querySelector("input");
+      input.addEventListener("input", () => searchConditions(input.value));
+      input.focus();
+      searchConditions("");
     }
 
     function closeDropdown() {
@@ -430,8 +488,25 @@
         }
 
         if (target.closest(".n21-cframe-hp")) {
-          if (dropdownOpen) closeDropdown();
+          if (dropdownOpen && getDropdown()?.dataset.mode === "hp") closeDropdown();
           else openDropdown();
+          return;
+        }
+
+        if (target.closest(".n21-cframe-condition-add")) {
+          if (dropdownOpen && getDropdown()?.dataset.mode === "conditions") closeDropdown();
+          else openConditionsDropdown();
+          return;
+        }
+
+        const option = target.closest(".n21-cframe-cond-option");
+        if (option && current) {
+          const list = option.closest(".n21-cframe-cond-results");
+          const condition = (list?._results || []).find(
+            (c) => String(c.id) === option.dataset.conditionId,
+          );
+          if (condition) CombatTrackingManager.addCondition(current, condition);
+          closeDropdown();
           return;
         }
 
@@ -461,7 +536,7 @@
       });
 
       root.addEventListener("contextmenu", (event) => {
-        const condition = event.target.closest(".n21-cframe-condition");
+        const condition = event.target.closest(".n21-cframe-condition:not(.n21-cframe-condition-add)");
         if (condition) {
           event.preventDefault();
           // Only users allowed to open Nivel20's status modal can edit.
