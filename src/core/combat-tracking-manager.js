@@ -271,8 +271,8 @@
 
       const resources = [];
       const slotLabels = {
-        spell_slots: "Nivel",
-        pact_spell_slots: "Pacto",
+        spell_slots: "Conjuros de nivel",
+        pact_spell_slots: "Magia de pacto, nivel",
       };
       Object.keys(slotLabels).forEach((category) => {
         const def = resourcesDef[category];

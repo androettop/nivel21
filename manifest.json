@@ -34,6 +34,7 @@
         "src/assets/inventory/*",
         "src/assets/inventory/currency/*",
         "src/assets/resources/*",
+        "src/assets/spell-levels/*",
         "src/lib/purify.min.js",
         "src/injected/jquery-checker.js",
         "src/core/utils.js",

@@ -33,7 +33,9 @@
 
   function folderIcon(level) {
     const lvl = Math.min(Math.max(level | 0, 0), 9);
-    return `${extensionBaseUrl()}src/assets/lvl${lvl}.png`;
+    // Spell levels use a roman numeral icon; cantrips keep their own.
+    if (lvl === 0) return `${extensionBaseUrl()}src/assets/lvl0.png`;
+    return `${extensionBaseUrl()}src/assets/spell-levels/lvl${lvl}.png`;
   }
 
   const ROLE_ICONS = {
@@ -396,11 +398,13 @@
   }
 
   function makeFolder(level, order, elements, sourceName) {
-    const name = level === 0 ? "Trucos" : `Nivel ${level}`;
+    const name = level === 0 ? "Trucos" : `Conjuros de nivel ${level}`;
     return {
       id: null,
       name,
-      text: "",
+      // The icon already shows the level: a zero-width text keeps the bar
+      // from printing the long name over it.
+      text: level === 0 ? "" : "\u200b",
       icon: folderIcon(level),
       description: null,
       action_type: "folder",
