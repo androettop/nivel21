@@ -279,6 +279,13 @@
 
     // Attack/damage folders get a first "Lanzar" action.
     const cast = makeCastElement(spell, `${spell.name} > Lanzar`, (header.order ?? 0) + 0.5, sourceName);
+    // Attacking with a concentration spell also means casting it.
+    elements.slice(1).forEach((el) => {
+      if (el.roll_options?.roll_type === "attack") {
+        el.n21_concentration = concentration;
+        el.n21_spell_name = spell.name;
+      }
+    });
     return [header, cast, ...elements.slice(1)];
   }
 
