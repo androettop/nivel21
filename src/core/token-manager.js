@@ -275,10 +275,27 @@
       const token = this.getToken(networkId);
       if (!token) return null;
 
-      return {
-        hidden: !!token.hidden,
-        translucent: !!token.translucent,
-      };
+      return this._readVisibility(token);
+    }
+
+    /**
+     * Read the visibility Nivel20 is currently applying to a token entity
+     * (kept by its visibility handler script; the entity has no flags).
+     * @param {Object} token - Token entity
+     * @returns {{hidden: boolean, translucent: boolean}}
+     */
+    _readVisibility(token) {
+      const handler = token?.script?.scripts?.find(
+        (script) =>
+          script?.visibility &&
+          typeof script.visibility === "object" &&
+          "hidden" in script.visibility,
+      );
+      const state = handler?.visibility;
+      if (!state) {
+        return { hidden: !!token?.hidden, translucent: !!token?.translucent };
+      }
+      return { hidden: !!state.hidden, translucent: !!state.seeThrough };
     }
 
     /**
@@ -314,7 +331,8 @@
 
         // Emit initial visibility state for newly tracked tokens
         try {
-          callback(networkId, !!token?.hidden, !!token?.translucent);
+          const state = this._readVisibility(token);
+          callback(networkId, state.hidden, state.translucent);
         } catch (_error) {}
       });
 
@@ -396,10 +414,7 @@
       this._visibilityHooked.add(token);
 
       if (!this._nativeVisibility.has(networkId)) {
-        this._nativeVisibility.set(networkId, {
-          hidden: !!token.hidden,
-          translucent: !!token.translucent,
-        });
+        this._nativeVisibility.set(networkId, this._readVisibility(token));
       }
 
       token.on("hidden", (hidden, translucent) => {
