@@ -2394,6 +2394,18 @@ span[n21-h] {
 	display: none !important;
 }
 
+/* Hide the whole column of the name field and the icon picker (the icon is
+   changed by clicking it in the row). */
+.n21-abe-details .row > [class*="col"]:has(> .form-group > input[name$="[name]"]),
+.n21-abe-details .row > [class*="col"]:has(.select-icon) {
+	display: none !important;
+}
+
+.n21-abe-details .row > [class*="col"]:has(input[name$="[icon_text]"]) {
+	flex: 0 0 50%;
+	max-width: 50%;
+}
+
 .n21-abe-details .pt-1.pb-1 {
 	padding-top: 8px !important;
 }
