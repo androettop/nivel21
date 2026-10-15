@@ -26,6 +26,29 @@
    * DiceManager provides a unified interface for modifying dice rolls
    * Features can register modifiers that transform dice notation before rolling
    */
+  // Extension assets (e.g. action icons) only load in browsers with the
+  // extension: a roll must never send them, or everyone else sees a broken
+  // image in the chat. Dropped from the roll's option objects.
+  const LOCAL_URL = /^(chrome|moz|safari-web)-extension:\/\//;
+
+  function stripLocalUrls(value, depth = 0) {
+    if (!value || typeof value !== "object" || Array.isArray(value) || depth > 2) return value;
+    let copy = null;
+    Object.keys(value).forEach((key) => {
+      const item = value[key];
+      const cleaned =
+        typeof item === "string" && LOCAL_URL.test(item)
+          ? undefined
+          : stripLocalUrls(item, depth + 1);
+      if (cleaned !== item) {
+        copy = copy || { ...value };
+        if (cleaned === undefined) delete copy[key];
+        else copy[key] = cleaned;
+      }
+    });
+    return copy || value;
+  }
+
   class DiceManager extends BaseManager {
     constructor() {
       super();
@@ -105,7 +128,7 @@
           }
         }
 
-        return originalFn(modifiedNotation, ...modifiedArgs);
+        return originalFn(modifiedNotation, ...modifiedArgs.map(stripLocalUrls));
       };
 
       this._hooked = true;
@@ -126,6 +149,7 @@
 
       const self = this;
       const hooked = function (...args) {
+        args = args.map(stripLocalUrls);
         if (self._visibilityOverride) {
           args[index] = transformVisibility(self._visibilityOverride);
         }

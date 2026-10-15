@@ -19,9 +19,10 @@
 
     const { loadManagers } = window._n21_;
 
-    const [ActionBarManager, SettingsManager] = await loadManagers(
+    const [ActionBarManager, SettingsManager, CombatTrackingManager] = await loadManagers(
       "ActionBarManager",
       "SettingsManager",
+      "CombatTrackingManager",
     );
 
     // Applies live: when disabled its items are stripped from the bar.
@@ -120,6 +121,31 @@
     }
 
     /**
+     * "Iniciativa" action, first item of the bar: the very same roll as
+     * "Inic." in the combat tracking panel (so the turn order can read it
+     * from the chat). Only on the tabletop, where that roll exists.
+     */
+    function initiativeAction(charId) {
+      const roll = charId ? CombatTrackingManager.getInitiativeRoll("character", charId) : null;
+      if (!roll) return null;
+      return {
+        id: `n21-action-${uuid()}`,
+        name: roll.name,
+        text: "",
+        icon: assetUrl("initiative.png"),
+        description: null,
+        action_type: "dice_roll",
+        hidden: false,
+        order: null,
+        source_name: null,
+        tooltip_title: roll.name,
+        owned: false,
+        dice_roll: roll.notation,
+        roll_options: { roll_name: roll.name },
+      };
+    }
+
+    /**
      * Resolve the character id owning an action bar from the `element` passed
      * to createBar (a row inside `.action-bar[data-sender-info]`).
      * @returns {string|null}
@@ -136,22 +162,31 @@
     }
 
     /**
-     * Append (idempotently) the "Acciones" folder at the end of the list, so
-     * the order is: [spells…, native actions, Acciones]. Spells stay at the
+     * Add (idempotently) "Iniciativa" first and the "Acciones" folder at the
+     * end of the list, so the order is: [Iniciativa, spells…, native actions,
+     * Acciones]. Spells stay at the
      * front (unshifted by the spell-action-bar feature) and our folder is
      * always last.
      */
-    function injectInto(items) {
+    function injectInto(items, charId) {
       // Remove our own previously injected folder.
       for (let i = items.length - 1; i >= 0; i--) {
         if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
       }
       items.push({ ...buildActionsFolder(), n21Key: "n21:actions", [INJECT_TAG]: true });
+      const initiative = initiativeAction(charId);
+      if (initiative) items.unshift({ ...initiative, n21Key: "n21:initiative", [INJECT_TAG]: true });
     }
 
     // Run after spell-action-bar (priority 50) so spells are already in place,
     // and before multi-level (priority 100) so the folder gets normalized.
     // List the folder in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("initiative", {
+      order: 5,
+      getEntries: async () => (!featureEnabled ? [] : [
+        { key: "n21:initiative", label: "Iniciativa", icon: assetUrl("initiative.png") },
+      ]),
+    });
     window._n21_.actionBarLayout?.registerProvider("actions", {
       order: 20,
       getEntries: async () => (!featureEnabled ? [] : [
@@ -182,9 +217,10 @@
         // Only augment the root render of a character bar.
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;
-        if (!resolveCharacterId(element)) return; // not a character bar
+        const charId = resolveCharacterId(element);
+        if (!charId) return; // not a character bar
 
-        injectInto(items);
+        injectInto(items, charId);
         return;
       },
       { priority: 60 },

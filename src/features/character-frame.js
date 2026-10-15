@@ -26,6 +26,8 @@
       DiceManager,
       TooltipManager,
       SettingsManager,
+      TokenManager,
+      PlayerManager,
     ] = await loadManagers(
       "CombatTrackingManager",
       "LocalResourcesManager",
@@ -33,6 +35,8 @@
       "DiceManager",
       "TooltipManager",
       "SettingsManager",
+      "TokenManager",
+      "PlayerManager",
     );
 
     // Applies live: the frame is hidden while the feature is disabled.
@@ -48,8 +52,6 @@
       "concentrandose",
     ];
 
-    // Instance shown for creature groups ("2 x Goblin"), per row.
-    const selectedInstance = new Map(); // "type:id" -> index
     let current = null; // entry being shown
     let lastRenderKey = "";
     let dropdownOpen = false;
@@ -95,11 +97,24 @@
     function getCurrentEntry() {
       const selected = CombatTrackingManager.getSelectedRow();
       if (!selected) return null;
-      const rowKey = `${selected.type}:${selected.id}`;
-      const count = CombatTrackingManager.getInstanceCount(selected.type, selected.id);
-      let index = selectedInstance.get(rowKey) || 0;
-      if (index >= count) index = 0;
-      return CombatTrackingManager.getEntry(selected.type, selected.id, index);
+      return CombatTrackingManager.getEntry(selected.type, selected.id, selectedTokenInstance(selected));
+    }
+
+    /**
+     * For a creature group, the creature shown is the one of the selected
+     * token (each token is assigned to one creature of the group).
+     */
+    function selectedTokenInstance(row) {
+      if (CombatTrackingManager.getInstanceCount(row.type, row.id) <= 1) return 0;
+      const ids = TokenManager.getSelectedTokenIds();
+      if (ids.length !== 1) return 0;
+      const linked = TokenManager.getLinkedRow(ids[0]);
+      const resolved = linked ? CombatTrackingManager.resolveRow(linked.rowId) : null;
+      if (!resolved || resolved.type !== row.type || resolved.id !== row.id) return 0;
+      const assignments = TokenManager.getAllTokenIds()
+        .map((networkId) => ({ networkId, ...TokenManager.getLinkedRow(networkId) }))
+        .filter((a) => a.rowId);
+      return CombatTrackingManager.mapTokensToEntries(assignments).get(ids[0])?.index || 0;
     }
 
     function getLocalResources(entry) {
@@ -220,16 +235,6 @@
         ...getLocalResources(entry).map((r) => buildResourceHtml(r, "local")),
       ].join("");
 
-      const instances =
-        entry.instanceCount > 1
-          ? `<div class="n21-cframe-instances" role="group" aria-label="Criatura del grupo">${Array.from(
-              { length: entry.instanceCount },
-              (_, i) =>
-                `<button type="button" class="n21-cframe-instance ${
-                  i === entry.index ? "n21-cframe-instance--active" : ""
-                }" data-index="${i}">${i + 1}</button>`,
-            ).join("")}</div>`
-          : "";
 
       return `
         <div class="n21-cframe-main ${entry.editable ? "" : "n21-cframe--readonly"}">
@@ -246,7 +251,6 @@
                   : ""
               }
             </div>
-            ${instances}
             <button type="button" class="n21-cframe-hp ${hpClass}" ${
               entry.editable ? 'title="Modificar puntos de golpe"' : "disabled"
             } aria-expanded="${dropdownOpen}">
@@ -488,13 +492,6 @@
           return;
         }
 
-        const instance = target.closest(".n21-cframe-instance");
-        if (instance && current) {
-          selectedInstance.set(`${current.type}:${current.id}`, Number(instance.dataset.index) || 0);
-          render();
-          return;
-        }
-
         if (target.closest(".n21-cframe-hp")) {
           if (dropdownOpen && getDropdown()?.dataset.mode === "hp") closeDropdown();
           else openDropdown();
@@ -576,12 +573,60 @@
       });
     }
 
+    /* ------------------- player's own character ------------------- */
+
+    // On entering, a player sees no frame or action bar until a row is
+    // selected: select their own character once, if it can be told apart.
+    let autoSelectDone = false;
+
+    function findOwnCharacterId() {
+      const myName = PlayerManager.getMyUserName?.();
+      if (myName) {
+        for (const networkId of TokenManager.getAllTokenIds?.() || []) {
+          if (TokenManager.getTokenTag(networkId, "user") !== myName) continue;
+          const rowId = TokenManager.getLinkedRowId(networkId);
+          if (rowId && CombatTrackingManager.isRowVisible("character", rowId)) return rowId;
+        }
+      }
+      // "DM and assigned player" permission: the only editable character.
+      const characters = CombatTrackingManager.getEntries().filter((e) => e.type === "character");
+      const editable = characters.filter((e) => e.editable);
+      if (editable.length === 1 && characters.length > 1) return editable[0].id;
+      return null;
+    }
+
+    function autoSelectOwnCharacter() {
+      if (autoSelectDone || !enabled) return;
+      if (PlayerManager.isGameMaster?.()) {
+        autoSelectDone = true;
+        return;
+      }
+      if (CombatTrackingManager.hasSelection()) {
+        autoSelectDone = true;
+        return;
+      }
+      const charId = findOwnCharacterId();
+      if (!charId) return; // tokens may not be loaded yet; retry on next change
+      autoSelectDone = true;
+      CombatTrackingManager.selectRow("character", charId);
+    }
+
     SettingsManager.watch("feature.character-frame.enabled", (value) => {
       enabled = !!value;
       lastRenderKey = "";
       render();
     });
-    CombatTrackingManager.onChange(render);
+    CombatTrackingManager.onChange(() => {
+      autoSelectOwnCharacter();
+      render();
+    });
+    // Selecting another token of the same creature group shows that creature.
+    $(document).on("mouseup.n21CharacterFrame", "canvas", () => setTimeout(render, 80));
+    // Give up after a while (e.g. a player with no character of their own).
+    setTimeout(() => {
+      autoSelectOwnCharacter();
+      autoSelectDone = true;
+    }, 15000);
     LocalResourcesManager.onChange(() => {
       lastRenderKey = "";
       render();

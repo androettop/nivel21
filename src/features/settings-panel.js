@@ -183,7 +183,7 @@
                    value="${escapedValue}"
                    readonly
                    placeholder="Presione una tecla..." />
-            <button class="n21-hotkey-reset btn btn-secondary" data-setting="${escapedName}">
+            <button class="n21-hotkey-reset btn n21-btn-neutral" data-setting="${escapedName}">
               Restablecer
             </button>
           </div>
@@ -222,7 +222,7 @@
                     data-type="select">
               ${optionsHtml}
             </select>
-            <button class="n21-setting-reset btn btn-secondary"
+            <button class="n21-setting-reset btn n21-btn-neutral"
                     data-setting="${escapedName}"
                     data-type="select">
               Restablecer
@@ -262,7 +262,7 @@
                    data-setting="${escapedName}"
                    data-type="number"
                    value="${escapedValue}"${minAttr}${maxAttr}${stepAttr} />
-            <button class="n21-setting-reset btn btn-secondary"
+            <button class="n21-setting-reset btn n21-btn-neutral"
                     data-setting="${escapedName}"
                     data-type="number">
               Restablecer
@@ -302,7 +302,7 @@
                    data-setting="${escapedName}"
                    data-type="color"
                    value="${escapedValue}" />
-            <button class="n21-setting-reset btn btn-secondary"
+            <button class="n21-setting-reset btn n21-btn-neutral"
                     data-setting="${escapedName}"
                     data-type="color">
               Restablecer

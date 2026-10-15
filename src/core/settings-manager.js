@@ -79,7 +79,7 @@
       // Feature enable/disable settings
       this.registerSetting({
         name: "feature.advantage-disadvantage.enabled",
-        label: "Tiradas con Ventaja/Desventaja",
+        label: "Tiradas con ventaja/desventaja",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -87,7 +87,7 @@
 
       this.registerSetting({
         name: "feature.send-to-chat.enabled",
-        label: "Compartir Contenido al Chat",
+        label: "Compartir contenido al chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -95,7 +95,7 @@
 
       this.registerSetting({
         name: "feature.parse-chat-links.enabled",
-        label: "Enlaces en Mensajes del Chat",
+        label: "Enlaces en mensajes del chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -103,7 +103,7 @@
 
       this.registerSetting({
         name: "feature.token-hotkeys.enabled",
-        label: "Atajos para Tokens",
+        label: "Atajos para tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -113,7 +113,7 @@
 
       this.registerSetting({
         name: "feature.token-move-arrows.enabled",
-        label: "Mover Tokens con el Teclado",
+        label: "Mover tokens con el teclado",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -121,7 +121,7 @@
 
       this.registerSetting({
         name: "feature.multi-measurement.enabled",
-        label: "Mediciones Persistentes",
+        label: "Mediciones persistentes",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -129,7 +129,7 @@
 
       this.registerSetting({
         name: "feature.whisper-mode.enabled",
-        label: "Susurrar en el Chat",
+        label: "Susurrar en el chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -269,7 +269,7 @@
 
       this.registerSetting({
         name: "feature.notes-panel.enabled",
-        label: "Panel de Notas",
+        label: "Panel de notas",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -285,7 +285,7 @@
 
       this.registerSetting({
         name: "feature.token-drag-measurement.enabled",
-        label: "Medición de Distancias al Arrastrar",
+        label: "Medición de distancias al arrastrar",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -293,7 +293,7 @@
 
       this.registerSetting({
         name: "token-drag-measurement.show-distance",
-        label: "Mostrar/Ocultar distancia al mover token",
+        label: "Mostrar la distancia al mover un token",
         type: "boolean",
         defaultValue: true,
         category: "medicion",
@@ -301,7 +301,7 @@
 
       this.registerSetting({
         name: "feature.token-drag-speed.enabled",
-        label: "Velocidad de Movimiento de Tokens",
+        label: "Velocidad de movimiento de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -309,7 +309,7 @@
 
       this.registerSetting({
         name: "feature.token-notes.enabled",
-        label: "Notas de Token",
+        label: "Notas de token",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -317,7 +317,7 @@
 
       this.registerSetting({
         name: "feature.turn-order.enabled",
-        label: "Orden de Turnos",
+        label: "Orden de turnos",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -325,7 +325,7 @@
 
       this.registerSetting({
         name: "feature.dice-visibility.enabled",
-        label: "Visibilidad de Tiradas de Dados",
+        label: "Visibilidad de tiradas de dados",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -333,7 +333,7 @@
 
       this.registerSetting({
         name: "feature.token-layers.enabled",
-        label: "Capas de Tokens",
+        label: "Capas de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -341,7 +341,7 @@
 
       this.registerSetting({
         name: "feature.token-aura.enabled",
-        label: "Auras de Tokens",
+        label: "Auras de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -349,7 +349,7 @@
 
       this.registerSetting({
         name: "feature.token-assign-player.enabled",
-        label: "Asignar Tokens a Jugadores",
+        label: "Asignar tokens a jugadores",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -357,7 +357,7 @@
 
       this.registerSetting({
         name: "feature.token-assign-character.enabled",
-        label: "Asignar Tokens a Personajes",
+        label: "Asignar tokens a personajes",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -365,7 +365,7 @@
 
       this.registerSetting({
         name: "feature.ping-map.enabled",
-        label: "Ping en Mapa",
+        label: "Ping en el mapa",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -373,7 +373,7 @@
 
       this.registerSetting({
         name: "feature.straighten-camera.enabled",
-        label: "Enderezar camara",
+        label: "Enderezar cámara",
         type: "boolean",
         defaultValue: true,
         category: "features",

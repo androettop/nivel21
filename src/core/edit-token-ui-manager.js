@@ -31,6 +31,20 @@
     }
 
     /**
+     * Saving the edit form makes Nivel20 drop a token's native link to its
+     * character (tokenizable_id). When another tag is written on a token
+     * linked only that way, add [char:id] in the same save to keep the link.
+     * @private
+     */
+    _keepNativeLink(networkId, description, tagKey) {
+      if (tagKey === "char") return description;
+      const utils = window._n21_.utils;
+      if (utils.parseTokenTag(description, "char")) return description;
+      const nativeId = this._tokenManager.getNativeCharacterId?.(networkId);
+      return nativeId ? utils.setTokenTag(description, "char", nativeId) : description;
+    }
+
+    /**
      * Set or update a generic token tag in description
      * @param {string} networkId - The network ID of the token to edit
      * @param {string} tagKey - The tag key (e.g., 'user', 'l')
@@ -92,7 +106,8 @@
           try {
             const currentValue = $description.val() || "";
             // Use generic tag utility to set the tag
-            const newValue = window._n21_.utils.setTokenTag(currentValue, tagKey, tagValue);
+            let newValue = window._n21_.utils.setTokenTag(currentValue, tagKey, tagValue);
+            newValue = this._keepNativeLink(networkId, newValue, tagKey);
 
             // Set the description
             $description.val(newValue);
@@ -177,7 +192,8 @@
           try {
             const currentValue = $description.val() || "";
             // Use generic tag utility to remove the tag
-            const newValue = window._n21_.utils.removeTokenTag(currentValue, tagKey);
+            let newValue = window._n21_.utils.removeTokenTag(currentValue, tagKey);
+            newValue = this._keepNativeLink(networkId, newValue, tagKey);
 
             // Set the description
             $description.val(newValue);

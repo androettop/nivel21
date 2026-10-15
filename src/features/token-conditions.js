@@ -44,7 +44,7 @@
     function rebuild() {
       rebuildTimer = null;
       const assignments = TokenManager.getAllTokenIds()
-        .map((networkId) => ({ networkId, rowId: TokenManager.getTokenTag(networkId, "char") }))
+        .map((networkId) => ({ networkId, ...TokenManager.getLinkedRow(networkId) }))
         .filter((a) => a.rowId);
 
       const next = new Map();

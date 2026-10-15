@@ -17,6 +17,8 @@
       CameraManager,
       MainMenuUIManager,
       SettingsManager,
+      CombatTrackingManager,
+      DiceManager,
     ] = await loadManagers(
       "ChatManager",
       "ChatUIManager",
@@ -28,6 +30,8 @@
       "CameraManager",
       "MainMenuUIManager",
       "SettingsManager",
+      "CombatTrackingManager",
+      "DiceManager",
     );
 
     if (!SettingsManager.get("feature.turn-order.enabled")) {
@@ -146,7 +150,7 @@
      * afterwards; this is only the initial value.
      */
     function getInitiativeForToken(networkId) {
-      const charId = getTokenTag(networkId, "char");
+      const charId = TokenManager.getLinkedRowId(networkId);
       if (!charId) return 0;
       return CharacterManager.getCharacterInitiative(charId);
     }
@@ -259,6 +263,40 @@
       return Math.max(0, timer.seconds - elapsed);
     }
 
+    // The chat history has no timestamps, so after a reload the countdown
+    // would restart. Each client remembers when (by its own clock, so clock
+    // or time zone differences between users don't matter) the current turn
+    // started, plus how many /turno messages the chat had then. After a
+    // reload the start is reused only if it is still the same turn and the
+    // number of /turno messages barely changed (not a later round).
+    const TURN_START_KEY = `_n21_turn-order.turn-start:${window.location.pathname}`;
+    const TURN_START_MAX_NEW_MESSAGES = 2;
+
+    function saveTurnStart(turnKey, messageCount) {
+      try {
+        localStorage.setItem(
+          TURN_START_KEY,
+          JSON.stringify({ turnKey, messageCount, startedAt: timer.startedAt }),
+        );
+      } catch (error) {}
+    }
+
+    /** Stored start of this turn, or null if it isn't known. */
+    function loadTurnStart(turnKey, messageCount) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(TURN_START_KEY) || "null");
+        if (!saved || saved.turnKey !== turnKey || !turnKey) return null;
+        // The count can differ a little between a live chat and the history
+        // rendered on load; a whole new round adds many more messages.
+        if (Math.abs(messageCount - saved.messageCount) > TURN_START_MAX_NEW_MESSAGES) return null;
+        return Number.isFinite(saved.startedAt) && saved.startedAt <= Date.now()
+          ? saved.startedAt
+          : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
     function updateTimerDom() {
       const $timer = getPanel().find(".n21-turn-timer");
       if (!$timer.length) return;
@@ -367,8 +405,12 @@
       const topBar = editable
         ? `
           <div class="n21-turn-topbar">
-            <button type="button" class="n21-turn-btn n21-turn-sort">
-              <i class="ft-bar-chart-2"></i> Ordenar por iniciativa
+            <button type="button" class="n21-turn-btn n21-turn-sort" title="Ordenar por iniciativa">
+              <i class="ft-bar-chart-2"></i> Ordenar
+            </button>
+            <button type="button" class="n21-turn-btn n21-turn-read-init"
+              title="Usar la última tirada de «Iniciativa» del chat de cada personaje y tirar la de las criaturas">
+              <i class="fa fa-cube"></i>
             </button>
             <button type="button" class="n21-turn-btn n21-turn-btn--danger n21-turn-end" title="Finalizar combate">
               <i class="ft-flag"></i>
@@ -499,7 +541,8 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const networkId = highlightNetworkId;
-      if (networkId) {
+      // Never reveal where a token hidden from this user is.
+      if (networkId && !TokenManager.isLocallyHidden(networkId)) {
         const pos = TokenManager.getTokenPosition(networkId);
         const scale = TokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
         if (pos) {
@@ -691,6 +734,7 @@
       if (isChatOrderReversed()) matches.reverse();
 
       matches.forEach((m) => reduceCommand(state, m.parsed));
+      state.messageCount = matches.length;
       return state;
     }
 
@@ -784,7 +828,13 @@
       // Key of "whose turn it is", to restart the timer only on real changes.
       function currentTurnKey() {
         const entry = roster[currentTurn - 1];
-        return entry ? `${currentTurn}|${entry.networkId}` : "";
+        return entry ? `${currentTurn}|${shortId(entry.networkId)}` : "";
+      }
+
+      /** Restart the countdown for a new turn and remember when it began. */
+      function startTurnTimer() {
+        restartTimer();
+        saveTurnStart(currentTurnKey(), scanHistoryState().messageCount);
       }
 
       function setTimerSeconds(seconds) {
@@ -796,7 +846,7 @@
         // (a single message); otherwise it goes out with the next "Actualizar".
         if (timer.running && !dirty) {
           queueChat("roster", buildRosterCommand());
-          restartTimer();
+          startTurnTimer();
         } else {
           updateTimerDom();
         }
@@ -849,6 +899,95 @@
         }
       }
 
+      /* ---------- initiative from the chat / rolled for creatures ---------- */
+
+      const INITIATIVE_ROLL = /iniciativa/i;
+      const ROLL_WAIT_MS = 8000;
+      let readingInitiatives = false;
+
+      function normalizeName(value) {
+        return toText(value)
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim()
+          .toLowerCase();
+      }
+
+      /** Row (character/creature) linked to a roster token, or null. */
+      function rosterRow(entry) {
+        const rowId = TokenManager.getLinkedRowId(entry.networkId);
+        return rowId ? CombatTrackingManager.resolveRow(rowId) : null;
+      }
+
+      /** Wait for a new "Iniciativa" roll in the chat after `countBefore`. */
+      function waitForNewRoll(countBefore) {
+        return new Promise((resolve) => {
+          const started = Date.now();
+          (function check() {
+            const rolls = ChatUIManager.getRolls(INITIATIVE_ROLL);
+            if (rolls.length > countBefore) {
+              resolve(rolls[rolls.length - 1]);
+              return;
+            }
+            if (Date.now() - started > ROLL_WAIT_MS) {
+              resolve(null);
+              return;
+            }
+            setTimeout(check, 250);
+          })();
+        });
+      }
+
+      async function readInitiatives() {
+        if (readingInitiatives || !roster.length) return;
+        readingInitiatives = true;
+        try {
+          // Characters: their latest "Iniciativa" roll in the chat.
+          const latest = new Map();
+          ChatUIManager.getRolls(INITIATIVE_ROLL).forEach((roll) => {
+            latest.set(normalizeName(roll.senderName), roll.total);
+          });
+          const creatures = [];
+          roster.forEach((entry) => {
+            const row = rosterRow(entry);
+            if (row?.type === "creature") {
+              creatures.push({ entry, row });
+              return;
+            }
+            const names = [
+              row ? CombatTrackingManager.getEntry(row.type, row.id)?.name : null,
+              getTokenInfo(entry.networkId).name,
+            ].map(normalizeName);
+            const name = names.find((n) => n && latest.has(n));
+            if (name) entry.initiative = latest.get(name);
+          });
+          dirty = true;
+          renderDm();
+
+          // Creatures: rolled one at a time, so each result maps to its token.
+          for (const { entry, row } of creatures) {
+            // Same roll as "Inic." in the combat tracking panel.
+            const initiative = CombatTrackingManager.getInitiativeRoll(row.type, row.id);
+            if (!initiative) continue;
+            const senderInfo = CombatTrackingManager.getEntry(row.type, row.id)?.senderInfo;
+            const countBefore = ChatUIManager.getRolls(INITIATIVE_ROLL).length;
+            const rolled = DiceManager.roll(initiative.notation, {
+              name: initiative.name,
+              senderInfo,
+            });
+            if (!rolled) break;
+            const roll = await waitForNewRoll(countBefore);
+            if (!roll) break;
+            entry.initiative = roll.total;
+            dirty = true;
+            renderDm();
+          }
+          sortByInitiative();
+        } finally {
+          readingInitiatives = false;
+        }
+      }
+
       function sortByInitiative() {
         roster.sort((a, b) => b.initiative - a.initiative);
         dirty = true;
@@ -864,7 +1003,7 @@
         if (currentTurn < 1) currentTurn = 1;
         dirty = false;
         renderDm();
-        if (currentTurnKey() !== previousKey) restartTimer();
+        if (currentTurnKey() !== previousKey) startTurnTimer();
         setTimerRunning(true);
       }
 
@@ -874,7 +1013,7 @@
         currentTurn = next;
         queueChat("turn", `/turno ${next}`);
         renderDm();
-        restartTimer();
+        startTurnTimer();
       }
 
       function stepTurn(delta) {
@@ -917,6 +1056,7 @@
         $panel.off(".n21turn");
 
         $panel.on("click.n21turn", ".n21-turn-sort", () => sortByInitiative());
+        $panel.on("click.n21turn", ".n21-turn-read-init", () => readInitiatives());
         $panel.on("click.n21turn", ".n21-turn-end", () => withChatConsent(() => finalize()));
         $panel.on("click.n21turn", ".n21-turn-update", () => withChatConsent(() => sendRoster()));
         $panel.on("click.n21turn", ".n21-turn-prev", () => withChatConsent(() => stepTurn(-1)));
@@ -1048,9 +1188,14 @@
           storeTimerSeconds(state.timerSeconds);
         }
         if (!timer.running) {
-          // History has no timestamps: the countdown restarts on reload.
           timer.running = true;
-          restartTimer();
+          const savedStart = loadTurnStart(currentTurnKey(), state.messageCount);
+          if (savedStart) {
+            timer.startedAt = savedStart;
+            syncTimerInterval();
+          } else {
+            startTurnTimer();
+          }
         }
         renderDm();
       }
@@ -1076,6 +1221,8 @@
       // timer; only a new turn/timer message does.
       const seenMessages = new WeakSet();
       let restartTimerPending = false;
+      const LIVE_TURN_WINDOW_MS = 5000;
+      let lastLiveTurnMessageAt = 0;
 
       // Recompute the whole state from chat history (order-corrected). This is
       // idempotent, so it's safe no matter how many times the chat history is
@@ -1096,7 +1243,14 @@
         timer.seconds = state.timerSeconds;
         timer.running = active;
         if (restartTimerPending || timerChanged || nextKey !== previousKey) {
-          timer.startedAt = Date.now();
+          if (Date.now() - lastLiveTurnMessageAt < LIVE_TURN_WINDOW_MS) {
+            // A turn change that just arrived: the countdown starts now.
+            timer.startedAt = Date.now();
+            saveTurnStart(nextKey, state.messageCount);
+          } else {
+            // Replaying the history (page load): resume this turn if known.
+            timer.startedAt = loadTurnStart(nextKey, state.messageCount) || Date.now();
+          }
         }
         restartTimerPending = false;
         syncTimerInterval();
@@ -1182,6 +1336,11 @@
           .first()
           .html(buildBodyHtml([], 0, false, false));
       }
+
+      // Live /turno messages (not the history replayed on load).
+      ChatManager.onMessage((message) => {
+        if (/^\s*\/turno\b/.test(toText(message?.message))) lastLiveTurnMessageAt = Date.now();
+      });
 
       ChatUIManager.onMessage(
         "turn-order-player",

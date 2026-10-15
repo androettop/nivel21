@@ -126,7 +126,7 @@
             <button type="submit" class="btn btn-success n21-cres-add-btn">Crear</button>
           </form>
           <div class="n21-cres-footer">
-            <button type="button" class="btn btn-secondary n21-cres-restore" ${resources.length ? "" : "disabled"}>Recuperar todo</button>
+            <button type="button" class="btn n21-btn-neutral n21-cres-restore" ${resources.length ? "" : "disabled"}>Recuperar todo</button>
             ${
               copyOptions && resources.length
                 ? `<select class="form-control n21-cres-copy" aria-label="Copiar recursos a otra criatura">
@@ -237,14 +237,13 @@
 
     // Token context menu: open the resources of the creature assigned to it.
     function getTokenCreatureKey(networkId) {
-      const schema = TokenManager.getTokenSchema(networkId);
-      let description = "";
-      try {
-        description = JSON.parse(schema?.metadata || "{}").description || "";
-      } catch (_error) {}
-      const rowId = window._n21_.utils.parseTokenTag(description, "char");
-      if (!rowId) return null;
-      const entry = getCreatures().find((c) => c.id === String(rowId));
+      // The creature of the group this token is assigned to.
+      const assignments = TokenManager.getAllTokenIds()
+        .map((id) => ({ networkId: id, ...TokenManager.getLinkedRow(id) }))
+        .filter((a) => a.rowId);
+      const ref = CombatTrackingManager.mapTokensToEntries(assignments).get(networkId);
+      if (!ref || ref.type !== "creature") return null;
+      const entry = getCreatures().find((c) => c.id === ref.id && c.index === ref.index);
       return entry ? entry.key : null;
     }
 

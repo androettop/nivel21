@@ -127,6 +127,56 @@
       return window._n21_.utils.parseTokenTag(String(description), key);
     }
 
+    /** Network ids of the tokens currently selected on the board. */
+    getSelectedTokenIds() {
+      const selected = Array.isArray(window.selectedSchemas) ? window.selectedSchemas : [];
+      return selected.map((schema) => schema?.networkId).filter(Boolean);
+    }
+
+    /**
+     * Character a token belongs to natively: tokens added from the campaign's
+     * characters folder carry tokenizable_type "Character" + tokenizable_id.
+     * Nivel20 drops that link whenever the token is edited.
+     * @param {string} networkId
+     * @returns {string|null}
+     */
+    getNativeCharacterId(networkId) {
+      const schema = this.getTokenSchema(networkId);
+      if (!schema) return null;
+      try {
+        const metadata = JSON.parse(typeof schema.metadata === "string" ? schema.metadata : "{}");
+        if (metadata?.tokenizable_type === "Character" && metadata.tokenizable_id != null) {
+          return String(metadata.tokenizable_id);
+        }
+      } catch (_error) {}
+      return null;
+    }
+
+    /**
+     * Row (character/creature) a token is linked to: its [char:id] tag
+     * ([char:id#n] for creature n of a group), or else the character Nivel20
+     * links it to natively.
+     * @param {string} networkId
+     * @returns {{rowId: string, index: number|null}|null} index is 0-based,
+     *   null when the tag doesn't name a creature of a group
+     */
+    getLinkedRow(networkId) {
+      const tag = this.getTokenTag(networkId, "char");
+      if (tag) {
+        const match = /^(.+?)#(\d+)$/.exec(tag);
+        return match
+          ? { rowId: match[1], index: Math.max(0, parseInt(match[2], 10) - 1) }
+          : { rowId: tag, index: null };
+      }
+      const nativeId = this.getNativeCharacterId(networkId);
+      return nativeId ? { rowId: nativeId, index: null } : null;
+    }
+
+    /** Row id a token is linked to (see getLinkedRow), or null. */
+    getLinkedRowId(networkId) {
+      return this.getLinkedRow(networkId)?.rowId || null;
+    }
+
     /**
      * Screen rectangle (canvas CSS pixels) covered by a token, or null.
      * @param {string} networkId
@@ -441,6 +491,12 @@
      */
     getLocalVisibilityOverride(networkId, source) {
       return this._visibilityOverrides?.get(networkId)?.get(source) || null;
+    }
+
+    /** Whether some feature hides this token from this user (e.g. Invisible). */
+    isLocallyHidden(networkId) {
+      const sources = this._visibilityOverrides?.get(networkId);
+      return !!sources && [...sources.values()].includes("hidden");
     }
 
     _ensureVisibilityOverrides() {

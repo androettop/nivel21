@@ -126,25 +126,30 @@
     }
 
     /**
-     * Map tokens assigned to rows (via [char:id]) to concrete entries. Tokens
-     * assigned to the same creature group are spread over its instances in a
-     * stable order (sorted by networkId) so every client agrees.
-     * @param {Array<{networkId: string, rowId: string}>} assignments
+     * Map tokens assigned to rows (via [char:id] or [char:id#n]) to concrete
+     * entries. A token names its creature of a group with #n; older tokens
+     * without it are spread over the group's instances in a stable order
+     * (sorted by networkId) so every client agrees.
+     * @param {Array<{networkId: string, rowId: string, index?: number|null}>} assignments
      * @returns {Map<string, {type: string, id: string, index: number}>}
      */
     mapTokensToEntries(assignments) {
       const result = new Map();
       const byRow = new Map();
-      (assignments || []).forEach(({ networkId, rowId }) => {
+      (assignments || []).forEach(({ networkId, rowId, index }) => {
         const row = this.resolveRow(rowId);
         if (!row || !networkId) return;
+        const count = this.getInstanceCount(row.type, row.id);
+        if (Number.isInteger(index)) {
+          result.set(networkId, { ...row, index: count > 1 ? Math.min(index, count - 1) : 0 });
+          return;
+        }
         const key = `${row.type}:${row.id}`;
-        if (!byRow.has(key)) byRow.set(key, { row, ids: [] });
+        if (!byRow.has(key)) byRow.set(key, { row, count, ids: [] });
         byRow.get(key).ids.push(networkId);
       });
-      byRow.forEach(({ row, ids }) => {
+      byRow.forEach(({ row, count, ids }) => {
         ids.sort().forEach((networkId, i) => {
-          const count = this.getInstanceCount(row.type, row.id);
           result.set(networkId, { ...row, index: count > 1 ? i % count : 0 });
         });
       });
@@ -407,6 +412,9 @@
      */
     queueStatus(entry, changes = {}) {
       if (!entry?.key) return false;
+      // Same rule as Nivel20's UI: only rows it marks as editable for this
+      // user (campaign "who can edit status" setting) can be changed.
+      if (!this._readEntry(entry.type, entry.id, entry.index)?.editable) return false;
       let pending = this._pending.get(entry.key);
       if (!pending) {
         pending = {
@@ -484,7 +492,7 @@
      */
     async setStatus(entry, changes = {}) {
       const baseUrl = this.getBaseUrl();
-      if (!baseUrl || !entry) return false;
+      if (!baseUrl || !entry?.editable) return false;
 
       const currentHp = changes.currentHp ?? entry.currentHp;
       const tempHp = changes.tempHp ?? entry.tempHp;
@@ -678,6 +686,35 @@
       if (!$row.length || $row.hasClass("selected")) return false;
       $row.trigger("click");
       return true;
+    }
+
+    /**
+     * The initiative roll Nivel20 offers in a row ("Inic." in the combat
+     * tracking panel), so other places can make exactly the same roll.
+     * @returns {{notation: string, name: string}|null} null if not in the panel
+     */
+    getInitiativeRoll(type, id) {
+      const $row = this._getRow(type, String(id));
+      if (!$row.length) return null;
+      const $roll = $row.find('[data-dice-roll][data-roll-name="Iniciativa"]').first();
+      if ($roll.length) {
+        return { notation: $roll.attr("data-dice-roll"), name: $roll.attr("data-roll-name") };
+      }
+      // Creatures have no roll in their row: use the bonus Nivel20's own
+      // initiative dialog ("Iniciativa" > "Realizar tiradas") uses.
+      const bonus = parseInt(
+        $(`#initiative-modal .character-row[data-row-type="${type}"][data-row-id="${id}"]`)
+          .first()
+          .attr("data-bonus"),
+        10,
+      );
+      if (!Number.isFinite(bonus)) return null;
+      return { notation: `1d20${bonus < 0 ? bonus : `+${bonus}`}`, name: "Iniciativa" };
+    }
+
+    /** Whether any character/creature row is selected. */
+    hasSelection() {
+      return $(`${ROWS_SELECTOR} ${CHARACTER_ROW_SELECTOR}.selected`).length > 0;
     }
 
     /**

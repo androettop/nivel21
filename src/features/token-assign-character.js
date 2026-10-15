@@ -24,6 +24,7 @@
       CameraManager,
       CharacterManager,
       SettingsManager,
+      CombatTrackingManager,
     ] = await loadManagers(
       "TokenManager",
       "CanvasDropdownManager",
@@ -32,6 +33,7 @@
       "CameraManager",
       "CharacterManager",
       "SettingsManager",
+      "CombatTrackingManager",
     );
 
     if (!SettingsManager.get("feature.token-assign-character.enabled")) {
@@ -59,19 +61,12 @@
     }
 
     /**
-     * Read the assigned character row id from a token's description tag.
+     * Character row a token is linked to ([char:id] tag or Nivel20's own link).
      * @param {string} networkId
      * @returns {string|null}
      */
     function getAssignedCharacterId(networkId) {
-      const schema = TokenManager.getTokenSchema(networkId);
-      if (!schema) return null;
-
-      const metadataString = typeof schema.metadata === "string" ? schema.metadata : "{}";
-      const metadata = safeJsonParse(metadataString) || {};
-      const description = toText(metadata.description);
-
-      return window._n21_.utils.parseTokenTag(description, ASSIGN_TAG);
+      return TokenManager.getLinkedRowId(networkId);
     }
 
     /**
@@ -107,16 +102,37 @@
         const networkId = toText(context?.tokenNetworkId);
         if (!networkId) return [];
 
-        const assigned = getAssignedCharacterId(networkId);
+        const assigned = TokenManager.getLinkedRow(networkId);
         const characters = CharacterManager.getCharacterList();
 
-        const items = characters.map((character) => ({
-          id: `n21-assign-character-${character.id}`,
-          label: assigned === character.id ? `✓ ${character.name}` : character.name,
-          onClick: () => {
-            EditTokenUIManager.setTokenTag(networkId, ASSIGN_TAG, character.id);
-          },
-        }));
+        // A token is one creature: groups ("3 x Goblin") list each of them.
+        const items = [];
+        characters.forEach((character) => {
+          const count =
+            character.type === "creature"
+              ? CombatTrackingManager.getInstanceCount("creature", character.id)
+              : 1;
+          if (count <= 1) {
+            const isAssigned = assigned?.rowId === character.id;
+            items.push({
+              id: `n21-assign-character-${character.id}`,
+              label: isAssigned ? `✓ ${character.name}` : character.name,
+              onClick: () => EditTokenUIManager.setTokenTag(networkId, ASSIGN_TAG, character.id),
+            });
+            return;
+          }
+          const baseName = character.name.replace(/^\s*\d+\s*x\s*/i, "");
+          for (let n = 1; n <= count; n += 1) {
+            const isAssigned = assigned?.rowId === character.id && assigned.index === n - 1;
+            const label = `${baseName} ${n}`;
+            items.push({
+              id: `n21-assign-character-${character.id}-${n}`,
+              label: isAssigned ? `✓ ${label}` : label,
+              onClick: () =>
+                EditTokenUIManager.setTokenTag(networkId, ASSIGN_TAG, `${character.id}#${n}`),
+            });
+          }
+        });
 
         if (assigned) {
           items.push({

@@ -105,7 +105,8 @@ Tanto el DM como los jugadores deben tener la extensión instalada. Los jugadore
 
 Asigna un token a un personaje o criatura del panel de personajes. Al cliquear el token se selecciona automáticamente ese personaje/criatura, permitiéndote usar sus acciones más fácilmente.
 
-- **Click derecho en token (DM)** - Opción "Asignar a personaje" con la lista de personajes y criaturas
+- **Click derecho en token (DM)** - Opción "Asignar a personaje" con la lista de personajes y criaturas. Los grupos de criaturas ("3 x Goblin") aparecen por separado ("Goblin 1", "Goblin 2"…), para asignar cada token a una criatura concreta
+- **Vinculación automática** - Los tokens añadidos desde la carpeta de personajes de la campaña quedan vinculados a su personaje sin hacer nada
 
 Tanto el DM como los jugadores deben tener la extensión instalada. Los jugadores sin la extensión no podrán seleccionar automáticamente su personaje al cliquear el token
 
@@ -121,10 +122,11 @@ Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma 
 
 - **Click derecho en token (DM)** - "Agregar turno" para sumar uno o varios tokens
 - **Iniciativa automática** - Si el token está asignado a un personaje, su iniciativa se completa sola (antes debes tirar iniciativa normalmente para que se registre el valor)
+- **Leer iniciativas (DM)** - El botón del dado toma de cada personaje su última tirada de "Iniciativa" del chat y tira la de las criaturas, y ordena la lista
 - **Botón en el menú lateral** - Vuelve a abrir el panel cuando quieras, por si se cierra
 - **Tus tokens resaltados** - A cada jugador se le marcan sus propios tokens
 - **Resaltar en el mapa** - Pasa el mouse por una fila para ver de qué token se trata, marcado en el mapa
-- **Temporizador por turno (opcional)** - El DM define los segundos por turno; todos ven la cuenta regresiva, que se reinicia al cambiar de turno. Al llegar a 0 solo se pone en rojo
+- **Temporizador por turno (opcional)** - El DM define los segundos por turno; todos ven la cuenta regresiva, que se reinicia al cambiar de turno y continúa donde iba si recargas la página. Al llegar a 0 solo se pone en rojo
 
 <a id="turn-order">
  <img src="popup/img/turn-order.png" alt="Orden de Turnos" />
@@ -134,7 +136,7 @@ Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma 
 
 ### Marco de personaje
 
-Muestra en la esquina superior izquierda del tablero al personaje o criatura seleccionado (la misma lógica para el DM y los jugadores).
+Muestra en la esquina superior izquierda del tablero al personaje o criatura seleccionado (la misma lógica para el DM y los jugadores). Al entrar, el jugador ve directamente su propio personaje. En un grupo de criaturas se muestra la del token seleccionado.
 
 - **Retrato** - Abre la hoja del personaje
 - **Vida y CA** - Click en la vida para curar, dañar o dar puntos temporales. Si tiene el estado Concentración y recibe daño, ofrece tirar la salvación de Constitución con la CD correcta
@@ -427,7 +429,7 @@ Agrega automáticamente los conjuros de un personaje a su barra de acciones, con
 
 ### Acciones estándar en la barra de acciones
 
-Agrega automáticamente una carpeta "Acciones" al final de la barra de un personaje, con las acciones comunes de combate (Carrera, Destrabar, Esquivar, Ayudar, Ocultarse, Preparar, Buscar, Investigar y Usar).
+Agrega automáticamente una carpeta "Acciones" al final de la barra de un personaje, con las acciones comunes de combate (Carrera, Destrabar, Esquivar, Ayudar, Ocultarse, Preparar, Buscar, Investigar y Usar), y una tirada de "Iniciativa" al principio (la misma que "Inic." del registro de combate).
 
 <a id="actions-bar">
  <img src="popup/img/actions-bar.png" alt="Acciones estándar en la barra de acciones" />
@@ -455,6 +457,7 @@ Agrega un botón "Inventario" al final de la barra de un personaje que abre un p
 - **Reordenar** - Arrastra los objetos para ordenarlos (el orden se guarda en tu navegador, por personaje)
 - **Click derecho en un objeto** - Usar uno (−1), Añadir uno (+1) o Eliminar objeto
 - **Click derecho en el dinero** - Editar las monedas
+- **Personajes ajenos** - Si no puedes editar ese personaje en Nivel20, el inventario es solo de lectura
 
 Los cambios usan los mismos formularios que la hoja del personaje. La cantidad se guarda como `[qty:N]` al final de la descripción del objeto (nunca se borra texto: si no hay espacio, no se guarda).
 

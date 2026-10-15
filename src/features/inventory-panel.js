@@ -370,16 +370,20 @@
       $body
         .find(".n21-inventory-money")
         .html(buildMoneyHtml(totals) || '<span class="n21-inventory-money-empty">Sin dinero</span>')
-        .attr("title", "Click derecho: editar dinero");
+        .attr("title", $panel.data("n21InventoryEditable") ? "Click derecho: editar dinero" : null);
     }
 
     /** Load items (with ids/quantities) + sheet and render them. */
     async function loadAndRender($panel, charId) {
       const jsonUrl = `/characters/${charId}.json`;
-      const [items, ph] = await Promise.all([
+      const [items, ph, editable] = await Promise.all([
         CharacterItemsManager.getItems(charId),
         CharacterSheetManager.fetchCharacter(jsonUrl),
+        CharacterItemsManager.canEdit(charId),
       ]);
+      // Someone else's character: read-only, no edit menus at all.
+      $panel.data("n21InventoryEditable", editable);
+      $panel.toggleClass("n21-inventory-panel--readonly", !editable);
       renderInventory($panel.find(".n21-inventory"), items, ph);
     }
 
@@ -625,7 +629,7 @@
         <form class="n21-inventory-money-editor">
           <div class="n21-inventory-money-fields">${fields}</div>
           <div class="n21-inventory-money-actions">
-            <button type="button" class="btn btn-sm btn-secondary n21-inventory-money-cancel">Cancelar</button>
+            <button type="button" class="btn btn-sm n21-btn-neutral n21-inventory-money-cancel">Cancelar</button>
             <button type="submit" class="btn btn-sm btn-success">Guardar</button>
           </div>
         </form>`);
@@ -681,6 +685,14 @@
       $panel.on("contextmenu", ".n21-inventory-item", function (event) {
         event.preventDefault();
         event.stopPropagation();
+        if (!$panel.data("n21InventoryEditable")) return;
+        // The item's own tooltip would stay open on top of the menu.
+        $(this)
+          .find(".tooltipstered")
+          .addBack(".tooltipstered")
+          .each(function () {
+            if (typeof $(this).tooltipster === "function") tooltipster($(this), ["close", "hide"]);
+          });
         const index = Number($(this).attr("data-index"));
         const item = ($panel.data("n21InventoryItems") || [])[index];
         if (!item) return;
@@ -745,6 +757,7 @@
       $panel.on("contextmenu", ".n21-inventory-money", (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (!$panel.data("n21InventoryEditable")) return;
         showContextMenu(event.clientX, event.clientY, [
           { label: "Editar dinero", onClick: () => openMoneyEditor($panel, charId) },
         ]);

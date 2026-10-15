@@ -121,6 +121,23 @@
     }
 
     /**
+     * Whether the current user can edit this character's equipment: Nivel20
+     * only renders the sheet's edit forms for its owner (and the DM).
+     * @param {string|number} charId
+     * @returns {Promise<boolean>}
+     */
+    async canEdit(charId) {
+      try {
+        const { doc } = await this._getSheetDoc(charId);
+        return !!doc.querySelector(
+          'form[action$="/update_field"] [name="character[attribute]"][value="equipment"]',
+        );
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    /**
      * Items of a character with their ids, matched to the printable JSON.
      * @param {string|number} charId
      * @returns {Promise<Array<Object>>} JSON items extended with

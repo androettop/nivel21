@@ -87,15 +87,27 @@
 }
 
 .n21-canvas-dropdown-menu {
+	--n21-menu-bg: rgba(252, 252, 251, 0.98);
+	--n21-menu-border: rgba(0, 0, 0, 0.14);
+	--n21-menu-text: #1f2023;
+	--n21-menu-hover: rgba(0, 0, 0, 0.07);
 	position: fixed;
 	z-index: 12000;
 	min-width: 170px;
 	padding: 6px;
 	border-radius: 8px;
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	background: rgba(16, 16, 18, 0.92);
+	border: 1px solid var(--n21-menu-border);
+	background: var(--n21-menu-bg);
+	color: var(--n21-menu-text);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 	display: none;
+}
+
+body.darkmode--activated .n21-canvas-dropdown-menu {
+	--n21-menu-bg: rgba(16, 16, 18, 0.96);
+	--n21-menu-border: rgba(255, 255, 255, 0.15);
+	--n21-menu-text: #ecebe8;
+	--n21-menu-hover: rgba(255, 255, 255, 0.1);
 }
 
 .n21-canvas-dropdown-item-wrapper {
@@ -111,13 +123,17 @@
 	padding: 8px 10px;
 	border-radius: 6px;
 	color: inherit;
-	font-size: 13px;
+	font-size: 14px;
 	line-height: 1.25;
 	cursor: pointer;
 }
 
 .n21-canvas-dropdown-item:hover {
-	background: rgba(255, 255, 255, 0.1);
+	background: var(--n21-menu-hover);
+}
+
+.n21-canvas-dropdown-item.n21-has-submenu {
+	padding-right: 26px;
 }
 
 .n21-canvas-dropdown-item.n21-has-submenu::after {
@@ -130,15 +146,22 @@
 }
 
 .n21-canvas-dropdown-submenu {
-	display: none;
+	/* Hover intent: opens after a short delay and closes a bit later, so
+	   moving diagonally to it doesn't switch to a neighbour's submenu. */
+	display: block;
+	visibility: hidden;
+	opacity: 0;
+	transition:
+		visibility 0s linear 0.25s,
+		opacity 0s linear 0.25s;
 	position: absolute;
 	left: 100%;
 	top: -6px;
 	min-width: 170px;
 	padding: 6px;
 	border-radius: 8px;
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	background: rgba(16, 16, 18, 0.92);
+	border: 1px solid var(--n21-menu-border);
+	background: var(--n21-menu-bg);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 	margin-left: 4px;
 }
@@ -158,7 +181,9 @@
 }
 
 .n21-canvas-dropdown-item-wrapper:hover > .n21-canvas-dropdown-submenu {
-	display: block;
+	visibility: visible;
+	opacity: 1;
+	transition-delay: 0.12s;
 }
 
 .n21-ping-overlay {
@@ -285,7 +310,9 @@
 .n21-settings-panel-body {
 	padding: 16px 18px 20px;
 	overflow-y: auto;
-	max-height: 100%;
+	/* Shrinks below the reload notice, which stays visible above it. */
+	flex: 1 1 auto;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
@@ -298,12 +325,12 @@
 }
 
 .n21-settings-tab {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(127, 127, 127, 0.3);
+	background: rgba(127, 127, 127, 0.06);
 	color: inherit;
 	padding: 8px 12px;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.2;
 	cursor: pointer;
@@ -312,8 +339,8 @@
 }
 
 .n21-settings-tab:hover {
-	border-color: rgba(255, 255, 255, 0.24);
-	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(127, 127, 127, 0.55);
+	background: rgba(127, 127, 127, 0.12);
 }
 
 .n21-settings-tab.is-active {
@@ -460,14 +487,20 @@
 	flex: 0 0 auto;
 }
 
-.n21-settings-reload-message {
-	background: rgba(255, 193, 7, 0.16);
-	border: 1px solid rgba(255, 193, 7, 0.55);
+body.darkmode--activated .n21-settings-reload-message {
+	background: #3a3220;
 	color: #ffe082;
+}
+
+.n21-settings-reload-message {
+	flex: 0 0 auto;
+	background: #fff4d6;
+	border: 1px solid rgba(214, 160, 0, 0.6);
+	color: #5c4000;
 	padding: 10px 12px;
 	margin: 14px 18px 0;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	text-align: center;
 }
@@ -629,7 +662,8 @@ span[n21-h] {
 	width: 100%;
 	height: 100%;
 	pointer-events: none;
-	z-index: 11400;
+	/* Over the board, under the HUD and floating panels. */
+	z-index: 999;
 }
 
 .n21-turn-content {
@@ -651,18 +685,25 @@ span[n21-h] {
 }
 
 .n21-turn-topbar .n21-turn-sort {
-	flex: 1;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.n21-turn-topbar .n21-turn-btn:not(.n21-turn-sort) {
+	flex: 0 0 auto;
 }
 
 /* Buttons styled like the rest of the extension (see .n21-settings-tab). */
 .n21-turn-btn {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	background: rgba(127, 127, 127, 0.06);
 	color: inherit;
 	padding: 8px 12px;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.2;
 	cursor: pointer;
@@ -671,8 +712,8 @@ span[n21-h] {
 }
 
 .n21-turn-btn:hover:not(:disabled) {
-	border-color: rgba(255, 255, 255, 0.24);
-	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(127, 127, 127, 0.6);
+	background: rgba(127, 127, 127, 0.12);
 }
 
 .n21-turn-btn:disabled {
@@ -753,8 +794,8 @@ span[n21-h] {
 	padding: 2px 4px;
 	font-size: 14px;
 	color: inherit;
-	background: rgba(0, 0, 0, 0.25);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
 	border-radius: 4px;
 }
 
@@ -874,10 +915,10 @@ span[n21-h] {
 	box-sizing: border-box;
 	text-align: center;
 	padding: 2px 4px;
-	font-size: 13px;
+	font-size: 14px;
 	color: inherit;
-	background: rgba(0, 0, 0, 0.25);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
 	border-radius: 4px;
 }
 
@@ -1285,6 +1326,11 @@ span[n21-h] {
 	background: rgba(0, 0, 0, 0.1);
 }
 
+/* Someone else's character: nothing to edit. */
+.n21-inventory-panel--readonly .n21-inventory-edit {
+	display: none;
+}
+
 .n21-inventory-refresh:hover:not(:disabled) {
 	background: rgba(0, 0, 0, 0.1);
 }
@@ -1401,7 +1447,7 @@ span[n21-h] {
 
 .n21-inventory-menu .n21-canvas-dropdown-item {
 	font-size: 14px;
-	color: #ecebe8;
+	color: var(--n21-menu-text);
 }
 
 .n21-inventory-menu .n21-canvas-dropdown-item:disabled {
@@ -1410,6 +1456,10 @@ span[n21-h] {
 }
 
 .n21-inventory-menu .n21-inventory-menu-danger {
+	color: #b3261e;
+}
+
+body.darkmode--activated .n21-inventory-menu .n21-inventory-menu-danger {
 	color: #ff8a80;
 }
 
@@ -1535,12 +1585,29 @@ span[n21-h] {
 
 /* ----------------------- Character Frame ----------------------- */
 
-.n21-cframe {
+body.darkmode--activated .n21-cframe {
 	--n21-cf-bg: rgba(23, 24, 26, 0.8);
 	--n21-cf-surface: rgba(255, 255, 255, 0.06);
 	--n21-cf-border: #3a3d42;
 	--n21-cf-text: #ecebe8;
 	--n21-cf-muted: #a9a8a4;
+	--n21-cf-res-text: #f2f0ea;
+	--n21-cf-res-shadow: 0 0 2px #000, 0 1px 2px #000;
+	--n21-cf-pip-off: #5a5c60;
+	--n21-cf-hp-track: #3a3c40;
+}
+
+.n21-cframe {
+	--n21-cf-bg: rgba(250, 250, 249, 0.88);
+	--n21-cf-surface: rgba(0, 0, 0, 0.05);
+	--n21-cf-border: #cfcecb;
+	--n21-cf-text: #1f2023;
+	--n21-cf-muted: #5f5e5a;
+	--n21-cf-res-text: #1f2023;
+	--n21-cf-res-shadow: none;
+	--n21-cf-pip-off: #c4c3bf;
+	/* Same grey as Nivel20's health bars in the combat tracking panel. */
+	--n21-cf-hp-track: #bbbbbb;
 	--n21-cf-hp: #b3261e;
 	--n21-cf-hp-bloodied: #8c1d17;
 	--n21-cf-temp: #3b82c4;
@@ -1581,7 +1648,7 @@ span[n21-h] {
 	padding: 4px 8px;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 6px;
-	background: rgba(255, 255, 255, 0.06);
+	background: var(--n21-cf-surface);
 	color: var(--n21-cf-text);
 	font-size: 14px;
 }
@@ -1611,7 +1678,8 @@ span[n21-h] {
 
 .n21-cframe-cond-option:hover,
 .n21-cframe-cond-option:focus-visible {
-	background: rgba(255, 255, 255, 0.1);
+	background: var(--n21-cf-surface);
+	box-shadow: inset 0 0 0 1px var(--n21-cf-border);
 }
 
 .n21-cframe-cond-option img,
@@ -1773,27 +1841,6 @@ span[n21-h] {
 	font-variant-numeric: tabular-nums;
 }
 
-.n21-cframe-instances {
-	display: flex;
-	gap: 4px;
-}
-
-.n21-cframe-instance {
-	min-width: 28px;
-	height: 26px;
-	border: 1px solid var(--n21-cf-border);
-	border-radius: 6px;
-	background: var(--n21-cf-surface);
-	color: var(--n21-cf-text);
-	font-size: 14px;
-	cursor: pointer;
-}
-
-.n21-cframe-instance--active {
-	border-color: var(--n21-cf-text);
-	font-weight: 700;
-}
-
 .n21-cframe-hp {
 	position: relative;
 	height: 20px;
@@ -1801,7 +1848,7 @@ span[n21-h] {
 	padding: 0;
 	border: 1px solid var(--n21-cf-border);
 	border-radius: 6px;
-	background: #3a3c40;
+	background: var(--n21-cf-hp-track);
 	overflow: hidden;
 	cursor: pointer;
 	color: #fff;
@@ -1897,10 +1944,8 @@ span[n21-h] {
 	font-size: 14px;
 	font-weight: 700;
 	line-height: 14px;
-	color: #f2f0ea;
-	text-shadow:
-		0 0 2px #000,
-		0 1px 2px #000;
+	color: var(--n21-cf-res-text);
+	text-shadow: var(--n21-cf-res-shadow);
 	pointer-events: none;
 }
 
@@ -1919,7 +1964,7 @@ span[n21-h] {
 	font-weight: 700;
 	line-height: 1;
 	font-family: Georgia, "Times New Roman", serif;
-	color: #d9d6cf;
+	color: var(--n21-cf-muted);
 }
 
 .n21-cframe-res-icon {
@@ -1941,7 +1986,7 @@ span[n21-h] {
 	width: 8px;
 	height: 8px;
 	border-radius: 1px;
-	background: #5a5c60;
+	background: var(--n21-cf-pip-off);
 }
 
 .n21-cframe-res-pips i.n21-cframe-pip--on {
@@ -2054,6 +2099,13 @@ span[n21-h] {
 
 .n21-cframe-btn:hover {
 	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe-btn--heal,
+.n21-cframe-btn--damage,
+.n21-cframe-btn--primary,
+.n21-cframe-btn--temp {
+	color: #fff;
 }
 
 .n21-cframe-btn--heal {
@@ -2563,14 +2615,27 @@ span[n21-h] {
 }
 
 .n21-chat-consent-box {
+	--n21-cc-bg: #fbfbfa;
+	--n21-cc-border: #d4d3d0;
+	--n21-cc-text: #1f2023;
+	--n21-cc-surface: rgba(0, 0, 0, 0.05);
+	--n21-cc-warning: #9a6400;
 	width: min(420px, calc(100vw - 32px));
 	padding: 16px;
-	border: 1px solid #3a3d42;
+	border: 1px solid var(--n21-cc-border);
 	border-radius: 10px;
-	background: #1d1e21;
-	color: #ecebe8;
+	background: var(--n21-cc-bg);
+	color: var(--n21-cc-text);
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 	font-size: 14px;
+}
+
+body.darkmode--activated .n21-chat-consent-box {
+	--n21-cc-bg: #1d1e21;
+	--n21-cc-border: #3a3d42;
+	--n21-cc-text: #ecebe8;
+	--n21-cc-surface: rgba(255, 255, 255, 0.06);
+	--n21-cc-warning: #e0a020;
 }
 
 .n21-chat-consent-box h5 {
@@ -2585,7 +2650,7 @@ span[n21-h] {
 }
 
 .n21-chat-consent-warning {
-	color: #e0a020;
+	color: var(--n21-cc-warning);
 }
 
 .n21-chat-consent-remember {
@@ -2606,9 +2671,9 @@ span[n21-h] {
 .n21-chat-consent-actions button {
 	height: 34px;
 	padding: 0 14px;
-	border: 1px solid #3a3d42;
+	border: 1px solid var(--n21-cc-border);
 	border-radius: 6px;
-	background: rgba(255, 255, 255, 0.06);
+	background: var(--n21-cc-surface);
 	color: inherit;
 	font-size: 14px;
 	font-weight: 600;
@@ -2618,6 +2683,7 @@ span[n21-h] {
 .n21-chat-consent-actions .n21-chat-consent-yes {
 	background: #6e1a16;
 	border-color: #a3271f;
+	color: #fff;
 }
 
 .n21-chat-consent-toast {
@@ -2644,4 +2710,18 @@ span[n21-h] {
 .action-bar-element.n21-spell-no-slots .action-bar-image {
 	filter: grayscale(1);
 	opacity: 0.6;
+}
+
+/* Neutral secondary button (instead of Nivel20's blue btn-secondary). */
+.btn.n21-btn-neutral {
+	background: transparent;
+	border: 1px solid rgba(127, 127, 127, 0.5);
+	color: inherit;
+}
+
+.btn.n21-btn-neutral:hover,
+.btn.n21-btn-neutral:focus {
+	background: rgba(127, 127, 127, 0.12);
+	border-color: rgba(127, 127, 127, 0.7);
+	color: inherit;
 }

@@ -566,7 +566,7 @@
         `<input id='n21-ambient-fx-opacity' type='range' min='0' max='1' step='0.01' value='${initialOpacity}' ` +
         "style='width: 100%; margin-bottom: 12px;' />" +
         "<label for='n21-ambient-fx-blend' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Modo de fusion" +
+        "Modo de fusión" +
         "</label>" +
         "<select id='n21-ambient-fx-blend' style='width: 100%;'>" +
         `<option value='multiply'${
@@ -641,7 +641,7 @@
         "Vista previa" +
         "</label>" +
         "<div style='display: flex; gap: 8px; margin-top: 12px;'>" +
-        "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 50%;'>" +
+        "<button id='n21-ambient-fx-clear' class='btn n21-btn-neutral' style='width: 50%;'>" +
         "Limpiar" +
         "</button>" +
         "<button id='n21-ambient-fx-apply' class='btn btn-primary' style='width: 50%;'>" +
