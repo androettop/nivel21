@@ -427,6 +427,7 @@
         </div>`;
 
       const html = `
+        <div class="n21-aura-panel">
         <div class="n21-aura-panel-content">
           <div class="n21-aura-panel-section">
             <label class="n21-aura-section-label">Forma</label>
@@ -454,10 +455,11 @@
             <input type="checkbox" id="n21-aura-only" ${current.auraOnly ? "checked" : ""} />
             <span>Solo aura: ocultar el token a los jugadores (para terreno difícil, trampas o zonas)</span>
           </label>
-          <div class="n21-aura-panel-buttons">
-            <button id="n21-aura-apply-btn" class="btn btn-success">Aplicar</button>
-            <button id="n21-aura-remove-btn" class="btn btn-danger">Eliminar</button>
-          </div>
+        </div>
+        <div class="n21-panel-footer">
+          <button id="n21-aura-remove-btn" class="btn btn-danger">Eliminar</button>
+          <button id="n21-aura-apply-btn" class="btn btn-primary">Aplicar</button>
+        </div>
         </div>
       `;
       const tokenSchema = TokenManager.getTokenSchema(networkId);

@@ -545,111 +545,92 @@
       setPreviewVisibility(previewEnabled);
     }
 
+    const BLEND_OPTIONS = [
+      ["multiply", "Multiplicar"],
+      ["normal", "Normal"],
+      ["screen", "Pantalla"],
+      ["overlay", "Superponer"],
+      ["darken", "Oscurecer"],
+      ["lighten", "Aclarar"],
+      ["soft-light", "Luz suave"],
+      ["difference", "Diferencia"],
+      ["exclusion", "Exclusión"],
+      ["hue", "Tono"],
+      ["saturation", "Saturación"],
+      ["color", "Color"],
+      ["luminosity", "Luminosidad"],
+    ];
+
+    // Icons (Feather, as used by Nivel20) for the weather chips.
+    const WEATHER_ICONS = {
+      lluvia: "ft-cloud-rain",
+      tormenta: "ft-cloud-lightning",
+      nieve: "ft-cloud-snow",
+      niebla: "ft-wind",
+      nubes: "ft-cloud",
+      brasas: "ft-zap",
+    };
+
     function buildPanelHtml(color, opacity, blendMode) {
-      const valueAttribute = color ? ` value='${color}'` : "";
       const normalizedOpacity = normalizeOpacity(opacity);
       const normalizedBlend = sanitizeBlendMode(blendMode) || DEFAULT_BLEND;
       const initialOpacity =
         typeof normalizedOpacity === "number"
           ? formatOpacityValue(normalizedOpacity)
           : formatOpacityValue(DEFAULT_OPACITY);
-      return (
-        "<div class='n21-ambient-fx-panel-body' style='padding: 12px;'>" +
-        "<label for='n21-ambient-fx-color' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Color de ambiente" +
-        "</label>" +
-        `<input id='n21-ambient-fx-color' type='color'${valueAttribute} ` +
-        "style='border: none; padding: 0; background: transparent; margin-bottom: 12px;' />" +
-        "<label for='n21-ambient-fx-opacity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Intensidad" +
-        "</label>" +
-        `<input id='n21-ambient-fx-opacity' type='range' min='0' max='1' step='0.01' value='${initialOpacity}' ` +
-        "style='width: 100%; margin-bottom: 12px;' />" +
-        "<label for='n21-ambient-fx-blend' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Modo de fusión" +
-        "</label>" +
-        "<select id='n21-ambient-fx-blend' style='width: 100%;'>" +
-        `<option value='multiply'${
-          normalizedBlend === "multiply" ? " selected" : ""
-        }>Multiplicar</option>` +
-        `<option value='normal'${
-          normalizedBlend === "normal" ? " selected" : ""
-        }>Normal</option>` +
-        `<option value='screen'${
-          normalizedBlend === "screen" ? " selected" : ""
-        }>Pantalla</option>` +
-        `<option value='overlay'${
-          normalizedBlend === "overlay" ? " selected" : ""
-        }>Superponer</option>` +
-        `<option value='darken'${
-          normalizedBlend === "darken" ? " selected" : ""
-        }>Oscurecer</option>` +
-        `<option value='lighten'${
-          normalizedBlend === "lighten" ? " selected" : ""
-        }>Aclarar</option>` +
-        `<option value='color-dodge'${
-          normalizedBlend === "color-dodge" ? " selected" : ""
-        }>Sobreexponer color</option>` +
-        `<option value='color-burn'${
-          normalizedBlend === "color-burn" ? " selected" : ""
-        }>Subexponer color</option>` +
-        `<option value='hard-light'${
-          normalizedBlend === "hard-light" ? " selected" : ""
-        }>Luz dura</option>` +
-        `<option value='soft-light'${
-          normalizedBlend === "soft-light" ? " selected" : ""
-        }>Luz suave</option>` +
-        `<option value='difference'${
-          normalizedBlend === "difference" ? " selected" : ""
-        }>Diferencia</option>` +
-        `<option value='exclusion'${
-          normalizedBlend === "exclusion" ? " selected" : ""
-        }>Exclusion</option>` +
-        `<option value='hue'${
-          normalizedBlend === "hue" ? " selected" : ""
-        }>Tono</option>` +
-        `<option value='saturation'${
-          normalizedBlend === "saturation" ? " selected" : ""
-        }>Saturacion</option>` +
-        `<option value='color'${
-          normalizedBlend === "color" ? " selected" : ""
-        }>Color</option>` +
-        `<option value='luminosity'${
-          normalizedBlend === "luminosity" ? " selected" : ""
-        }>Luminosidad</option>` +
-        "</select>" +
-        "<label for='n21-ambient-weather-type' style='display: block; margin: 12px 0 8px; font-weight: 600;'>" +
-        "Clima animado" +
-        "</label>" +
-        "<select id='n21-ambient-weather-type' style='width: 100%; margin-bottom: 12px;'>" +
-        `<option value=''${currentWeather.type ? "" : " selected"}>Ninguno</option>` +
-        (weather?.TYPES || [])
-          .map(
-            (t) =>
-              `<option value='${t.key}'${currentWeather.type === t.key ? " selected" : ""}>${t.label}</option>`,
-          )
-          .join("") +
-        "</select>" +
-        "<label for='n21-ambient-weather-intensity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Intensidad del clima" +
-        "</label>" +
-        `<input id='n21-ambient-weather-intensity' type='range' min='0.1' max='1' step='0.05' value='${formatOpacityValue(
-          currentWeather.intensity,
-        )}' style='width: 100%;' />` +
-        "<label style='display: flex; gap: 8px; align-items: center; margin-top: 12px;'>" +
-        `<input id='${PREVIEW_TOGGLE_ID}' type='checkbox' />` +
-        "Vista previa" +
-        "</label>" +
-        "<div style='display: flex; gap: 8px; margin-top: 12px;'>" +
-        "<button id='n21-ambient-fx-clear' class='btn n21-btn-neutral' style='width: 50%;'>" +
-        "Limpiar" +
-        "</button>" +
-        "<button id='n21-ambient-fx-apply' class='btn btn-primary' style='width: 50%;'>" +
-        "Aplicar" +
-        "</button>" +
-        "</div>" +
-        "</div>"
-      );
+      const types = [{ key: "", label: "Ninguno" }, ...(weather?.TYPES || [])];
+      const chips = types
+        .map(
+          (t) =>
+            `<button type="button" class="n21-fx-chip${currentWeather.type === t.key || (!currentWeather.type && !t.key) ? " n21-fx-chip--active" : ""}" data-weather="${t.key}">` +
+            `<i class="${WEATHER_ICONS[t.key] || "ft-slash"}"></i><span>${t.label}</span></button>`,
+        )
+        .join("");
+      const weatherOptions = types
+        .map(
+          (t) =>
+            `<option value="${t.key}"${(currentWeather.type || "") === t.key ? " selected" : ""}>${t.label}</option>`,
+        )
+        .join("");
+      const blendOptions = BLEND_OPTIONS.map(
+        ([value, label]) =>
+          `<option value="${value}"${normalizedBlend === value ? " selected" : ""}>${label}</option>`,
+      ).join("");
+
+      return `
+        <div class="n21-fx">
+          <div class="n21-fx-body">
+            <section class="n21-fx-section">
+              <h6 class="n21-fx-title">Clima animado</h6>
+              <div class="n21-fx-chips" role="radiogroup" aria-label="Clima animado">${chips}</div>
+              <select id="n21-ambient-weather-type" hidden>${weatherOptions}</select>
+              <label class="n21-fx-label" for="n21-ambient-weather-intensity">Intensidad del clima</label>
+              <input id="n21-ambient-weather-intensity" type="range" min="0.1" max="1" step="0.05"
+                value="${formatOpacityValue(currentWeather.intensity)}" />
+            </section>
+            <section class="n21-fx-section">
+              <h6 class="n21-fx-title">Luz de ambiente</h6>
+              <div class="n21-fx-row">
+                <input id="n21-ambient-fx-color" type="color" value="${color || DEFAULT_COLOR}"
+                  aria-label="Color de ambiente" title="Color de ambiente" />
+                <div class="n21-fx-grow">
+                  <label class="n21-fx-label" for="n21-ambient-fx-opacity">Intensidad</label>
+                  <input id="n21-ambient-fx-opacity" type="range" min="0" max="1" step="0.01" value="${initialOpacity}" />
+                </div>
+              </div>
+              <label class="n21-fx-label" for="n21-ambient-fx-blend">Modo de fusión</label>
+              <select id="n21-ambient-fx-blend" class="form-control">${blendOptions}</select>
+            </section>
+            <label class="n21-fx-check">
+              <input id="${PREVIEW_TOGGLE_ID}" type="checkbox" />
+              Vista previa (solo para ti)
+            </label>
+          </div>
+          <div class="n21-panel-footer">
+            <button id="n21-ambient-fx-clear" type="button" class="btn">Limpiar</button>
+            <button id="n21-ambient-fx-apply" type="button" class="btn btn-primary">Aplicar</button>
+          </div>
+        </div>`;
     }
 
     function applyState(color, opacity, blendMode) {
@@ -670,7 +651,7 @@
         "#822020",
         html,
         "n21-ambient-fx-panel n21-fixed-panel",
-        "width: 300px; height: 470px; min-width: 300px; min-height: 470px; max-width: 300px; max-height: 470px;",
+        "width: 344px; height: 520px; min-width: 344px; min-height: 520px; max-width: 344px; max-height: 520px;",
       );
 
       if (!$panel || typeof $panel.find !== "function") return;
@@ -718,6 +699,14 @@
         });
       }
 
+      // Weather chips drive the (hidden) weather select.
+      $panel.off("click.n21AmbientFxChip").on("click.n21AmbientFxChip", ".n21-fx-chip", function () {
+        const value = this.getAttribute("data-weather") || "";
+        $panel.find(".n21-fx-chip").removeClass("n21-fx-chip--active");
+        $(this).addClass("n21-fx-chip--active");
+        $panel.find("#n21-ambient-weather-type").val(value).trigger("change");
+      });
+
       $panel
         .find("#n21-ambient-weather-type, #n21-ambient-weather-intensity")
         .off(".n21AmbientFx")
@@ -749,6 +738,8 @@
             }, PREVIEW_DISABLE_DELAY_MS);
           }
           $panel.find("#n21-ambient-weather-type").val("");
+          $panel.find(".n21-fx-chip").removeClass("n21-fx-chip--active");
+          $panel.find('.n21-fx-chip[data-weather=""]').addClass("n21-fx-chip--active");
           const commandText = getCommandFromInputs(true);
           sendCommandToChat(commandText, { debounce: true });
         });
