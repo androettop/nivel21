@@ -164,6 +164,13 @@
 
       activePing.marker.style.left = `${screenPosition.x}px`;
       activePing.marker.style.top = `${screenPosition.y}px`;
+      // Lie on the board plane (identity with the top-down camera).
+      const ground = CameraManager.getGroundAffine(activePing.worldX, activePing.worldZ);
+      if (ground) {
+        const [ma, mb, mc, md] = ground.matrix;
+        activePing.marker.style.transformOrigin = "0 0";
+        activePing.marker.style.transform = `matrix(${ma}, ${mb}, ${mc}, ${md}, 0, 0) translate(-50%, -50%)`;
+      }
 
       const pingSizePx = getPingSizePx();
       activePing.marker.style.width = `${pingSizePx}px`;

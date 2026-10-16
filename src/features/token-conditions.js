@@ -77,15 +77,27 @@
         const visibility = TokenManager.getTokenVisibility(networkId);
         if (!visibility || (visibility.hidden && !visibility.translucent)) return;
 
-        const rect = helpers.rectOf(networkId);
-        if (!rect || rect.width < 12) return;
+        const screenRect = helpers.rectOf(networkId);
+        if (!screenRect || screenRect.width < 12) return;
+        if (
+          screenRect.x > helpers.width ||
+          screenRect.y > helpers.height ||
+          screenRect.x + screenRect.width < 0 ||
+          screenRect.y + screenRect.height < 0
+        ) return;
+        // Laid on the board: layout in the token's top-down box, then mapped
+        // to the camera's view (tilted in 3D, unchanged in 2D).
+        const ground = helpers.groundOf(networkId);
+        if (!ground) return;
+        const rect = { x: 0, y: 0, width: ground.width, height: ground.height };
+        ctx.save();
+        ground.apply(ctx);
 
         const gap = Math.max(1, rect.height * 0.02);
         const size = Math.max(10, Math.min((rect.height - gap * (ROWS - 1)) / ROWS, 32));
         // Right edge aligned with the token's box; extra columns grow left.
         const rightX = rect.x + rect.width - size;
         const startY = rect.y;
-        if (rect.x > helpers.width || startY > helpers.height || startY + rect.height < 0) return;
 
         ctx.globalAlpha = visibility.translucent ? 0.6 : 1;
         icons.forEach((url, i) => {
@@ -109,6 +121,7 @@
           ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
           ctx.stroke();
         });
+        ctx.restore();
       });
     }
 

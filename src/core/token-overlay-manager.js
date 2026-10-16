@@ -111,6 +111,26 @@
           pixelRatio: ratio,
           rectOf: (networkId) =>
             this._tokenManager.getTokenScreenRect(networkId, this._cameraManager),
+          // The token's footprint as it is laid on the board: draw in a
+          // top-down box of `width` x `height` px after `apply(ctx)`, and it
+          // follows the camera tilt and rotation (identity in plain 2D).
+          groundOf: (networkId) => {
+            const pos = this._tokenManager.getTokenPosition(networkId);
+            if (!pos) return null;
+            const scale = this._tokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
+            const halfX = Math.abs(scale.x || 1) / 2;
+            const halfZ = Math.abs(scale.z || 1) / 2;
+            const ground = this._cameraManager.getGroundAffine(pos.x - halfX, pos.z - halfZ);
+            const basis = this._cameraManager.getGroundBasis(pos.x, pos.z);
+            if (!ground || !basis) return null;
+            const [a, b, c, d] = ground.matrix;
+            return {
+              width: halfX * 2 * basis.scale,
+              height: halfZ * 2 * basis.scale,
+              origin: ground.origin,
+              apply: (ctx) => ctx.transform(a, b, c, d, ground.origin.x, ground.origin.y),
+            };
+          },
         };
 
         [...this._layers.entries()]
