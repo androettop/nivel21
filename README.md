@@ -125,7 +125,7 @@ Lleva el orden de iniciativa del combate en un panel siempre a mano. El DM arma 
 - **Leer iniciativas (DM)** - El botón del dado toma de cada personaje su última tirada de "Iniciativa" del chat y tira la de las criaturas, y ordena la lista
 - **Botón en el menú lateral** - Vuelve a abrir el panel cuando quieras, por si se cierra
 - **Tus tokens resaltados** - A cada jugador se le marcan sus propios tokens
-- **Resaltar en el mapa** - Pasa el mouse por una fila para ver de qué token se trata, marcado en el mapa
+- **Resaltar en el mapa** - Pasa el mouse por una fila para ver de qué token se trata, marcado en el mapa. Haz click en la fila para centrar tu cámara en ese token (solo tu cámara)
 - **Temporizador por turno (opcional)** - El DM define los segundos por turno; todos ven la cuenta regresiva, que se reinicia al cambiar de turno y continúa donde iba si recargas la página. Al llegar a 0 solo se pone en rojo
 
 <a id="turn-order">

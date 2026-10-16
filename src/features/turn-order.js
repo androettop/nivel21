@@ -540,6 +540,11 @@
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // The row can disappear under the cursor (panel closed or redrawn)
+      // without a mouseleave: stop as soon as no row is hovered.
+      if (highlightNetworkId && !document.querySelector(".n21-turn-row:hover")) {
+        highlightNetworkId = null;
+      }
       const networkId = highlightNetworkId;
       // Never reveal where a token hidden from this user is.
       if (networkId && !TokenManager.isLocallyHidden(networkId)) {
@@ -559,13 +564,6 @@
             .filter(Boolean);
 
           if (corners.length === 4) {
-            const xs = corners.map((p) => p.x);
-            const ys = corners.map((p) => p.y);
-            const minX = Math.min(...xs);
-            const maxX = Math.max(...xs);
-            const minY = Math.min(...ys);
-            const maxY = Math.max(...ys);
-
             // Border thickness scales with how big a cell is on screen, so it
             // stays ~3px at normal zoom and grows/shrinks with it.
             const topEdgePx = Math.hypot(
@@ -575,9 +573,15 @@
             const pxPerCell = topEdgePx / (Math.abs(scale.x) || 1);
             const lineWidth = Math.max(2, pxPerCell * 0.06);
 
+            // The token's real outline on the board (a trapezoid with a
+            // tilted camera, a square from above).
             ctx.lineWidth = lineWidth;
+            ctx.lineJoin = "round";
             ctx.strokeStyle = HIGHLIGHT_COLOR;
-            ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+            ctx.beginPath();
+            corners.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+            ctx.closePath();
+            ctx.stroke();
           }
         }
       }
@@ -607,6 +611,15 @@
       });
       $panel.on("mouseleave.n21turnhl", ".n21-turn-row", function () {
         setHighlight(null);
+      });
+
+      // Click a row: center this user's camera on that token (local only).
+      $panel.on("click.n21turnhl", ".n21-turn-row", function (event) {
+        if ($(event.target).closest("input, button, select, a").length) return;
+        const networkId = $(this).attr("data-network-id");
+        if (!networkId || TokenManager.isLocallyHidden(networkId)) return;
+        const pos = TokenManager.getTokenPosition(networkId);
+        if (pos) CameraManager.centerOn(pos.x, pos.z);
       });
     }
 
