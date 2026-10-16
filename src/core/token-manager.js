@@ -127,6 +127,12 @@
       return window._n21_.utils.parseTokenTag(String(description), key);
     }
 
+    /** Image shown by a token on the board, or null. */
+    getTokenImageUrl(networkId) {
+      const instance = this.getToken(networkId)?.script?.tokenInstance;
+      return instance?.imageUrl || instance?.schema?.imageUrl || null;
+    }
+
     /** Network ids of the tokens currently selected on the board. */
     getSelectedTokenIds() {
       const selected = Array.isArray(window.selectedSchemas) ? window.selectedSchemas : [];

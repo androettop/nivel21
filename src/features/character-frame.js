@@ -219,6 +219,27 @@
       return items.length ? `<div class="n21-cframe-conditions">${items.join("")}</div>` : "";
     }
 
+    /**
+     * Portrait of the entry; a creature without an image of its own (Nivel20's
+     * placeholder) shows the image of a token linked to it instead.
+     */
+    function portraitUrl(entry) {
+      if (!CombatTrackingManager.isPlaceholderImage(entry.imageUrl)) return entry.imageUrl;
+      if (entry.type !== "creature") return entry.imageUrl;
+      const assignments = TokenManager.getAllTokenIds()
+        .map((networkId) => ({ networkId, ...TokenManager.getLinkedRow(networkId) }))
+        .filter((a) => a.rowId);
+      let fallback = null;
+      for (const [networkId, ref] of CombatTrackingManager.mapTokensToEntries(assignments)) {
+        if (ref.type !== entry.type || ref.id !== entry.id) continue;
+        const url = TokenManager.getTokenImageUrl(networkId);
+        if (!url) continue;
+        if (ref.index === entry.index) return url;
+        fallback = fallback || url;
+      }
+      return fallback || entry.imageUrl;
+    }
+
     function buildCardHtml(entry) {
       const hpRatio = entry.maxHp > 0 ? Math.min(entry.currentHp / entry.maxHp, 1) : 0;
       const tempRatio = entry.maxHp > 0 ? Math.min(entry.tempHp / entry.maxHp, 1) : 0;
@@ -226,8 +247,9 @@
       const hpClass =
         hpRatio <= 0 ? "n21-cframe-hp--down" : hpRatio <= 0.5 ? "n21-cframe-hp--bloodied" : "";
 
-      const portrait = entry.imageUrl
-        ? `<img src="${escapeHtml(entry.imageUrl)}" alt="" />`
+      const imageUrl = portraitUrl(entry);
+      const portrait = imageUrl
+        ? `<img src="${escapeHtml(imageUrl)}" alt="" />`
         : `<span class="n21-cframe-portrait-empty">${escapeHtml(entry.name.charAt(0))}</span>`;
 
       const resources = [
@@ -286,7 +308,7 @@
       const renderKey = JSON.stringify([
         entry.key,
         entry.name,
-        entry.imageUrl,
+        portraitUrl(entry),
         entry.currentHp,
         entry.maxHp,
         entry.tempHp,

@@ -712,6 +712,14 @@
       return { notation: `1d20${bonus < 0 ? bonus : `+${bonus}`}`, name: "Iniciativa" };
     }
 
+    /**
+     * Whether an image URL is Nivel20's generic placeholder portrait (shown
+     * for characters/creatures without an image of their own).
+     */
+    isPlaceholderImage(url) {
+      return !url || /\/default-portrait[^/]*$/.test(String(url).split("?")[0]);
+    }
+
     /** Whether any character/creature row is selected. */
     hasSelection() {
       return $(`${ROWS_SELECTOR} ${CHARACTER_ROW_SELECTOR}.selected`).length > 0;
