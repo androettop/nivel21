@@ -18,7 +18,7 @@
 
   // ----- Platform constants (icons reused by Nivel20 for each roll role) -----
 
-  // Per-level folder icons are bundled extension assets (src/assets/lvlN.png,
+  // Per-level folder icons are bundled extension assets (src/assets/spell-levels/lvlN.png,
   // level 0 = trucos, up to level 9). They live in the extension package, so
   // their URL is built from the extension's base URL (which carries the
   // extension id). The content script exposes that base via a shared-DOM data
@@ -33,7 +33,8 @@
 
   function folderIcon(level) {
     const lvl = Math.min(Math.max(level | 0, 0), 9);
-    return `${extensionBaseUrl()}src/assets/lvl${lvl}.png`;
+    // Roman numeral per level; cantrips get a hollow square.
+    return `${extensionBaseUrl()}src/assets/spell-levels/lvl${lvl}.png`;
   }
 
   const ROLE_ICONS = {
@@ -236,7 +237,81 @@
    * @param {Object} ctx - { spell, slug, mod, attackBonus, sourceName, nextOrder }
    * @returns {Array<Object>}
    */
+  /** Whether a spell requires concentration ("Concentración, hasta 1 hora"). */
+  function isConcentration(spell) {
+    return /^\s*concentraci[oó]n/i.test(spell?.duration || "") || spell?.concentration === true;
+  }
+
+  /**
+   * "Lanzar" action: posts the casting to chat and, for concentration
+   * spells, sets the Concentración status (handled by the spell action bar).
+   */
+  function makeCastElement(spell, name, order, sourceName) {
+    return {
+      ...makeBaseElement(name, spell.icon_url, order, sourceName),
+      action_type: "spell_cast",
+      description: buildHeaderDescription(spell),
+      tooltip_title: `Lanzar ${spell.name}`,
+      n21_spell_name: spell.name,
+      n21_spell_level: spell.level ?? null,
+      n21_concentration: isConcentration(spell),
+      // Casting a leveled spell spends a slot of its level.
+      n21_consume_slot: (spell.level | 0) > 0,
+    };
+  }
+
   function buildSpellElements(ctx) {
+    // Every element of a spell knows its level (used to grey out spells
+    // without slots left).
+    return tagLevel(buildSpellElementsInner(ctx), ctx.spell.level | 0);
+  }
+
+  function tagLevel(elements, level) {
+    elements.forEach((el) => {
+      el.n21_spell_level = level;
+    });
+    return elements;
+  }
+
+  function buildSpellElementsInner(ctx) {
+    const elements = buildSpellElementsRaw(ctx);
+    const { spell, sourceName, nextOrder } = ctx;
+    const concentration = isConcentration(spell);
+    const header = elements[0];
+
+    // Spells without any roll: the button itself casts.
+    if (elements.length === 1 && header?.action_type === "none") {
+      return [makeCastElement(spell, spell.name, header.order, sourceName)];
+    }
+
+    // A single roll (healing, utility die) is already the cast button.
+    if (elements.length === 1) {
+      header.n21_concentration = concentration;
+      header.n21_spell_name = spell.name;
+      header.n21_spell_level = spell.level ?? null;
+      header.n21_consume_slot = (spell.level | 0) > 0;
+      return elements;
+    }
+
+    // Attack/damage folders get a first "Lanzar" action.
+    // Spells with an attack roll are cast with that roll: the attack buttons
+    // set concentration and spend the slot, and no "Lanzar" is added.
+    const attacks = elements.slice(1).filter((el) => el.roll_options?.roll_type === "attack");
+    if (attacks.length) {
+      attacks.forEach((el) => {
+        el.n21_concentration = concentration;
+        el.n21_spell_name = spell.name;
+        el.n21_spell_level = spell.level ?? null;
+        el.n21_consume_slot = (spell.level | 0) > 0;
+      });
+      return elements;
+    }
+
+    const cast = makeCastElement(spell, `${spell.name} > Lanzar`, (header.order ?? 0) + 0.5, sourceName);
+    return [header, cast, ...elements.slice(1)];
+  }
+
+  function buildSpellElementsRaw(ctx) {
     const { spell, slug, mod, attackBonus, sourceName, nextOrder } = ctx;
     const name = spell.name;
     const attackParts = parseAttackString(spell.attack);
@@ -396,11 +471,13 @@
   }
 
   function makeFolder(level, order, elements, sourceName) {
-    const name = level === 0 ? "Trucos" : `Nivel ${level}`;
+    const name = level === 0 ? "Trucos" : `Conjuros de nivel ${level}`;
     return {
       id: null,
       name,
-      text: "",
+      // The icon already shows the level: a zero-width text keeps the bar
+      // from printing the long name over it.
+      text: "\u200b",
       icon: folderIcon(level),
       description: null,
       action_type: "folder",
@@ -410,6 +487,7 @@
       tooltip_title: name,
       owned: false,
       elements,
+      n21_spell_level: level,
     };
   }
 

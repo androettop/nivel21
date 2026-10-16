@@ -268,7 +268,8 @@
     function renderItems($container, items, $baseElement, depth) {
       $container.empty();
 
-      items.forEach((item) => {
+      // Respect actions hidden in Nivel20's "Acciones a ocultar".
+      items.filter((item) => !item?.hidden).forEach((item) => {
         const $itemElement = createItemElement(item);
         $container.append($itemElement);
 
@@ -351,6 +352,10 @@
         .addClass("action-bar-element")
         .attr("data-item-id", item.id)
         .attr("data-action-type", item.action_type);
+      // Spell level (set by the spell action bar) for slot-based styling.
+      if (Number.isFinite(item.n21_spell_level)) {
+        $itemEl.attr("data-n21-spell-level", item.n21_spell_level);
+      }
 
       // Build tooltip HTML
       let tooltipHtml = `<h5>${item.tooltip_title || item.name}</h5>`;

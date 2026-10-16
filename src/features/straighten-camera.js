@@ -18,9 +18,11 @@
 
     CanvasDropdownManager.registerOption({
       id: "n21-straighten-camera",
-      label: "Enderezar camara",
+      label: "Enderezar cámara",
       showOn: ["always"],
       order: 41,
+      // Only useful when the camera is actually rotated.
+      isVisible: () => !CameraManager.isCameraStraight(),
       onClick: () => {
         CameraManager.straightenCameraYaw();
       },

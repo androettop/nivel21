@@ -26,6 +26,29 @@
    * DiceManager provides a unified interface for modifying dice rolls
    * Features can register modifiers that transform dice notation before rolling
    */
+  // Extension assets (e.g. action icons) only load in browsers with the
+  // extension: a roll must never send them, or everyone else sees a broken
+  // image in the chat. Dropped from the roll's option objects.
+  const LOCAL_URL = /^(chrome|moz|safari-web)-extension:\/\//;
+
+  function stripLocalUrls(value, depth = 0) {
+    if (!value || typeof value !== "object" || Array.isArray(value) || depth > 2) return value;
+    let copy = null;
+    Object.keys(value).forEach((key) => {
+      const item = value[key];
+      const cleaned =
+        typeof item === "string" && LOCAL_URL.test(item)
+          ? undefined
+          : stripLocalUrls(item, depth + 1);
+      if (cleaned !== item) {
+        copy = copy || { ...value };
+        if (cleaned === undefined) delete copy[key];
+        else copy[key] = cleaned;
+      }
+    });
+    return copy || value;
+  }
+
   class DiceManager extends BaseManager {
     constructor() {
       super();
@@ -43,6 +66,25 @@
      */
     setVisibilityOverride(value) {
       this._visibilityOverride = value || null;
+    }
+
+    /**
+     * Roll dice through Nivel20's own roller (same path as clicking a
+     * [data-dice-roll] element), so modifiers, visibility and 3D dice apply.
+     * @param {string} notation - e.g. "1d20+3"
+     * @param {Object} [options]
+     * @param {string} [options.name] - Roll name shown in chat
+     * @param {string} [options.senderInfo] - e.g. "Character-123" to roll as
+     * @returns {boolean} True if the roll was requested
+     */
+    roll(notation, options = {}) {
+      if (typeof window.diceRoll !== "function" || !notation) return false;
+      const data = {};
+      if (options.name) data.roll_name = options.name;
+      if (options.type) data.roll_type = options.type;
+      if (options.senderInfo) data.sender_info = options.senderInfo;
+      window.diceRoll(String(notation), data);
+      return true;
     }
 
     /**
@@ -86,7 +128,7 @@
           }
         }
 
-        return originalFn(modifiedNotation, ...modifiedArgs);
+        return originalFn(modifiedNotation, ...modifiedArgs.map(stripLocalUrls));
       };
 
       this._hooked = true;
@@ -107,6 +149,7 @@
 
       const self = this;
       const hooked = function (...args) {
+        args = args.map(stripLocalUrls);
         if (self._visibilityOverride) {
           args[index] = transformVisibility(self._visibilityOverride);
         }

@@ -109,6 +109,24 @@
     }
 
     /**
+     * Re-render the root of every character action bar on the page (e.g.
+     * after a feature that injects items was turned on or off).
+     */
+    rerenderCharacterBars() {
+      document.querySelectorAll(".action-bar[data-sender-info]").forEach((bar) => {
+        if (!/Character-\d+/.test(bar.getAttribute("data-sender-info") || "")) return;
+        const $primary = $(bar).find(".action-bar-row.primary-bar").first();
+        const elements = $(bar).data("elements");
+        if (!$primary.length || !Array.isArray(elements)) return;
+        try {
+          window.createBar($primary[0], elements, null, 0);
+        } catch (error) {
+          console.warn("[ActionBarManager] Could not re-render bar:", error);
+        }
+      });
+    }
+
+    /**
      * Get the original createBar function
      * @returns {Function|null}
      */

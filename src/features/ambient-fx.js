@@ -13,6 +13,8 @@
       ChatUIManager,
       ChatManager,
       SettingsManager,
+      CameraManager,
+      MapManager,
     ] = await loadManagers(
       "MainMenuUIManager",
       "FloatingPanelManager",
@@ -21,6 +23,8 @@
       "ChatUIManager",
       "ChatManager",
       "SettingsManager",
+      "CameraManager",
+      "MapManager",
     );
 
     // Check if feature is enabled
@@ -41,6 +45,11 @@
     }
 
     const COMMAND_NAME = "ambient-fx";
+    // Animated weather travels in the same command, after the blend mode:
+    //   /ambient-fx <color> <opacidad> <fusión> [clima] [intensidad]
+    // (no weather args = no weather). Older clients just ignore them.
+    const weather = window._n21_.weather;
+    const DEFAULT_WEATHER_INTENSITY = 0.5;
     const OVERLAY_ID = "n21-ambient-fx-overlay";
     const PREVIEW_OVERLAY_ID = "n21-ambient-fx-overlay-preview";
     const PANEL_TITLE = "Efectos Ambientales";
@@ -77,6 +86,64 @@
     let currentOpacity = null;
     let currentBlend = null;
     let previewEnabled = false;
+    let currentWeather = { type: null, intensity: DEFAULT_WEATHER_INTENSITY };
+
+    function isWeatherType(value) {
+      return !!weather?.TYPES.some((t) => t.key === value);
+    }
+
+    /** Weather from "/ambient-fx" args (positions 3 and 4). */
+    function parseWeatherArgs(args) {
+      const first = String(args?.[3] ?? "").trim().toLowerCase();
+      if (!isWeatherType(first)) return { type: null, intensity: DEFAULT_WEATHER_INTENSITY };
+      const intensity = parseOpacityCommand(args?.[4]);
+      return { type: first, intensity: intensity ?? DEFAULT_WEATHER_INTENSITY };
+    }
+
+    function applyWeather(next) {
+      currentWeather = {
+        type: next?.type || null,
+        intensity: next?.intensity ?? DEFAULT_WEATHER_INTENSITY,
+      };
+      // While previewing, the panel (not the table state) drives the weather.
+      if (previewEnabled) return;
+      syncWeatherInputs();
+      renderWeather(currentWeather.type, currentWeather.intensity);
+    }
+
+    /** Show the weather from the panel inputs only on this screen. */
+    function previewWeatherFromInputs() {
+      const type = document.querySelector("#n21-ambient-weather-type")?.value || null;
+      const intensity = parseOpacityInput(
+        document.querySelector("#n21-ambient-weather-intensity")?.value,
+        DEFAULT_WEATHER_INTENSITY,
+      );
+      renderWeather(type, intensity);
+    }
+
+    function renderWeather(type, intensity) {
+      const container = document.querySelector("#application-canvas")?.parentElement;
+      // Each viewer can turn the animation off (e.g. on slow devices).
+      if (!weather || !type || !container ||
+          !SettingsManager.get("ambient-fx.animated-weather")) {
+        weather?.stop();
+        return;
+      }
+      // Tileable textures on the board plane: they follow the camera.
+      weather.start(container, type, intensity, {
+        project: (x, z) => CameraManager.worldToScreen(x, z, 0),
+        // Only over the map area.
+        clip: () => MapManager.getMapCorners(),
+      });
+    }
+
+    function syncWeatherInputs() {
+      const typeInput = document.querySelector("#n21-ambient-weather-type");
+      const intensityInput = document.querySelector("#n21-ambient-weather-intensity");
+      if (typeInput) typeInput.value = currentWeather.type || "";
+      if (intensityInput) intensityInput.value = formatOpacityValue(currentWeather.intensity);
+    }
+
 
     function normalizeOpacity(value) {
       if (value === undefined || value === null) return null;
@@ -144,8 +211,15 @@
       return senderInfoElement?.value || null;
     }
 
-    function sendCommandToChat(commandText, { debounce = false } = {}) {
+    async function sendCommandToChat(commandText, { debounce = false } = {}) {
       if (!commandText) return;
+      // The effect reaches everyone (and is applied) through this message.
+      const send = await window._n21_.chatConsent?.confirm("ambient-fx", {
+        title: "¿Enviar los efectos ambientales al chat?",
+        description: "Los efectos se sincronizan con los jugadores mediante un mensaje en el chat.",
+        required: true,
+      });
+      if (send === false) return;
       const senderInfo = getSenderInfo();
       const messageOptions = { visibility: "public" };
       if (senderInfo) {
@@ -182,7 +256,12 @@
       let nextBlend = currentState.blend ?? null;
 
       if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
-        return { color: null, opacity: DEFAULT_OPACITY, blend: null };
+        return {
+          color: null,
+          opacity: DEFAULT_OPACITY,
+          blend: null,
+          weather: { type: null, intensity: DEFAULT_WEATHER_INTENSITY },
+        };
       }
 
       if (args[0]) {
@@ -206,7 +285,12 @@
         }
       }
 
-      return { color: nextColor, opacity: nextOpacity, blend: nextBlend };
+      return {
+        color: nextColor,
+        opacity: nextOpacity,
+        blend: nextBlend,
+        weather: parseWeatherArgs(args),
+      };
     }
 
     function isChatOrderReversed() {
@@ -266,6 +350,7 @@
               }
 
               applyState(lastState.color, lastState.opacity, lastState.blend);
+              if (lastState.weather) applyWeather(lastState.weather);
             }
             ChatUIManager.removeHandler(handlerName);
           },
@@ -334,6 +419,9 @@
     }
 
     function setPreviewVisibility(enabled) {
+      if (enabled) previewWeatherFromInputs();
+      else renderWeather(currentWeather.type, currentWeather.intensity);
+
       const mainOverlay = ensureOverlay();
       if (mainOverlay) {
         mainOverlay.style.display = enabled ? "none" : "";
@@ -394,7 +482,7 @@
       }
     }
 
-    function buildCommand(color, opacity, blend, forceClear = false) {
+    function buildCommand(color, opacity, blend, forceClear = false, weatherType = null, weatherIntensity = null) {
       if (forceClear) return `/${COMMAND_NAME} ${COMMAND_CLEAR}`;
 
       const normalizedOpacity = normalizeOpacity(opacity) ?? DEFAULT_OPACITY;
@@ -402,7 +490,10 @@
       const safeColor = color || DEFAULT_COLOR;
 
       const opacityText = formatOpacityValue(normalizedOpacity);
-      return `/${COMMAND_NAME} ${safeColor} ${opacityText} ${normalizedBlend}`;
+      const weatherText = isWeatherType(weatherType)
+        ? ` ${weatherType} ${formatOpacityValue(weatherIntensity ?? DEFAULT_WEATHER_INTENSITY)}`
+        : "";
+      return `/${COMMAND_NAME} ${safeColor} ${opacityText} ${normalizedBlend}${weatherText}`;
     }
 
     function getCommandFromInputs(forceClear = false) {
@@ -413,8 +504,13 @@
       const color = colorInput?.value || DEFAULT_COLOR;
       const opacityValue = parseOpacityInput(opacityInput?.value);
       const blend = blendInput?.value || DEFAULT_BLEND;
+      const weatherType = document.querySelector("#n21-ambient-weather-type")?.value || null;
+      const weatherIntensity = parseOpacityInput(
+        document.querySelector("#n21-ambient-weather-intensity")?.value,
+        DEFAULT_WEATHER_INTENSITY,
+      );
 
-      return buildCommand(color, opacityValue, blend, forceClear);
+      return buildCommand(color, opacityValue, blend, forceClear, weatherType, weatherIntensity);
     }
 
     function updatePreviewOverlayFromInputs() {
@@ -428,6 +524,7 @@
 
       const overlay = ensurePreviewOverlay();
       applyOverlayStyles(overlay, color, opacityValue, blend);
+      previewWeatherFromInputs();
     }
 
     function applyColor(color, opacity, blendMode) {
@@ -448,93 +545,92 @@
       setPreviewVisibility(previewEnabled);
     }
 
+    const BLEND_OPTIONS = [
+      ["multiply", "Multiplicar"],
+      ["normal", "Normal"],
+      ["screen", "Pantalla"],
+      ["overlay", "Superponer"],
+      ["darken", "Oscurecer"],
+      ["lighten", "Aclarar"],
+      ["soft-light", "Luz suave"],
+      ["difference", "Diferencia"],
+      ["exclusion", "Exclusión"],
+      ["hue", "Tono"],
+      ["saturation", "Saturación"],
+      ["color", "Color"],
+      ["luminosity", "Luminosidad"],
+    ];
+
+    // Icons (Feather, as used by Nivel20) for the weather chips.
+    const WEATHER_ICONS = {
+      lluvia: "ft-cloud-rain",
+      tormenta: "ft-cloud-lightning",
+      nieve: "ft-cloud-snow",
+      niebla: "ft-wind",
+      nubes: "ft-cloud",
+      brasas: "ft-zap",
+    };
+
     function buildPanelHtml(color, opacity, blendMode) {
-      const valueAttribute = color ? ` value='${color}'` : "";
       const normalizedOpacity = normalizeOpacity(opacity);
       const normalizedBlend = sanitizeBlendMode(blendMode) || DEFAULT_BLEND;
       const initialOpacity =
         typeof normalizedOpacity === "number"
           ? formatOpacityValue(normalizedOpacity)
           : formatOpacityValue(DEFAULT_OPACITY);
-      return (
-        "<div class='n21-ambient-fx-panel-body' style='padding: 12px;'>" +
-        "<label for='n21-ambient-fx-color' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Color de ambiente" +
-        "</label>" +
-        `<input id='n21-ambient-fx-color' type='color'${valueAttribute} ` +
-        "style='border: none; padding: 0; background: transparent; margin-bottom: 12px;' />" +
-        "<label for='n21-ambient-fx-opacity' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Intensidad" +
-        "</label>" +
-        `<input id='n21-ambient-fx-opacity' type='range' min='0' max='1' step='0.01' value='${initialOpacity}' ` +
-        "style='width: 100%; margin-bottom: 12px;' />" +
-        "<label for='n21-ambient-fx-blend' style='display: block; margin-bottom: 8px; font-weight: 600;'>" +
-        "Modo de fusion" +
-        "</label>" +
-        "<select id='n21-ambient-fx-blend' style='width: 100%;'>" +
-        `<option value='multiply'${
-          normalizedBlend === "multiply" ? " selected" : ""
-        }>Multiplicar</option>` +
-        `<option value='normal'${
-          normalizedBlend === "normal" ? " selected" : ""
-        }>Normal</option>` +
-        `<option value='screen'${
-          normalizedBlend === "screen" ? " selected" : ""
-        }>Pantalla</option>` +
-        `<option value='overlay'${
-          normalizedBlend === "overlay" ? " selected" : ""
-        }>Superponer</option>` +
-        `<option value='darken'${
-          normalizedBlend === "darken" ? " selected" : ""
-        }>Oscurecer</option>` +
-        `<option value='lighten'${
-          normalizedBlend === "lighten" ? " selected" : ""
-        }>Aclarar</option>` +
-        `<option value='color-dodge'${
-          normalizedBlend === "color-dodge" ? " selected" : ""
-        }>Sobreexponer color</option>` +
-        `<option value='color-burn'${
-          normalizedBlend === "color-burn" ? " selected" : ""
-        }>Subexponer color</option>` +
-        `<option value='hard-light'${
-          normalizedBlend === "hard-light" ? " selected" : ""
-        }>Luz dura</option>` +
-        `<option value='soft-light'${
-          normalizedBlend === "soft-light" ? " selected" : ""
-        }>Luz suave</option>` +
-        `<option value='difference'${
-          normalizedBlend === "difference" ? " selected" : ""
-        }>Diferencia</option>` +
-        `<option value='exclusion'${
-          normalizedBlend === "exclusion" ? " selected" : ""
-        }>Exclusion</option>` +
-        `<option value='hue'${
-          normalizedBlend === "hue" ? " selected" : ""
-        }>Tono</option>` +
-        `<option value='saturation'${
-          normalizedBlend === "saturation" ? " selected" : ""
-        }>Saturacion</option>` +
-        `<option value='color'${
-          normalizedBlend === "color" ? " selected" : ""
-        }>Color</option>` +
-        `<option value='luminosity'${
-          normalizedBlend === "luminosity" ? " selected" : ""
-        }>Luminosidad</option>` +
-        "</select>" +
-        "<label style='display: flex; gap: 8px; align-items: center; margin-top: 12px;'>" +
-        `<input id='${PREVIEW_TOGGLE_ID}' type='checkbox' />` +
-        "Vista previa" +
-        "</label>" +
-        "<div style='display: flex; gap: 8px; margin-top: 12px;'>" +
-        "<button id='n21-ambient-fx-clear' class='btn btn-secondary' style='width: 50%;'>" +
-        "Limpiar" +
-        "</button>" +
-        "<button id='n21-ambient-fx-apply' class='btn btn-primary' style='width: 50%;'>" +
-        "Aplicar" +
-        "</button>" +
-        "</div>" +
-        "</div>"
-      );
+      const types = [{ key: "", label: "Ninguno" }, ...(weather?.TYPES || [])];
+      const chips = types
+        .map(
+          (t) =>
+            `<button type="button" class="n21-fx-chip${currentWeather.type === t.key || (!currentWeather.type && !t.key) ? " n21-fx-chip--active" : ""}" data-weather="${t.key}">` +
+            `<i class="${WEATHER_ICONS[t.key] || "ft-slash"}"></i><span>${t.label}</span></button>`,
+        )
+        .join("");
+      const weatherOptions = types
+        .map(
+          (t) =>
+            `<option value="${t.key}"${(currentWeather.type || "") === t.key ? " selected" : ""}>${t.label}</option>`,
+        )
+        .join("");
+      const blendOptions = BLEND_OPTIONS.map(
+        ([value, label]) =>
+          `<option value="${value}"${normalizedBlend === value ? " selected" : ""}>${label}</option>`,
+      ).join("");
+
+      return `
+        <div class="n21-fx">
+          <div class="n21-fx-body">
+            <section class="n21-fx-section">
+              <h6 class="n21-fx-title">Clima animado</h6>
+              <div class="n21-fx-chips" role="radiogroup" aria-label="Clima animado">${chips}</div>
+              <select id="n21-ambient-weather-type" hidden>${weatherOptions}</select>
+              <label class="n21-fx-label" for="n21-ambient-weather-intensity">Intensidad del clima</label>
+              <input id="n21-ambient-weather-intensity" type="range" min="0.1" max="1" step="0.05"
+                value="${formatOpacityValue(currentWeather.intensity)}" />
+            </section>
+            <section class="n21-fx-section">
+              <h6 class="n21-fx-title">Luz de ambiente</h6>
+              <div class="n21-fx-row">
+                <input id="n21-ambient-fx-color" type="color" value="${color || DEFAULT_COLOR}"
+                  aria-label="Color de ambiente" title="Color de ambiente" />
+                <div class="n21-fx-grow">
+                  <label class="n21-fx-label" for="n21-ambient-fx-opacity">Intensidad</label>
+                  <input id="n21-ambient-fx-opacity" type="range" min="0" max="1" step="0.01" value="${initialOpacity}" />
+                </div>
+              </div>
+              <label class="n21-fx-label" for="n21-ambient-fx-blend">Modo de fusión</label>
+              <select id="n21-ambient-fx-blend" class="form-control">${blendOptions}</select>
+            </section>
+            <label class="n21-fx-check">
+              <input id="${PREVIEW_TOGGLE_ID}" type="checkbox" />
+              Vista previa (solo para ti)
+            </label>
+          </div>
+          <div class="n21-panel-footer">
+            <button id="n21-ambient-fx-clear" type="button" class="btn">Limpiar</button>
+            <button id="n21-ambient-fx-apply" type="button" class="btn btn-primary">Aplicar</button>
+          </div>
+        </div>`;
     }
 
     function applyState(color, opacity, blendMode) {
@@ -555,7 +651,7 @@
         "#822020",
         html,
         "n21-ambient-fx-panel n21-fixed-panel",
-        "width: 300px; height: 352px; min-width: 300px; min-height: 352px; max-width: 300px; max-height: 352px;",
+        "width: 344px; height: 520px; min-width: 344px; min-height: 520px; max-width: 344px; max-height: 520px;",
       );
 
       if (!$panel || typeof $panel.find !== "function") return;
@@ -603,6 +699,21 @@
         });
       }
 
+      // Weather chips drive the (hidden) weather select.
+      $panel.off("click.n21AmbientFxChip").on("click.n21AmbientFxChip", ".n21-fx-chip", function () {
+        const value = this.getAttribute("data-weather") || "";
+        $panel.find(".n21-fx-chip").removeClass("n21-fx-chip--active");
+        $(this).addClass("n21-fx-chip--active");
+        $panel.find("#n21-ambient-weather-type").val(value).trigger("change");
+      });
+
+      $panel
+        .find("#n21-ambient-weather-type, #n21-ambient-weather-intensity")
+        .off(".n21AmbientFx")
+        .on("change.n21AmbientFx input.n21AmbientFx", () => {
+          if (previewEnabled) updatePreviewOverlayFromInputs();
+        });
+
       const $clearButton = $panel.find("#n21-ambient-fx-clear");
       if ($clearButton.length) {
         $clearButton.off("click.n21AmbientFx");
@@ -626,6 +737,9 @@
               setPreviewVisibility(false);
             }, PREVIEW_DISABLE_DELAY_MS);
           }
+          $panel.find("#n21-ambient-weather-type").val("");
+          $panel.find(".n21-fx-chip").removeClass("n21-fx-chip--active");
+          $panel.find('.n21-fx-chip[data-weather=""]').addClass("n21-fx-chip--active");
           const commandText = getCommandFromInputs(true);
           sendCommandToChat(commandText, { debounce: true });
         });
@@ -645,6 +759,7 @@
               setPreviewVisibility(false);
             }, PREVIEW_DISABLE_DELAY_MS);
           }
+          // One message carries color and weather.
           const commandText = getCommandFromInputs(false);
           sendCommandToChat(commandText, { debounce: true });
         });
@@ -663,7 +778,7 @@
     }
 
     ChatCommandsManager.registerCommand(COMMAND_NAME, {
-      description: "Aplicar efectos ambientales",
+      description: "Aplicar efectos ambientales (color, opacidad, fusión y clima animado opcional)",
       params: [
         { name: "color" },
         { name: "opacity" },
@@ -675,6 +790,15 @@
             return BLEND_MODES.filter((mode) => mode.startsWith(lower));
           },
         },
+        {
+          name: "clima",
+          getSuggestions: (fragment) => {
+            const keys = (weather?.TYPES || []).map((t) => t.key);
+            if (!fragment) return keys;
+            return keys.filter((k) => k.startsWith(String(fragment).toLowerCase()));
+          },
+        },
+        { name: "intensidad" },
       ],
       validate: ({ args }) => {
         if (!args || !args.length) return false;
@@ -688,7 +812,10 @@
 
         if (!isValidColorValue(args[0])) return false;
 
-        if (args.length > 3) return false;
+        if (args.length > 5) return false;
+
+        if (args[3] && !isWeatherType(String(args[3]).trim().toLowerCase())) return false;
+        if (args[4] && parseOpacityCommand(String(args[4]).trim()) === null) return false;
 
         if (args[1]) {
           const rawOpacity = String(args[1]).trim();
@@ -718,8 +845,11 @@
 
       if (String(args[0]).trim().toLowerCase() === COMMAND_CLEAR) {
         applyState(null, DEFAULT_OPACITY, null);
+        applyWeather({ type: null });
         return;
       }
+
+      applyWeather(parseWeatherArgs(args));
 
       let nextColor = currentColor;
       let nextOpacity = currentOpacity;
@@ -747,6 +877,10 @@
       }
 
       applyState(nextColor, nextOpacity, nextBlend);
+    });
+
+    SettingsManager.onChange((name) => {
+      if (name === "ambient-fx.animated-weather") applyWeather(currentWeather);
     });
 
     applyColor(currentColor, currentOpacity, currentBlend);

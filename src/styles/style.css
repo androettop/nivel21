@@ -87,15 +87,27 @@
 }
 
 .n21-canvas-dropdown-menu {
+	--n21-menu-bg: rgba(252, 252, 251, 0.98);
+	--n21-menu-border: rgba(0, 0, 0, 0.14);
+	--n21-menu-text: #1f2023;
+	--n21-menu-hover: rgba(0, 0, 0, 0.07);
 	position: fixed;
 	z-index: 12000;
 	min-width: 170px;
 	padding: 6px;
 	border-radius: 8px;
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	background: rgba(16, 16, 18, 0.92);
+	border: 1px solid var(--n21-menu-border);
+	background: var(--n21-menu-bg);
+	color: var(--n21-menu-text);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 	display: none;
+}
+
+body.darkmode--activated .n21-canvas-dropdown-menu {
+	--n21-menu-bg: rgba(16, 16, 18, 0.96);
+	--n21-menu-border: rgba(255, 255, 255, 0.15);
+	--n21-menu-text: #ecebe8;
+	--n21-menu-hover: rgba(255, 255, 255, 0.1);
 }
 
 .n21-canvas-dropdown-item-wrapper {
@@ -111,13 +123,17 @@
 	padding: 8px 10px;
 	border-radius: 6px;
 	color: inherit;
-	font-size: 13px;
+	font-size: 14px;
 	line-height: 1.25;
 	cursor: pointer;
 }
 
 .n21-canvas-dropdown-item:hover {
-	background: rgba(255, 255, 255, 0.1);
+	background: var(--n21-menu-hover);
+}
+
+.n21-canvas-dropdown-item.n21-has-submenu {
+	padding-right: 26px;
 }
 
 .n21-canvas-dropdown-item.n21-has-submenu::after {
@@ -130,15 +146,22 @@
 }
 
 .n21-canvas-dropdown-submenu {
-	display: none;
+	/* Hover intent: opens after a short delay and closes a bit later, so
+	   moving diagonally to it doesn't switch to a neighbour's submenu. */
+	display: block;
+	visibility: hidden;
+	opacity: 0;
+	transition:
+		visibility 0s linear 0.25s,
+		opacity 0s linear 0.25s;
 	position: absolute;
 	left: 100%;
 	top: -6px;
 	min-width: 170px;
 	padding: 6px;
 	border-radius: 8px;
-	border: 1px solid rgba(255, 255, 255, 0.15);
-	background: rgba(16, 16, 18, 0.92);
+	border: 1px solid var(--n21-menu-border);
+	background: var(--n21-menu-bg);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 	margin-left: 4px;
 }
@@ -158,7 +181,9 @@
 }
 
 .n21-canvas-dropdown-item-wrapper:hover > .n21-canvas-dropdown-submenu {
-	display: block;
+	visibility: visible;
+	opacity: 1;
+	transition-delay: 0.12s;
 }
 
 .n21-ping-overlay {
@@ -285,7 +310,9 @@
 .n21-settings-panel-body {
 	padding: 16px 18px 20px;
 	overflow-y: auto;
-	max-height: 100%;
+	/* Shrinks below the reload notice, which stays visible above it. */
+	flex: 1 1 auto;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
@@ -298,12 +325,12 @@
 }
 
 .n21-settings-tab {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(127, 127, 127, 0.3);
+	background: rgba(127, 127, 127, 0.06);
 	color: inherit;
 	padding: 8px 12px;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.2;
 	cursor: pointer;
@@ -312,8 +339,8 @@
 }
 
 .n21-settings-tab:hover {
-	border-color: rgba(255, 255, 255, 0.24);
-	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(127, 127, 127, 0.55);
+	background: rgba(127, 127, 127, 0.12);
 }
 
 .n21-settings-tab.is-active {
@@ -460,14 +487,20 @@
 	flex: 0 0 auto;
 }
 
-.n21-settings-reload-message {
-	background: rgba(255, 193, 7, 0.16);
-	border: 1px solid rgba(255, 193, 7, 0.55);
+body.darkmode--activated .n21-settings-reload-message {
+	background: #3a3220;
 	color: #ffe082;
+}
+
+.n21-settings-reload-message {
+	flex: 0 0 auto;
+	background: #fff4d6;
+	border: 1px solid rgba(214, 160, 0, 0.6);
+	color: #5c4000;
 	padding: 10px 12px;
 	margin: 14px 18px 0;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	text-align: center;
 }
@@ -484,7 +517,23 @@
 }
 
 /* Token Aura Panel Styles */
+.n21-aura-floating-panel .card-body,
+.n21-aura-floating-panel .floating-block {
+	min-height: 0;
+}
+
+/* Fields scroll; the Aplicar/Eliminar bar stays at the bottom. */
+.n21-aura-panel {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+}
+
 .n21-aura-panel-content {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
 	padding: 16px;
 	display: flex;
 	flex-direction: column;
@@ -499,7 +548,7 @@
 
 .n21-aura-section-label {
 	font-weight: 600;
-	font-size: 13px;
+	font-size: 14px;
 	margin-bottom: 4px;
 }
 
@@ -530,6 +579,77 @@
 	transform: scale(1.05);
 }
 
+.n21-aura-shape-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 8px;
+}
+
+.n21-aura-shape-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 4px;
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	border-radius: 8px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	line-height: 1.2;
+	cursor: pointer;
+	outline: none !important;
+}
+
+.n21-aura-shape-btn svg {
+	width: 24px;
+	height: 24px;
+	fill: currentColor;
+	opacity: 0.75;
+}
+
+.n21-aura-shape-btn:hover {
+	border-color: rgba(127, 127, 127, 0.7);
+}
+
+.n21-aura-shape-btn.n21-aura-shape-selected {
+	border-color: #822020;
+	box-shadow: inset 0 0 0 1px #822020;
+	background: rgba(130, 32, 32, 0.12);
+}
+
+.n21-aura-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.n21-aura-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.n21-aura-field .n21-aura-section-label {
+	margin-bottom: 0;
+}
+
+.n21-aura-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.35;
+	cursor: pointer;
+}
+
+.n21-aura-check input {
+	margin-top: 3px;
+	flex: 0 0 auto;
+}
+
 .n21-aura-panel-buttons {
 	display: flex;
 	gap: 8px;
@@ -552,7 +672,8 @@ span[n21-h] {
 	width: 100%;
 	height: 100%;
 	pointer-events: none;
-	z-index: 11400;
+	/* Over the board, under the HUD and floating panels. */
+	z-index: 999;
 }
 
 .n21-turn-content {
@@ -574,18 +695,25 @@ span[n21-h] {
 }
 
 .n21-turn-topbar .n21-turn-sort {
-	flex: 1;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.n21-turn-topbar .n21-turn-btn:not(.n21-turn-sort) {
+	flex: 0 0 auto;
 }
 
 /* Buttons styled like the rest of the extension (see .n21-settings-tab). */
 .n21-turn-btn {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	background: rgba(127, 127, 127, 0.06);
 	color: inherit;
 	padding: 8px 12px;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 600;
 	line-height: 1.2;
 	cursor: pointer;
@@ -594,8 +722,8 @@ span[n21-h] {
 }
 
 .n21-turn-btn:hover:not(:disabled) {
-	border-color: rgba(255, 255, 255, 0.24);
-	background: rgba(255, 255, 255, 0.08);
+	border-color: rgba(127, 127, 127, 0.6);
+	background: rgba(127, 127, 127, 0.12);
 }
 
 .n21-turn-btn:disabled {
@@ -623,6 +751,94 @@ span[n21-h] {
 	background: rgba(192, 57, 43, 0.15);
 }
 
+/* Turn timer: countdown + depleting bar under the top bar. */
+.n21-turn-timer {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.n21-turn-timer-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+}
+
+.n21-turn-timer-value {
+	flex: 1 1 auto;
+	font-size: 20px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+}
+
+.n21-turn-timer-value--action {
+	cursor: pointer;
+}
+
+.n21-turn-timer--off .n21-turn-timer-value {
+	font-size: 14px;
+	font-weight: 600;
+	opacity: 0.7;
+}
+
+.n21-turn-timer-config {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	font-size: 14px;
+	opacity: 0.85;
+}
+
+.n21-turn-timer .n21-turn-timer-input {
+	flex: 0 0 56px;
+	width: 56px !important;
+	min-width: 0;
+	height: 28px;
+	box-sizing: border-box;
+	text-align: center;
+	padding: 2px 4px;
+	font-size: 14px;
+	color: inherit;
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 4px;
+}
+
+.n21-turn-timer-bar {
+	height: 4px;
+	border-radius: 2px;
+	background: rgba(127, 127, 127, 0.25);
+	overflow: hidden;
+}
+
+.n21-turn-timer--off .n21-turn-timer-bar {
+	display: none;
+}
+
+.n21-turn-timer-fill {
+	height: 100%;
+	width: 100%;
+	background: #4caf50;
+	transition: width 250ms linear, background-color 300ms ease;
+}
+
+.n21-turn-timer--warn .n21-turn-timer-value {
+	color: #f0a020;
+}
+
+.n21-turn-timer--warn .n21-turn-timer-fill {
+	background: #f0a020;
+}
+
+.n21-turn-timer--zero .n21-turn-timer-value {
+	color: #e74c3c;
+}
+
 .n21-turn-list {
 	flex: 1 1 auto;
 	min-height: 0;
@@ -643,6 +859,10 @@ span[n21-h] {
 	gap: 8px;
 	padding: 4px 8px;
 	border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.n21-turn-row {
+	cursor: pointer;
 }
 
 .n21-turn-row--current {
@@ -709,10 +929,10 @@ span[n21-h] {
 	box-sizing: border-box;
 	text-align: center;
 	padding: 2px 4px;
-	font-size: 13px;
+	font-size: 14px;
 	color: inherit;
-	background: rgba(0, 0, 0, 0.25);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
 	border-radius: 4px;
 }
 
@@ -1056,12 +1276,24 @@ span[n21-h] {
 	min-height: 0;
 }
 
+/* Sized in whole slots: Nivel20's 300px minimum would leave a gap. */
+.card.floating-panel.n21-inventory-panel,
+.card.floating-panel.n21-inventory-panel.panel-unpin:not(.panel-minimized) {
+	min-width: 0;
+}
+
 .n21-inventory-grid {
 	flex: 1 1 auto;
 	min-height: 0;
-	overflow-y: scroll;
+	overflow-y: auto;
+	overflow-x: hidden;
+	scrollbar-width: thin;
+	scrollbar-gutter: stable;
+	scrollbar-color: rgba(127, 127, 127, 0.5) transparent;
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: repeat(auto-fill, 60px);
+	grid-auto-rows: 60px;
+	justify-content: start;
 	gap: 0;
 	padding: 6px;
 	align-content: start;
@@ -1103,6 +1335,25 @@ span[n21-h] {
 	border-radius: 4px;
 }
 
+.n21-inventory-edit {
+	flex: 0 0 auto;
+	color: inherit;
+	font-size: 14px;
+	padding: 4px 6px;
+	line-height: 1;
+	border-radius: 4px;
+}
+
+.n21-inventory-edit:hover {
+	color: inherit;
+	background: rgba(0, 0, 0, 0.1);
+}
+
+/* Someone else's character: nothing to edit. */
+.n21-inventory-panel--readonly .n21-inventory-edit {
+	display: none;
+}
+
 .n21-inventory-refresh:hover:not(:disabled) {
 	background: rgba(0, 0, 0, 0.1);
 }
@@ -1141,6 +1392,162 @@ span[n21-h] {
 	width: 16px;
 	height: 16px;
 	object-fit: contain;
+}
+
+/* Quantity badge (WoW-like) on inventory items. */
+.n21-inventory-item .action-bar-button {
+	position: relative;
+}
+
+.n21-inventory-qty {
+	position: absolute;
+	right: 7px;
+	bottom: 6px;
+	z-index: 3;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 1;
+	color: #fff;
+	text-shadow:
+		-1px -1px 0 #000,
+		1px -1px 0 #000,
+		-1px 1px 0 #000,
+		1px 1px 0 #000;
+	pointer-events: none;
+}
+
+/* Names only in the tooltip: the cell shows just the icon and quantity. */
+.n21-inventory-item .action-bar-text {
+	display: none;
+}
+
+.n21-inventory-item--empty .action-bar-image {
+	filter: grayscale(1);
+	opacity: 0.5;
+}
+
+.n21-inventory-item {
+	cursor: grab;
+}
+
+/* Empty bag slot, same footprint as an item cell. */
+.n21-inventory-slot {
+	width: 56px;
+	height: 56px;
+	margin: 2px;
+	border: 1px dashed rgba(127, 127, 127, 0.35);
+	border-radius: 6px;
+	background: rgba(0, 0, 0, 0.15);
+}
+
+.n21-inventory-slot.n21-inventory-item--drop {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.15);
+}
+
+.n21-inventory-item--dragging {
+	opacity: 0.4;
+}
+
+.n21-inventory-item--drop .action-bar-button {
+	box-shadow: 0 0 0 2px #822020;
+	border-radius: 4px;
+}
+
+.n21-inventory-item--busy {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.n21-inventory-money {
+	cursor: context-menu;
+}
+
+.n21-inventory-money-empty {
+	font-size: 14px;
+	opacity: 0.6;
+}
+
+.n21-inventory-menu .n21-canvas-dropdown-item {
+	font-size: 14px;
+	color: var(--n21-menu-text);
+}
+
+.n21-inventory-menu .n21-canvas-dropdown-item:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.n21-inventory-menu .n21-inventory-menu-danger {
+	color: #b3261e;
+}
+
+body.darkmode--activated .n21-inventory-menu .n21-inventory-menu-danger {
+	color: #ff8a80;
+}
+
+.n21-inventory-money-editor {
+	flex: 0 0 auto;
+	padding: 8px;
+	border-top: 1px solid #999;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-inventory-money-fields {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 6px;
+}
+
+.n21-inventory-money-field {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+}
+
+.n21-inventory-money-field img {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
+}
+
+.n21-inventory-money-field input {
+	width: 100%;
+	min-width: 0;
+	font-size: 14px;
+	padding: 2px 4px;
+}
+
+.n21-inventory-money-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.n21-inventory {
+	position: relative;
+}
+
+.n21-inventory-message {
+	position: absolute;
+	left: 8px;
+	right: 8px;
+	bottom: 40px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	background: rgba(16, 16, 18, 0.92);
+	color: #ecebe8;
+	font-size: 14px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 200ms ease;
+}
+
+.n21-inventory-message--visible {
+	opacity: 1;
 }
 
 /* ------------------------------ Money editor ------------------------------- */
@@ -1197,4 +1604,1409 @@ span[n21-h] {
 	width: 16px;
 	height: 16px;
 	object-fit: contain;
+}
+
+/* ----------------------- Character Frame ----------------------- */
+
+body.darkmode--activated .n21-cframe {
+	--n21-cf-bg: rgba(23, 24, 26, 0.8);
+	--n21-cf-surface: rgba(255, 255, 255, 0.06);
+	--n21-cf-border: #3a3d42;
+	--n21-cf-text: #ecebe8;
+	--n21-cf-muted: #a9a8a4;
+	--n21-cf-res-text: #f2f0ea;
+	--n21-cf-res-shadow: 0 0 2px #000, 0 1px 2px #000;
+	--n21-cf-pip-off: #5a5c60;
+	--n21-cf-hp-track: #3a3c40;
+}
+
+.n21-cframe {
+	--n21-cf-bg: rgba(250, 250, 249, 0.88);
+	--n21-cf-surface: rgba(0, 0, 0, 0.05);
+	--n21-cf-border: #cfcecb;
+	--n21-cf-text: #1f2023;
+	--n21-cf-muted: #5f5e5a;
+	--n21-cf-res-text: #1f2023;
+	--n21-cf-res-shadow: none;
+	--n21-cf-pip-off: #c4c3bf;
+	/* Same grey as Nivel20's health bars in the combat tracking panel. */
+	--n21-cf-hp-track: #bbbbbb;
+	--n21-cf-hp: #b3261e;
+	--n21-cf-hp-bloodied: #8c1d17;
+	--n21-cf-temp: #3b82c4;
+	position: absolute;
+	top: 12px;
+	left: 12px;
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-width: calc(100% - 24px);
+	color: var(--n21-cf-text);
+	font-size: 14px;
+	line-height: 1.3;
+	pointer-events: none;
+}
+
+.n21-cframe[hidden] {
+	display: none;
+}
+
+.n21-cframe-condition-add {
+	padding: 0;
+	color: var(--n21-cf-text);
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.n21-cframe-condition-add:hover {
+	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe .n21-cframe-cond-input {
+	width: 100%;
+	height: 34px;
+	padding: 4px 8px;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	background: var(--n21-cf-surface);
+	color: var(--n21-cf-text);
+	font-size: 14px;
+}
+
+.n21-cframe-cond-results {
+	margin-top: 6px;
+	max-height: 240px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.n21-cframe-cond-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 6px;
+	border: none;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--n21-cf-text);
+	font-size: 14px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.n21-cframe-cond-option:hover,
+.n21-cframe-cond-option:focus-visible {
+	background: var(--n21-cf-surface);
+	box-shadow: inset 0 0 0 1px var(--n21-cf-border);
+}
+
+.n21-cframe-cond-option img,
+.n21-cframe-cond-option > span:first-child {
+	flex: 0 0 auto;
+	width: 24px;
+	height: 24px;
+	border-radius: 4px;
+	object-fit: cover;
+}
+
+.n21-cframe-cond-empty {
+	padding: 6px;
+	font-size: 14px;
+	color: var(--n21-cf-muted);
+}
+
+.n21-cframe-card,
+.n21-cframe-dropdown {
+	pointer-events: auto;
+}
+
+/* Frame, HP dropdown and conditions each keep their own width. */
+.n21-cframe {
+	align-items: flex-start;
+}
+
+.n21-cframe-card,
+.n21-cframe-conditions-wrap {
+	max-width: 100%;
+}
+
+.n21-cframe-dropdown {
+	width: max-content;
+	max-width: min(420px, 100%);
+}
+
+.n21-cframe-hp-msg p {
+	overflow-wrap: break-word;
+}
+
+.n21-cframe-card {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* Portrait + name/HP on top; resources span the whole width below. */
+.n21-cframe-main {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: 8px;
+	padding: 6px;
+	background: var(--n21-cf-bg);
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 10px;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.n21-cframe-portrait {
+	flex: 0 0 auto;
+	width: 56px;
+	height: 56px;
+	padding: 0;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	overflow: hidden;
+	background: var(--n21-cf-surface);
+	cursor: pointer;
+	outline: none;
+}
+
+.n21-cframe-portrait:hover,
+.n21-cframe-portrait:focus-visible {
+	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe-portrait img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.n21-cframe-portrait-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	font-size: 32px;
+	font-weight: 700;
+	color: var(--n21-cf-muted);
+}
+
+.n21-cframe-body {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 4px;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.n21-cframe-head {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.n21-cframe-name {
+	font-size: 16px;
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.n21-cframe-sub {
+	color: var(--n21-cf-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+	flex: 1 1 0;
+}
+
+.n21-cframe-ac {
+	position: relative;
+	flex: 0 0 auto;
+	width: 30px;
+	height: 32px;
+	margin-left: auto;
+	align-self: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.n21-cframe-ac svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	fill: var(--n21-cf-surface);
+	stroke: var(--n21-cf-muted);
+	stroke-width: 1.2;
+}
+
+.n21-cframe-ac span {
+	position: relative;
+	margin-top: -3px;
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-cframe-hp {
+	position: relative;
+	height: 20px;
+	width: 100%;
+	padding: 0;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	background: var(--n21-cf-hp-track);
+	overflow: hidden;
+	cursor: pointer;
+	color: #fff;
+	outline: none;
+}
+
+.n21-cframe-hp:disabled {
+	cursor: default;
+}
+
+.n21-cframe-hp:not(:disabled):hover,
+.n21-cframe-hp:focus-visible {
+	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe-hp-fill,
+.n21-cframe-hp-temp {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	transition: width 250ms ease;
+}
+
+.n21-cframe-hp-fill {
+	background: var(--n21-cf-hp);
+}
+
+.n21-cframe-hp--bloodied .n21-cframe-hp-fill {
+	background: var(--n21-cf-hp-bloodied);
+}
+
+.n21-cframe-hp-temp {
+	background: var(--n21-cf-temp);
+	opacity: 0.85;
+	height: 4px;
+	top: auto;
+}
+
+.n21-cframe-hp-text {
+	position: relative;
+	font-size: 14px;
+	line-height: 1;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* All resources in a single row; scrolls sideways if the screen is narrow. */
+.n21-cframe-resources {
+	grid-column: 1 / -1;
+	margin-top: 4px;
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 4px;
+	padding: 2px 0;
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+/* BG3-like resource button: fixed size, content centered; slot levels sit
+   on the top edge and use counts on the bottom edge, slightly overlapping. */
+.n21-cframe-res {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 4px;
+	background: var(--n21-cf-surface);
+	color: var(--n21-cf-text);
+	cursor: pointer;
+	user-select: none;
+	outline: none;
+}
+
+.n21-cframe-res:hover,
+.n21-cframe-res:focus-visible {
+	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe-res-top,
+.n21-cframe-res-bottom {
+	position: absolute;
+	left: 0;
+	right: 0;
+	text-align: center;
+	font-size: 14px;
+	font-weight: 700;
+	line-height: 14px;
+	color: var(--n21-cf-res-text);
+	text-shadow: var(--n21-cf-res-shadow);
+	pointer-events: none;
+}
+
+.n21-cframe-res-top {
+	top: 0;
+	font-family: Georgia, "Times New Roman", serif;
+}
+
+.n21-cframe-res-bottom {
+	bottom: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-cframe-res-initial {
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1;
+	font-family: Georgia, "Times New Roman", serif;
+	color: var(--n21-cf-muted);
+}
+
+.n21-cframe-res-icon {
+	width: 24px;
+	height: 24px;
+	background-color: var(--n21-res-color, var(--n21-cf-text));
+	-webkit-mask: var(--n21-res-icon) center / contain no-repeat;
+	mask: var(--n21-res-icon) center / contain no-repeat;
+}
+
+.n21-cframe-res-pips {
+	display: grid;
+	grid-template-columns: repeat(var(--n21-pip-cols, 1), 8px);
+	gap: 2px;
+	justify-content: center;
+}
+
+.n21-cframe-res-pips i {
+	width: 8px;
+	height: 8px;
+	border-radius: 1px;
+	background: var(--n21-cf-pip-off);
+}
+
+.n21-cframe-res-pips i.n21-cframe-pip--on {
+	background: #d0342a;
+	box-shadow: 0 0 3px rgba(208, 52, 42, 0.6);
+}
+
+.n21-cframe-res-count {
+	font-size: 14px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Leave room for the label: slot squares sit a bit lower, icons a bit higher. */
+.n21-cframe-res-top ~ .n21-cframe-res-pips,
+.n21-cframe-res-top ~ .n21-cframe-res-count {
+	margin-top: 9px;
+}
+
+.n21-cframe-res-icon:not(:last-child),
+.n21-cframe-res-initial:not(:last-child) {
+	margin-bottom: 7px;
+}
+
+/* Out of uses: the whole button looks disabled. */
+.n21-cframe-res--empty > * {
+	filter: grayscale(1);
+	opacity: 0.45;
+}
+
+.n21-cframe-res--empty .n21-cframe-res-top,
+.n21-cframe-res--empty .n21-cframe-res-bottom {
+	opacity: 0.6;
+}
+
+.n21-cframe--readonly .n21-cframe-res {
+	cursor: default;
+}
+
+.n21-cframe-conditions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	pointer-events: auto;
+}
+
+.n21-cframe-condition {
+	cursor: context-menu;
+	width: 28px;
+	height: 28px;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	overflow: hidden;
+	background: var(--n21-cf-bg);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+}
+
+.n21-cframe-condition img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.n21-cframe-dropdown {
+	padding: 8px;
+	background: var(--n21-cf-bg);
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 10px;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.n21-cframe-dropdown[hidden] {
+	display: none;
+}
+
+.n21-cframe-hp-form {
+	display: flex;
+	gap: 6px;
+}
+
+.n21-cframe .n21-cframe-hp-input {
+	flex: 1 1 auto;
+	min-width: 64px;
+	width: 80px;
+	height: 36px;
+	padding: 4px 8px;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	background: var(--n21-cf-surface);
+	color: var(--n21-cf-text);
+	font-size: 16px;
+}
+
+.n21-cframe-btn {
+	height: 36px;
+	padding: 0 12px;
+	border: 1px solid var(--n21-cf-border);
+	border-radius: 6px;
+	background: var(--n21-cf-surface);
+	color: var(--n21-cf-text);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.n21-cframe-btn:hover {
+	border-color: var(--n21-cf-text);
+}
+
+.n21-cframe-btn--heal,
+.n21-cframe-btn--damage,
+.n21-cframe-btn--primary,
+.n21-cframe-btn--temp {
+	color: #fff;
+}
+
+.n21-cframe-btn--heal {
+	background: #1f5130;
+	border-color: #2f7a48;
+}
+
+.n21-cframe-btn--damage,
+.n21-cframe-btn--primary {
+	background: #6e1a16;
+	border-color: #a3271f;
+}
+
+.n21-cframe-btn--temp {
+	background: #1d3f60;
+	border-color: #2f6596;
+}
+
+.n21-cframe-hp-msg {
+	margin-top: 8px;
+}
+
+.n21-cframe-hp-msg p {
+	margin: 0 0 8px;
+}
+
+.n21-cframe-hp-msg-actions {
+	display: flex;
+	gap: 6px;
+}
+
+/* ----------------------- Creature Resources ----------------------- */
+
+.n21-cres {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px;
+	height: 100%;
+	min-height: 0;
+	font-size: 14px;
+}
+
+.n21-cres-label {
+	margin: 0;
+	font-weight: 600;
+}
+
+.n21-cres-list {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-cres-empty {
+	padding: 12px;
+	text-align: center;
+	opacity: 0.75;
+	font-size: 14px;
+}
+
+.n21-cres-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid rgba(127, 127, 127, 0.3);
+	border-radius: 8px;
+}
+
+.n21-cres-row-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.n21-cres .n21-cres-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	padding: 2px 4px;
+}
+
+.n21-cres .n21-cres-name:hover,
+.n21-cres .n21-cres-name:focus {
+	border-color: rgba(127, 127, 127, 0.5);
+}
+
+.n21-cres-count {
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-cres-remove {
+	border: none;
+	background: transparent;
+	color: #c0392b;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0 4px;
+}
+
+.n21-cres-boxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.n21-cres-box {
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 2px solid rgba(127, 127, 127, 0.7);
+	border-radius: 4px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.n21-cres-box--used {
+	background: #822020;
+	border-color: #822020;
+}
+
+.n21-cres-add {
+	display: flex;
+	gap: 6px;
+	margin: 0;
+}
+
+.n21-cres-add .n21-cres-add-name {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.n21-cres-add .n21-cres-add-max {
+	flex: 0 0 64px;
+	width: 64px;
+}
+
+.n21-cres-footer {
+	display: flex;
+	gap: 6px;
+}
+
+.n21-cres-footer > * {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* ----------------------- Token overlay ----------------------- */
+
+.n21-token-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+/* ----------------------- Animated weather ----------------------- */
+
+.n21-weather-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+/* ----------------------- Action bar editor ----------------------- */
+
+.n21-abe-native-hidden {
+	display: none !important;
+}
+
+.n21-abe .card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.n21-abe .header-actions {
+	display: flex;
+	gap: 6px;
+}
+
+.n21-abe-help {
+	margin: 0;
+	padding: 8px 16px 0;
+	font-size: 14px;
+	opacity: 0.8;
+}
+
+.n21-abe-tree,
+.n21-abe-children {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.n21-abe-tree {
+	padding: 8px 12px 12px;
+}
+
+.n21-abe-children {
+	margin-left: 28px;
+	border-left: 2px solid rgba(127, 127, 127, 0.25);
+	padding-left: 6px;
+}
+
+/* Each element is a box: its row and, when editing, its form below. */
+.n21-abe-box {
+	margin: 3px 0;
+	border: 1px solid rgba(127, 127, 127, 0.25);
+	border-radius: 6px;
+	background: rgba(127, 127, 127, 0.06);
+}
+
+.n21-abe-box:hover,
+.n21-abe-open > .n21-abe-box {
+	border-color: rgba(127, 127, 127, 0.55);
+}
+
+.n21-abe-open > .n21-abe-box {
+	background: rgba(127, 127, 127, 0.1);
+}
+
+.n21-abe-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 4px 8px;
+	border-radius: 6px;
+	font-size: 14px;
+	cursor: grab;
+}
+
+.n21-abe-dragging > .n21-abe-box {
+	opacity: 0.45;
+}
+
+.n21-abe-drop-before {
+	box-shadow: inset 0 3px 0 #822020;
+}
+
+.n21-abe-drop-after {
+	box-shadow: inset 0 -3px 0 #822020;
+}
+
+.n21-abe-drop-into {
+	background: rgba(130, 32, 32, 0.15);
+	border-color: #822020;
+}
+
+.n21-abe-handle {
+	flex: 0 0 auto;
+	opacity: 0.5;
+	font-size: 16px;
+	cursor: grab;
+}
+
+.n21-abe-collapse,
+.n21-abe-collapse-spacer {
+	flex: 0 0 22px;
+	width: 22px;
+	border: none;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	cursor: pointer;
+	padding: 0;
+}
+
+.n21-abe-icon {
+	flex: 0 0 32px;
+	width: 32px;
+	height: 32px;
+	border-radius: 4px;
+	background-color: rgba(127, 127, 127, 0.2);
+	background-size: cover;
+	background-position: center;
+}
+
+.n21-abe-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.n21-abe-name--editable,
+.n21-abe-icon--editable {
+	cursor: pointer;
+}
+
+.n21-abe-name--editable:hover {
+	text-decoration: underline dotted;
+}
+
+.n21-abe-icon--editable:hover,
+.n21-abe-icon--editable:focus-visible {
+	outline: 2px solid #822020;
+	outline-offset: 1px;
+}
+
+.n21-abe .n21-abe-rename {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 30px;
+	padding: 2px 8px;
+	border: 1px solid #822020;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.n21-abe-badge {
+	flex: 0 0 auto;
+	font-size: 14px;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.n21-abe-actions {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.n21-abe-btn {
+	border: 1px solid rgba(127, 127, 127, 0.4);
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+	font-size: 14px;
+	padding: 2px 8px;
+	cursor: pointer;
+}
+
+.n21-abe-btn:hover {
+	border-color: #822020;
+}
+
+.n21-abe-delete {
+	color: #c0392b;
+}
+
+.n21-abe-toggle {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0 6px 0 0;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.n21-abe-disabled > .n21-abe-row .n21-abe-icon,
+.n21-abe-disabled > .n21-abe-row .n21-abe-name {
+	opacity: 0.4;
+}
+
+.n21-abe-details {
+	padding: 4px 12px 12px 48px;
+	border-top: 1px solid rgba(127, 127, 127, 0.2);
+}
+
+/* The native fragment, restyled only inside the editor. */
+.n21-abe-details > .action-button-form,
+.n21-abe-details .accordion-wrapper,
+.n21-abe-details .accordion-content,
+.n21-abe-details .card-body {
+	border: none !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Name is edited in the row and position by dragging: hide them here
+   (child actions use different class names, so match by field name). */
+.n21-abe-details .accordion-header,
+.n21-abe-details .form-group:has(> input[name$="[name]"]),
+.n21-abe-details .form-group:has(> input[name$="[order]"]),
+.n21-abe-details .remove_fields,
+.n21-abe-details .help-block {
+	display: none !important;
+}
+
+/* Hide the whole column of the name field and the icon picker (the icon is
+   changed by clicking it in the row). */
+.n21-abe-details .row > [class*="col"]:has(> .form-group > input[name$="[name]"]),
+.n21-abe-details .row > [class*="col"]:has(.select-icon) {
+	display: none !important;
+}
+
+.n21-abe-details .row > [class*="col"]:has(input[name$="[icon_text]"]) {
+	flex: 0 0 50%;
+	max-width: 50%;
+}
+
+.n21-abe-details .pt-1.pb-1 {
+	padding-top: 8px !important;
+}
+
+.n21-abe-details .row {
+	margin-left: -6px;
+	margin-right: -6px;
+}
+
+.n21-abe-details .row > [class*="col"] {
+	padding-left: 6px;
+	padding-right: 6px;
+}
+
+.n21-abe-details .form-group {
+	margin-bottom: 10px;
+}
+
+.n21-abe-details .control-label {
+	font-size: 14px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.n21-abe-details .form-control {
+	font-size: 14px;
+	border-radius: 6px;
+}
+
+.n21-abe-details textarea.form-control {
+	min-height: 64px;
+}
+
+/* Children are managed by the tree, not by the native folder section. */
+.n21-abe-details .action-type-dependent[data-action-type="folder"] {
+	display: none !important;
+}
+
+
+
+.n21-abe-confirm {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.n21-abe-confirm[hidden],
+.n21-abe-actions[hidden] {
+	display: none;
+}
+
+.n21-abe-confirm-yes {
+	border-color: #c0392b;
+	color: #c0392b;
+}
+
+
+.n21-abe-warning {
+	margin: 8px 16px 0;
+	padding: 8px 12px;
+	border-radius: 6px;
+	background: rgba(224, 160, 32, 0.15);
+	border: 1px solid rgba(224, 160, 32, 0.6);
+	font-size: 14px;
+}
+
+.n21-setting-dependency {
+	padding: 0 8px 6px 36px;
+	font-size: 14px;
+	opacity: 0.7;
+}
+
+.n21-setting-dependency--missing {
+	opacity: 1;
+	color: #e0a020;
+}
+
+/* ----------------------- Chat consent ----------------------- */
+
+.n21-chat-consent {
+	position: fixed;
+	inset: 0;
+	z-index: 13000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.n21-chat-consent-box {
+	--n21-cc-bg: #fbfbfa;
+	--n21-cc-border: #d4d3d0;
+	--n21-cc-text: #1f2023;
+	--n21-cc-surface: rgba(0, 0, 0, 0.05);
+	--n21-cc-warning: #9a6400;
+	width: min(420px, calc(100vw - 32px));
+	padding: 16px;
+	border: 1px solid var(--n21-cc-border);
+	border-radius: 10px;
+	background: var(--n21-cc-bg);
+	color: var(--n21-cc-text);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+	font-size: 14px;
+}
+
+body.darkmode--activated .n21-chat-consent-box {
+	--n21-cc-bg: #1d1e21;
+	--n21-cc-border: #3a3d42;
+	--n21-cc-text: #ecebe8;
+	--n21-cc-surface: rgba(255, 255, 255, 0.06);
+	--n21-cc-warning: #e0a020;
+}
+
+.n21-chat-consent-box h5 {
+	margin: 0 0 8px;
+	font-size: 16px;
+	font-weight: 700;
+	color: inherit;
+}
+
+.n21-chat-consent-box p {
+	margin: 0 0 8px;
+}
+
+.n21-chat-consent-warning {
+	color: var(--n21-cc-warning);
+}
+
+.n21-chat-consent-remember {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0 12px;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.n21-chat-consent-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.n21-chat-consent-actions button {
+	height: 34px;
+	padding: 0 14px;
+	border: 1px solid var(--n21-cc-border);
+	border-radius: 6px;
+	background: var(--n21-cc-surface);
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.n21-chat-consent-actions .n21-chat-consent-yes {
+	background: #6e1a16;
+	border-color: #a3271f;
+	color: #fff;
+}
+
+.n21-chat-consent-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 90px;
+	z-index: 13001;
+	transform: translateX(-50%);
+	max-width: min(520px, calc(100vw - 32px));
+	padding: 10px 14px;
+	border-radius: 8px;
+	background: rgba(23, 24, 26, 0.95);
+	color: #ecebe8;
+	font-size: 14px;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+	transition: opacity 400ms ease;
+}
+
+.n21-chat-consent-toast--out {
+	opacity: 0;
+}
+
+/* Spells of a level with no slots left: greyed out but still clickable. */
+.action-bar-element.n21-spell-no-slots .action-bar-image {
+	filter: grayscale(1);
+	opacity: 0.6;
+}
+
+/* Neutral secondary button (instead of Nivel20's blue btn-secondary). */
+.btn.n21-btn-neutral {
+	background: transparent;
+	border: 1px solid rgba(127, 127, 127, 0.5);
+	color: inherit;
+}
+
+.btn.n21-btn-neutral:hover,
+.btn.n21-btn-neutral:focus {
+	background: rgba(127, 127, 127, 0.12);
+	border-color: rgba(127, 127, 127, 0.7);
+	color: inherit;
+}
+
+/* ===================================================================
+   Shared look of the extension's floating panels (.n21-panel is added
+   to every static panel by FloatingPanelManager). Same style as the
+   "Orden de turnos" panel: translucent bordered buttons, red primary,
+   grey fields. Works on both Nivel20 themes.
+   =================================================================== */
+
+.card.floating-panel.n21-panel .btn {
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	background: rgba(127, 127, 127, 0.06);
+	color: inherit;
+	padding: 7px 12px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	box-shadow: none;
+	transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.card.floating-panel.n21-panel .btn:hover:not(:disabled),
+.card.floating-panel.n21-panel .btn:focus-visible {
+	border-color: rgba(127, 127, 127, 0.6);
+	background: rgba(127, 127, 127, 0.12);
+	color: inherit;
+}
+
+.card.floating-panel.n21-panel .btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.card.floating-panel.n21-panel .btn-primary,
+.card.floating-panel.n21-panel .btn-success {
+	border-color: rgba(130, 32, 32, 0.8);
+	background: rgba(130, 32, 32, 0.25);
+}
+
+.card.floating-panel.n21-panel .btn-primary:hover:not(:disabled),
+.card.floating-panel.n21-panel .btn-success:hover:not(:disabled) {
+	border-color: rgba(130, 32, 32, 1);
+	background: rgba(130, 32, 32, 0.4);
+}
+
+/* Nivel20 forces its filled .btn-danger with !important. */
+.card.floating-panel.n21-panel .btn-danger {
+	border-color: rgba(192, 57, 43, 0.6) !important;
+	background: transparent !important;
+	color: #c0392b !important;
+}
+
+.card.floating-panel.n21-panel .btn-danger:hover:not(:disabled) {
+	border-color: rgba(192, 57, 43, 0.9) !important;
+	background: rgba(192, 57, 43, 0.15) !important;
+}
+
+body.darkmode--activated .card.floating-panel.n21-panel .btn-danger {
+	color: #e74c3c !important;
+}
+
+.card.floating-panel.n21-panel .form-control,
+.card.floating-panel.n21-panel select,
+.card.floating-panel.n21-panel input[type="text"],
+.card.floating-panel.n21-panel input[type="number"] {
+	height: 34px;
+	padding: 4px 8px;
+	font-size: 14px;
+	color: inherit;
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 6px;
+	box-shadow: none;
+	color-scheme: light;
+}
+
+body.darkmode--activated .card.floating-panel.n21-panel .form-control,
+body.darkmode--activated .card.floating-panel.n21-panel select,
+body.darkmode--activated .card.floating-panel.n21-panel input[type="text"],
+body.darkmode--activated .card.floating-panel.n21-panel input[type="number"] {
+	color-scheme: dark;
+}
+
+.card.floating-panel.n21-panel .form-control:focus,
+.card.floating-panel.n21-panel select:focus,
+.card.floating-panel.n21-panel input[type="text"]:focus,
+.card.floating-panel.n21-panel input[type="number"]:focus {
+	border-color: rgba(163, 39, 31, 0.9);
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(163, 39, 31, 0.2);
+}
+
+.card.floating-panel.n21-panel input[type="range"] {
+	width: 100%;
+	accent-color: #a3271f;
+	cursor: pointer;
+}
+
+.card.floating-panel.n21-panel input[type="checkbox"] {
+	accent-color: #a3271f;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+}
+
+.card.floating-panel.n21-panel input[type="color"] {
+	flex: 0 0 auto;
+	width: 46px;
+	height: 46px;
+	padding: 4px;
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.12);
+	cursor: pointer;
+}
+
+.card.floating-panel.n21-panel input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.card.floating-panel.n21-panel input[type="color"]::-webkit-color-swatch {
+	border: none;
+	border-radius: 5px;
+}
+
+/* Sticky action bar at the bottom of a panel (like the turn order's). */
+.n21-panel-footer {
+	display: flex;
+	gap: 8px;
+	padding: 8px;
+	border-top: 1px solid rgba(127, 127, 127, 0.25);
+	background: rgba(0, 0, 0, 0.04);
+}
+
+.n21-panel-footer > .btn {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+/* ----------------------- Ambient effects panel ----------------------- */
+
+.n21-ambient-fx-panel .floating-block {
+	min-height: 0;
+}
+
+.n21-fx {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	font-size: 14px;
+}
+
+.n21-fx-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 12px;
+}
+
+.n21-fx-section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-fx-title {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.75;
+}
+
+.n21-fx-label {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.n21-fx-chips {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+}
+
+.n21-fx-chip {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 7px 6px;
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.06);
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.n21-fx-chip span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.n21-fx-chip:hover {
+	border-color: rgba(127, 127, 127, 0.6);
+	background: rgba(127, 127, 127, 0.12);
+}
+
+.n21-fx-chip--active,
+.n21-fx-chip--active:hover {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.25);
+	box-shadow: inset 0 0 0 1px #822020;
+}
+
+.n21-fx-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+.n21-fx-grow {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-fx-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+/* Resource names are edited in place: they look like text until focused. */
+.card.floating-panel.n21-panel .n21-cres .n21-cres-name {
+	height: auto;
+	padding: 2px 4px;
+	border-color: transparent;
+	background: transparent;
+	font-weight: 600;
+}
+
+.card.floating-panel.n21-panel .n21-cres .n21-cres-name:hover,
+.card.floating-panel.n21-panel .n21-cres .n21-cres-name:focus {
+	border-color: rgba(127, 127, 127, 0.5);
+	box-shadow: none;
 }

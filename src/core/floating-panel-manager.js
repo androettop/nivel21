@@ -247,7 +247,8 @@
      */
     _createStaticPanelHtml(title, icon, color, html, className, style) {
       return (
-        "<div class='card floating-panel static-panel resizable-row " +
+        // n21-panel: shared look of the extension's own panels (style.css).
+        "<div class='card floating-panel static-panel resizable-row n21-panel " +
         (className || "") +
         "' data-state='unpinned' data-title='" +
         (title || "") +

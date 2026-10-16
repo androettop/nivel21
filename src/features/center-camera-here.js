@@ -34,7 +34,7 @@
 
     CanvasDropdownManager.registerOption({
       id: "n21-center-camera-here",
-      label: "Centrar camara aqui",
+      label: "Centrar cámara aquí",
       showOn: ["always"],
       order: 40,
       gameMasterOnly: true,

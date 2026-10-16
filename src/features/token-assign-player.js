@@ -72,13 +72,16 @@
      */
     function getAssignablePlayers() {
       const players = PlayerManager.getPlayerList() || [];
-      return players.filter(
-        (player) =>
-          player &&
-          player.connected &&
-          player.userName &&
-          !PlayerManager.isUserGameMaster(player.userId),
-      );
+      // One entry per user, even if connected from several tabs/devices.
+      const seen = new Set();
+      return players.filter((player) => {
+        if (!player?.connected || !player.userName) return false;
+        if (PlayerManager.isUserGameMaster(player.userId)) return false;
+        const key = String(player.userId ?? player.userName);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     }
 
     /* ======================= DM side: assignment menu ======================= */

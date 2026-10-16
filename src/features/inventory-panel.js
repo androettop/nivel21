@@ -34,20 +34,23 @@
     const [
       ActionBarManager,
       CharacterSheetManager,
+      CharacterItemsManager,
+      CombatTrackingManager,
       FloatingPanelManager,
       TooltipManager,
       SettingsManager,
     ] = await loadManagers(
       "ActionBarManager",
       "CharacterSheetManager",
+      "CharacterItemsManager",
+      "CombatTrackingManager",
       "FloatingPanelManager",
       "TooltipManager",
       "SettingsManager",
     );
 
-    if (!SettingsManager.get("feature.inventory-panel.enabled")) {
-      return;
-    }
+    // Applies live: when disabled its items are stripped from the bar.
+    let featureEnabled = SettingsManager.get("feature.inventory-panel.enabled");
 
     // Shared money helpers (currency definitions + [money:...] parsing).
     const money = window._n21_.money;
@@ -117,30 +120,22 @@
 
     /* ----------------------------- Inventory ------------------------------ */
 
-    /** Flatten the character's `items` categories into a single ordered list. */
-    function collectItems(ph) {
-      const items = ph?.items;
-      if (!items || typeof items !== "object") return [];
-      const flat = [];
-      for (const list of Object.values(items)) {
-        if (Array.isArray(list)) flat.push(...list);
-      }
-      return flat;
-    }
-
     /**
      * Build a single read-only inventory cell reusing the native action-bar
      * icon markup (same frame + tooltip), so it looks identical to the bar.
      * @returns {jQuery}
      */
-    function buildItemCell(item) {
+    function buildItemCell(item, index) {
       const name = item?.name || "";
       const icon = item?.icon_url || "";
+      const description = item?.cleanDescription ?? item?.description;
+      const quantity = item?.quantity ?? 1;
 
       let tooltipHtml = `<h5>${escapeHtml(item?.tooltip_title || name)}</h5>`;
       if (item?.group) tooltipHtml += `<p><em>${escapeHtml(item.group)}</em></p>`;
-      if (item?.description)
-        tooltipHtml += `<p>${escapeHtml(item.description)}</p>`;
+      tooltipHtml += `<p><strong>Cantidad: ${escapeHtml(quantity)}</strong></p>`;
+      if (description)
+        tooltipHtml += `<p>${escapeHtml(description)}</p>`;
       if (item?.location_text)
         tooltipHtml += `<p><strong>${escapeHtml(item.location_text)}</strong></p>`;
 
@@ -149,8 +144,11 @@
         : "";
 
       const $cell = $("<div>")
-        .addClass("action-bar-element")
-        .attr("data-action-type", "none");
+        .addClass("action-bar-element n21-inventory-item")
+        .toggleClass("n21-inventory-item--empty", quantity === 0)
+        .attr("data-action-type", "none")
+        .attr("data-index", index)
+        .attr("draggable", "true");
 
       $cell.html(`
         <div class="action-bar-button tooltipstered" data-toggle="tooltip">
@@ -166,6 +164,12 @@
             <i class="selected-indicator-icon d-none"></i>
           </div>
           <div class="action-bar-frame"></div>
+          ${
+            // Like WoW: the count only shows for stacks (or when used up).
+            quantity !== 1
+              ? `<span class="n21-inventory-qty">${escapeHtml(quantity)}</span>`
+              : ""
+          }
         </div>
       `);
 
@@ -176,22 +180,211 @@
       return $cell;
     }
 
+    /* --------------------------- Panel size ----------------------------- */
+
+    // The window only takes whole-slot sizes: 1-9 columns and N rows. The
+    // last size is remembered (in columns x rows).
+    const SIZE_KEY = "_n21_inventory-panel-size";
+    const MAX_COLUMNS = 9;
+    const MIN_ROWS = 2;
+    const DEFAULT_SIZE = { columns: 4, rows: 6 };
+
+    function loadPanelSize() {
+      try {
+        const size = JSON.parse(localStorage.getItem(SIZE_KEY) || "null");
+        if (size?.columns > 0 && size?.rows > 0) {
+          return {
+            columns: Math.min(Math.max(size.columns, 1), MAX_COLUMNS),
+            rows: Math.max(size.rows, MIN_ROWS),
+          };
+        }
+      } catch (_) {}
+      return DEFAULT_SIZE;
+    }
+
+    function savePanelSize(size) {
+      try {
+        localStorage.setItem(SIZE_KEY, JSON.stringify(size));
+      } catch (_) {}
+    }
+
+    /** Pixels the panel adds around the usable grid area (borders, header...). */
+    function panelChrome($panel) {
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      return {
+        x: $panel.outerWidth() - (grid.clientWidth - GRID_PADDING_PX),
+        y: $panel.outerHeight() - (grid.clientHeight - GRID_PADDING_PX),
+      };
+    }
+
+    /** Resize the panel to exactly `columns x rows` slots. */
+    function applyPanelSize($panel, size) {
+      const chrome = panelChrome($panel);
+      $panel.outerWidth(chrome.x + size.columns * CELL_PX);
+      $panel.outerHeight(chrome.y + size.rows * CELL_PX);
+    }
+
+    /** Make the native resize snap to whole slots and remember the size. */
+    function bindPanelResize($panel) {
+      if (typeof $panel.resizable !== "function") return;
+      const chrome = panelChrome($panel);
+      const onStop = () => {
+        const c = panelChrome($panel);
+        const size = {
+          columns: Math.min(Math.max(Math.round(($panel.outerWidth() - c.x) / CELL_PX), 1), MAX_COLUMNS),
+          rows: Math.max(Math.round(($panel.outerHeight() - c.y) / CELL_PX), MIN_ROWS),
+        };
+        applyPanelSize($panel, size);
+        savePanelSize(size);
+      };
+      try {
+        $panel.css({ minWidth: "", maxWidth: "", minHeight: "", maxHeight: "" });
+        // Keep any existing stop handler (Nivel20's own) and add ours.
+        const previousStop = $panel.resizable("option", "stop");
+        $panel.resizable("option", {
+          grid: [CELL_PX, CELL_PX],
+          minWidth: chrome.x + CELL_PX,
+          maxWidth: chrome.x + MAX_COLUMNS * CELL_PX,
+          minHeight: chrome.y + MIN_ROWS * CELL_PX,
+          stop: function (...args) {
+            if (typeof previousStop === "function") previousStop.apply(this, args);
+            onStop();
+          },
+        });
+      } catch (_) {}
+    }
+
+    /* ------------------------- Local slot layout -------------------------- */
+
+    // Bag-like slots: each item keeps its slot (gaps allowed). Purely local,
+    // per character: an array of item keys (null = empty slot).
+    const SLOTS_PREFIX = "_n21_inventory-slots:";
+    const CELL_PX = 60; // item cell size (same as the action bar buttons)
+    const GRID_PADDING_PX = 12;
+
+    function itemKey(item) {
+      return item?.itemId ? `id:${item.itemId}` : `name:${item?.name || ""}`;
+    }
+
+    function loadSlots(charId) {
+      try {
+        const list = JSON.parse(localStorage.getItem(SLOTS_PREFIX + charId) || "[]");
+        return Array.isArray(list) ? list : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveSlots(charId, slots) {
+      const keys = slots.map((item) => (item ? itemKey(item) : null));
+      while (keys.length && keys[keys.length - 1] === null) keys.pop();
+      try {
+        localStorage.setItem(SLOTS_PREFIX + charId, JSON.stringify(keys));
+      } catch (_) {}
+    }
+
+    /**
+     * Place items in slots: saved positions first, the rest (new items) in
+     * the first free slots. Shows as many slots as fit in the window.
+     * @returns {Array<Object|null>}
+     */
+    /** Columns and visible rows that fit in the (resizable) panel. */
+    function gridCapacity($panel) {
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      const width = grid?.clientWidth || CELL_PX * 4;
+      const height = grid?.clientHeight || CELL_PX * 6;
+      return {
+        columns: Math.max(1, Math.floor((width - GRID_PADDING_PX) / CELL_PX)),
+        rows: Math.max(1, Math.floor((height - GRID_PADDING_PX) / CELL_PX)),
+      };
+    }
+
+    function layoutSlots(charId, items, capacity = { columns: 4, rows: 6 }) {
+      const saved = charId ? loadSlots(charId) : [];
+      const slots = [];
+      const placed = new Set();
+      const byKey = new Map();
+      items.forEach((item) => {
+        const key = itemKey(item);
+        if (!byKey.has(key)) byKey.set(key, []);
+        byKey.get(key).push(item);
+      });
+      saved.forEach((key, index) => {
+        const candidates = key ? byKey.get(key) : null;
+        const item = candidates?.find((it) => !placed.has(it));
+        slots[index] = item || null;
+        if (item) placed.add(item);
+      });
+      items.forEach((item) => {
+        if (placed.has(item)) return;
+        let free = slots.findIndex((slot) => !slot);
+        if (free === -1) free = slots.length;
+        slots[free] = item;
+        placed.add(item);
+      });
+      for (let i = 0; i < slots.length; i += 1) if (slots[i] === undefined) slots[i] = null;
+      let last = slots.length - 1;
+      while (last >= 0 && !slots[last]) last -= 1;
+      // Exactly what fits in the window (more only if items don't fit).
+      const { columns, rows } = capacity;
+      const total = Math.max(columns * rows, Math.ceil((last + 1) / columns) * columns);
+      while (slots.length < total) slots.push(null);
+      return slots.slice(0, total);
+    }
+
+    function renderSlots($panel) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const slots = $panel.data("n21InventorySlots") || [];
+      const $grid = $panel.find(".n21-inventory-grid");
+      $grid.empty();
+      slots.forEach((item, slot) => {
+        if (item) {
+          $grid.append(buildItemCell(item, items.indexOf(item)).attr("data-slot", slot));
+        } else {
+          $grid.append(
+            $("<div>").addClass("n21-inventory-slot").attr("data-slot", slot),
+          );
+        }
+      });
+    }
+
     /** Render the grid + money into the panel body. */
-    function renderInventory($body, ph) {
+    function renderInventory($body, items, ph) {
+      const $panel = $body.closest(".n21-inventory-panel");
       const $grid = $body.find(".n21-inventory-grid");
       $grid.empty();
+      const charId = $panel.data("n21CharId");
+      $panel.data("n21InventoryItems", items);
+      $panel.data("n21InventorySlots", layoutSlots(charId, items, gridCapacity($panel)));
+      $panel.data("n21InventoryMoney", money.parse(ph?.equipment));
 
-      const items = collectItems(ph);
       if (!items.length) {
         $grid.append(
           '<div class="n21-inventory-empty">Sin objetos en el inventario.</div>',
         );
       } else {
-        items.forEach((item) => $grid.append(buildItemCell(item)));
+        renderSlots($panel);
       }
 
       const totals = money.parse(ph?.equipment);
-      $body.find(".n21-inventory-money").html(buildMoneyHtml(totals));
+      $body
+        .find(".n21-inventory-money")
+        .html(buildMoneyHtml(totals) || '<span class="n21-inventory-money-empty">Sin dinero</span>')
+        .attr("title", $panel.data("n21InventoryEditable") ? "Click derecho: editar dinero" : null);
+    }
+
+    /** Load items (with ids/quantities) + sheet and render them. */
+    async function loadAndRender($panel, charId) {
+      const jsonUrl = `/characters/${charId}.json`;
+      const [items, ph, editable] = await Promise.all([
+        CharacterItemsManager.getItems(charId),
+        CharacterSheetManager.fetchCharacter(jsonUrl),
+        CharacterItemsManager.canEdit(charId),
+      ]);
+      // Someone else's character: read-only, no edit menus at all.
+      $panel.data("n21InventoryEditable", editable);
+      $panel.toggleClass("n21-inventory-panel--readonly", !editable);
+      renderInventory($panel.find(".n21-inventory"), items, ph);
     }
 
     // Default tooltip shown when hovering the refresh button.
@@ -258,8 +451,7 @@
         $button.addClass("loading").prop("disabled", true);
         try {
           CharacterSheetManager.invalidate(jsonUrl);
-          const ph = await CharacterSheetManager.fetchCharacter(jsonUrl);
-          renderInventory($body, ph);
+          await loadAndRender($panel, charId);
         } catch (error) {
           window._n21_.utils?.registerFeatureError?.("inventory-panel", error);
           flashButtonTooltip($button, "No se pudo actualizar el inventario.");
@@ -270,13 +462,18 @@
     }
 
     /** Build the (empty) panel body markup: scrollable grid + sticky footer. */
-    function panelBodyHtml() {
+    function panelBodyHtml(charId) {
       return (
         '<div class="n21-inventory">' +
         '<div class="n21-inventory-grid"></div>' +
         '<div class="n21-inventory-footer">' +
         '<button class="n21-inventory-refresh">' +
         '<i class="fa fa-refresh"></i></button>' +
+        // The items tab only opens on the campaign URL of the sheet.
+        `<a class="n21-inventory-edit" href="${escapeHtml(
+          CombatTrackingManager.getCharacterSheetUrl(charId),
+        )}?panel=items" target="_blank" rel="noopener" title="Editar el equipo en la hoja del personaje">` +
+        '<i class="fa fa-pencil"></i></a>' +
         '<div class="n21-inventory-money"></div>' +
         "</div>" +
         "</div>"
@@ -305,23 +502,286 @@
         title,
         "",
         "#4a3b2a",
-        panelBodyHtml(),
+        panelBodyHtml(charId),
         "n21-inventory-panel",
-        "width: 269px; height: 420px; min-width: 269px; max-width: 269px; " +
-          "min-height: 240px;",
+        // Sized in whole slots right after opening (see applyPanelSize).
+        "width: 290px; height: 420px;",
       );
       if (!$panel || !$panel.length) return;
 
-      // If the panel already existed (still open), just refresh its contents.
-      const $body = $panel.find(".n21-inventory");
-      renderInventory($body, ph);
+      $panel.data("n21CharId", String(charId));
 
       // Bind refresh once per freshly created panel.
       if (!$panel.data("n21InventoryBound")) {
         $panel.data("n21InventoryBound", true);
+        applyPanelSize($panel, loadPanelSize());
+        bindPanelResize($panel);
         bindRefresh($panel, charId, jsonUrl);
+        bindEditing($panel, charId);
+      }
+
+      // If the panel already existed (still open), just refresh its contents.
+      try {
+        await loadAndRender($panel, charId);
+      } catch (error) {
+        window._n21_.utils?.registerFeatureError?.("inventory-panel", error);
       }
     }
+
+    /* ------------------------------ Editing ------------------------------- */
+
+    let $contextMenu = null;
+
+    function closeContextMenu() {
+      if ($contextMenu) $contextMenu.remove();
+      $contextMenu = null;
+    }
+
+    /** Small context menu with the same look as the board's dropdown. */
+    function showContextMenu(x, y, options) {
+      closeContextMenu();
+      $contextMenu = $('<div class="n21-canvas-dropdown-menu n21-inventory-menu" role="menu"></div>');
+      options.forEach((option) => {
+        const $item = $(
+          `<button type="button" class="n21-canvas-dropdown-item" role="menuitem">${escapeHtml(option.label)}</button>`,
+        );
+        if (option.danger) $item.addClass("n21-inventory-menu-danger");
+        if (option.disabled) $item.prop("disabled", true);
+        $item.on("click", (event) => {
+          event.stopPropagation();
+          closeContextMenu();
+          if (!option.disabled) option.onClick?.();
+        });
+        $contextMenu.append($item);
+      });
+      $("body").append($contextMenu);
+      const width = $contextMenu.outerWidth();
+      const height = $contextMenu.outerHeight();
+      $contextMenu.css({
+        display: "block",
+        left: Math.min(x, window.innerWidth - width - 8),
+        top: Math.min(y, window.innerHeight - height - 8),
+      });
+    }
+
+    $(document).on("mousedown.n21InventoryMenu", (event) => {
+      if ($contextMenu && !$(event.target).closest(".n21-inventory-menu").length) {
+        closeContextMenu();
+      }
+    });
+    $(document).on("keydown.n21InventoryMenu", (event) => {
+      if (event.key === "Escape") closeContextMenu();
+    });
+
+    function flashMessage($panel, text) {
+      const $msg = $panel.find(".n21-inventory-message");
+      $msg.text(text).addClass("n21-inventory-message--visible");
+      clearTimeout($msg.data("timer"));
+      $msg.data(
+        "timer",
+        setTimeout(() => $msg.removeClass("n21-inventory-message--visible"), 3500),
+      );
+    }
+
+    function changeQuantity($panel, charId, index, delta) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const item = items[index];
+      if (!item) return;
+      const current = item.quantity ?? 1;
+      const next = Math.max(0, current + delta);
+      if (next === current) return;
+      if (!CharacterItemsManager.setQuantity(charId, item, next)) {
+        flashMessage($panel, "No se puede editar este objeto.");
+        return;
+      }
+      // Optimistic update: redraw just this cell.
+      item.quantity = next;
+      const $old = $panel.find(`.n21-inventory-item[data-index="${index}"]`);
+      $old.replaceWith(buildItemCell(item, index).attr("data-slot", $old.attr("data-slot")));
+    }
+
+    async function deleteItem($panel, charId, index) {
+      const items = $panel.data("n21InventoryItems") || [];
+      const item = items[index];
+      if (!item) return;
+      if (!window.confirm(`¿Eliminar «${item.name}» del inventario?`)) return;
+      try {
+        $panel.find(`.n21-inventory-item[data-index="${index}"]`).addClass("n21-inventory-item--busy");
+        await CharacterItemsManager.deleteItem(charId, item);
+      } catch (error) {
+        flashMessage($panel, "No se pudo eliminar el objeto.");
+        $panel.find(`.n21-inventory-item[data-index="${index}"]`).removeClass("n21-inventory-item--busy");
+      }
+    }
+
+    function openMoneyEditor($panel, charId) {
+      const totals = $panel.data("n21InventoryMoney") || {};
+      const fields = money.CURRENCIES.map(
+        (currency) => `
+          <label class="n21-inventory-money-field" title="${escapeHtml(currency.label)}">
+            <img src="${money.iconUrl(currency)}" alt="${escapeHtml(currency.key)}" />
+            <input type="number" min="0" step="1" inputmode="numeric" data-currency="${escapeHtml(
+              currency.key,
+            )}" value="${escapeHtml(totals[currency.key.toLowerCase()] || 0)}" />
+          </label>`,
+      ).join("");
+      const $editor = $(`
+        <form class="n21-inventory-money-editor">
+          <div class="n21-inventory-money-fields">${fields}</div>
+          <div class="n21-inventory-money-actions">
+            <button type="button" class="btn btn-sm n21-btn-neutral n21-inventory-money-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-sm btn-success">Guardar</button>
+          </div>
+        </form>`);
+      $panel.find(".n21-inventory-money-editor").remove();
+      $panel.find(".n21-inventory-footer").before($editor);
+      $editor.find("input").first().trigger("focus").trigger("select");
+      $editor.on("keydown keyup keypress", "input", (event) => event.stopPropagation());
+      $editor.on("click", ".n21-inventory-money-cancel", () => $editor.remove());
+      $editor.on("submit", async (event) => {
+        event.preventDefault();
+        const next = {};
+        $editor.find("input[data-currency]").each(function () {
+          next[this.dataset.currency.toLowerCase()] = Math.max(0, parseInt(this.value, 10) || 0);
+        });
+        $editor.find("button").prop("disabled", true);
+        try {
+          const saved = await CharacterItemsManager.updateEquipmentText(charId, (text, max) => {
+            const updated = money.setInText(text, next);
+            // Never drop player text: skip if the field can't hold the tag.
+            return max && updated.length > max ? null : updated;
+          });
+          if (!saved) flashMessage($panel, "No hay espacio en «Otras posesiones» para guardar el dinero.");
+          $editor.remove();
+        } catch (error) {
+          flashMessage($panel, "No se pudo guardar el dinero.");
+          $editor.find("button").prop("disabled", false);
+        }
+      });
+    }
+
+    function bindEditing($panel, charId) {
+      // Resizing the window shows more or fewer slots.
+      const grid = $panel.find(".n21-inventory-grid")[0];
+      if (grid && typeof ResizeObserver === "function") {
+        let lastTotal = null;
+        let timer = null;
+        new ResizeObserver(() => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            const items = $panel.data("n21InventoryItems");
+            if (!items?.length) return;
+            const slots = layoutSlots(charId, items, gridCapacity($panel));
+            if (slots.length === lastTotal) return;
+            lastTotal = slots.length;
+            $panel.data("n21InventorySlots", slots);
+            renderSlots($panel);
+          }, 80);
+        }).observe(grid);
+      }
+
+      $panel.find(".n21-inventory").append('<div class="n21-inventory-message" role="status"></div>');
+
+      $panel.on("contextmenu", ".n21-inventory-item", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!$panel.data("n21InventoryEditable")) return;
+        // The item's own tooltip would stay open on top of the menu.
+        $(this)
+          .find(".tooltipstered")
+          .addBack(".tooltipstered")
+          .each(function () {
+            if (typeof $(this).tooltipster === "function") tooltipster($(this), ["close", "hide"]);
+          });
+        const index = Number($(this).attr("data-index"));
+        const item = ($panel.data("n21InventoryItems") || [])[index];
+        if (!item) return;
+        const editable = !!item.itemId;
+        const quantity = item.quantity ?? 1;
+        showContextMenu(event.clientX, event.clientY, [
+          {
+            label: "Usar uno (−1)",
+            disabled: !editable || quantity <= 0,
+            onClick: () => changeQuantity($panel, charId, index, -1),
+          },
+          {
+            label: "Añadir uno (+1)",
+            disabled: !editable,
+            onClick: () => changeQuantity($panel, charId, index, 1),
+          },
+          {
+            label: "Eliminar objeto",
+            danger: true,
+            disabled: !item.deleteUrl,
+            onClick: () => deleteItem($panel, charId, index),
+          },
+        ]);
+      });
+
+      // Drag & drop between slots (saved locally for this character):
+      // onto an empty slot moves the item, onto another item swaps them.
+      let dragSlot = null;
+      const SLOT_SELECTOR = ".n21-inventory-item, .n21-inventory-slot";
+      $panel.on("dragstart", ".n21-inventory-item", function (event) {
+        dragSlot = Number($(this).attr("data-slot"));
+        event.originalEvent.dataTransfer.effectAllowed = "move";
+        event.originalEvent.dataTransfer.setData("text/plain", String(dragSlot));
+        $(this).addClass("n21-inventory-item--dragging");
+      });
+      $panel.on("dragend", ".n21-inventory-item", () => {
+        dragSlot = null;
+        $panel.find(".n21-inventory-item--dragging, .n21-inventory-item--drop").removeClass(
+          "n21-inventory-item--dragging n21-inventory-item--drop",
+        );
+      });
+      $panel.on("dragover", SLOT_SELECTOR, function (event) {
+        if (dragSlot === null) return;
+        event.preventDefault();
+        $panel.find(".n21-inventory-item--drop").removeClass("n21-inventory-item--drop");
+        $(this).addClass("n21-inventory-item--drop");
+      });
+      $panel.on("drop", SLOT_SELECTOR, function (event) {
+        event.preventDefault();
+        const target = Number($(this).attr("data-slot"));
+        const slots = ($panel.data("n21InventorySlots") || []).slice();
+        if (dragSlot === null || dragSlot === target || !slots[dragSlot]) return;
+        [slots[dragSlot], slots[target]] = [slots[target] || null, slots[dragSlot]];
+        saveSlots(charId, slots);
+        $panel.data(
+          "n21InventorySlots",
+          layoutSlots(charId, $panel.data("n21InventoryItems") || [], gridCapacity($panel)),
+        );
+        renderSlots($panel);
+      });
+
+      $panel.on("contextmenu", ".n21-inventory-money", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!$panel.data("n21InventoryEditable")) return;
+        showContextMenu(event.clientX, event.clientY, [
+          { label: "Editar dinero", onClick: () => openMoneyEditor($panel, charId) },
+        ]);
+      });
+
+    }
+
+    // Reload open panels once edits have been saved (several edits in a row
+    // cause a single reload).
+    const reloadTimers = new Map();
+    CharacterItemsManager.onChange((charId) => {
+      clearTimeout(reloadTimers.get(charId));
+      reloadTimers.set(
+        charId,
+        setTimeout(() => {
+          reloadTimers.delete(charId);
+          $(".n21-inventory-panel").each(function () {
+            const $panel = $(this);
+            if ($panel.data("n21CharId") !== String(charId)) return;
+            loadAndRender($panel, charId).catch(() => {});
+          });
+        }, 800),
+      );
+    });
 
     /* ------------------------- Action bar wiring -------------------------- */
 
@@ -340,6 +800,7 @@
         tooltip_title: "Inventario",
         owned: false,
         charId,
+        n21Key: "n21:inventory",
         [INJECT_TAG]: true,
       };
     }
@@ -352,10 +813,35 @@
       items.push(buildInventoryItem(charId));
     }
 
+    // List the item in the action bar editor.
+    window._n21_.actionBarLayout?.registerProvider("inventory", {
+      order: 40,
+      getEntries: async () => (!featureEnabled ? [] : [
+        { key: "n21:inventory", label: "Inventario", icon: assetUrl("backpack.png") },
+      ]),
+    });
+
     // Run after actions (60) and traits (70) so "Inventario" is the last item.
+    function stripOwnItems(items) {
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (items[i] && items[i][INJECT_TAG]) items.splice(i, 1);
+      }
+    }
+
+    SettingsManager.onChange(() => {
+      const next = !!SettingsManager.get("feature.inventory-panel.enabled");
+      if (next === featureEnabled) return;
+      featureEnabled = next;
+      ActionBarManager.rerenderCharacterBars();
+    });
+
     ActionBarManager.onCreateBar(
       "inventory-panel",
       (element, items, parentItem = null) => {
+        if (!featureEnabled) {
+          if (parentItem === null && Array.isArray(items)) stripOwnItems(items);
+          return;
+        }
         if (parentItem !== null) return;
         if (!Array.isArray(items)) return;
 

@@ -54,6 +54,10 @@
 
     // 2b. Load shared, manager-less helpers used by multiple features.
     await injectScript("src/core/money.js");
+    await injectScript("src/core/resource-icons.js");
+    await injectScript("src/core/weather-renderer.js");
+    await injectScript("src/core/action-bar-layout.js");
+    await injectScript("src/core/chat-consent.js");
 
     // 3. Load managers and features in parallel
     await Promise.all([
@@ -70,6 +74,7 @@
       injectScript("src/core/token-manager.js"),
       injectScript("src/core/measurement-manager.js"),
       injectScript("src/core/camera-manager.js"),
+      injectScript("src/core/map-manager.js"),
       injectScript("src/core/network-manager.js"),
       injectScript("src/core/dice-manager.js"),
       injectScript("src/core/floating-panel-manager.js"),
@@ -80,6 +85,10 @@
       injectScript("src/core/canvas-dropdown-manager.js"),
       injectScript("src/core/character-manager.js"),
       injectScript("src/core/character-sheet-manager.js"),
+      injectScript("src/core/combat-tracking-manager.js"),
+      injectScript("src/core/local-resources-manager.js"),
+      injectScript("src/core/token-overlay-manager.js"),
+      injectScript("src/core/character-items-manager.js"),
       injectScript("src/core/markdown-editor-manager.js"),
 
       // Features
@@ -107,6 +116,7 @@
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
       injectScript("src/features/straighten-camera.js"),
+      injectScript("src/features/camera-rotation-lock.js"),
       injectScript("src/features/generate-spell-actions.js"),
       injectScript("src/features/spell-action-bar.js"),
       injectScript("src/features/actions-bar.js"),
@@ -114,7 +124,13 @@
       injectScript("src/features/traits-action-bar.js"),
       injectScript("src/features/floating-panel-action.js"),
       injectScript("src/features/inventory-panel.js"),
+      injectScript("src/features/action-bar-editor.js"),
       injectScript("src/features/money-editor.js"),
+      injectScript("src/features/character-frame.js"),
+      injectScript("src/features/creature-resources.js"),
+      injectScript("src/features/token-health-bar.js"),
+      injectScript("src/features/token-conditions.js"),
+      injectScript("src/features/invisible-condition.js"),
       injectScript("src/features/error-report.js"),
     ]);
   });

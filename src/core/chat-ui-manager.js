@@ -213,6 +213,42 @@
     }
 
     /**
+     * Dice rolls in the chat whose roll name matches, oldest first.
+     * @param {RegExp} rollNamePattern - matched against the roll name
+     *   ("Tirada - Iniciativa")
+     * @returns {Array<{senderName: string, total: number, element: Element}>}
+     */
+    getRolls(rollNamePattern) {
+      const rolls = [];
+      // The chat can be rendered in more than one container; use the fullest.
+      const container = [...document.querySelectorAll(CHAT_CONTAINER_SELECTOR)].sort(
+        (a, b) =>
+          b.querySelectorAll(".room-message").length - a.querySelectorAll(".room-message").length,
+      )[0];
+      [container].filter(Boolean).forEach((container) => {
+        const reversed =
+          window.getComputedStyle?.(container).flexDirection === "column-reverse";
+        const found = [];
+        container.querySelectorAll(".room-message").forEach((message) => {
+          const rollName = message.querySelector(".roll-name")?.textContent || "";
+          if (!rollNamePattern.test(rollName)) return;
+          const total = parseInt(
+            message.querySelector(".result-dice-total")?.textContent || "",
+            10,
+          );
+          if (!Number.isFinite(total)) return;
+          const senderName = (message.querySelector(".user-name")?.textContent || "")
+            .trim()
+            .replace(/:$/, "")
+            .trim();
+          found.push({ senderName, total, element: message });
+        });
+        rolls.push(...(reversed ? found.reverse() : found));
+      });
+      return rolls;
+    }
+
+    /**
      * Get the message text selector
      */
     getMessageTextSelector() {

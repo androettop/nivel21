@@ -144,7 +144,15 @@
         messageOptions.icon = fallbackIcon;
       }
 
-      ChatManager.sendJsonMessage(payload, messageOptions, "chat.link");
+      window._n21_.chatConsent
+        ?.confirm("send-to-chat", {
+          title: "¿Compartir en el chat?",
+          description: "Se enviará el contenido al chat de la partida.",
+          required: true,
+        })
+        .then((send) => {
+          if (send) ChatManager.sendJsonMessage(payload, messageOptions, "chat.link");
+        });
     }
 
     // Track hovered floating element

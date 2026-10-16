@@ -1,0 +1,115 @@
+(() => {
+  /* =======================================================================
+       Shared action bar layout
+
+       Order and visibility of the ROOT entries of a character's action bar,
+       saved per character in this browser. It covers what Nivel20 can't store
+       (folders injected by the extension, the default "Pruebas de habilidad" /
+       "Tiradas de salvación" position, weapon actions) and is applied to the
+       bar right before it's rendered.
+
+       Features that inject root folders give them a stable `n21Key` and
+       register a provider so the action bar editor can list them.
+
+       Exposed as `window._n21_.actionBarLayout`:
+         registerProvider(id, { order, getEntries(charId) -> [{key,label,icon}] })
+         getProviderEntries(charId) -> Promise<[{key,label,icon}]>
+         keyOf(item)                 -> stable key of a bar item
+         getLayout(charId) / saveLayout(charId, { order: [key], hidden: [key] })
+         apply(items, charId)        -> reorders/hides root items in place
+    ======================================================================= */
+
+  const STORAGE_PREFIX = "_n21_actionbar-layout:";
+  const providers = new Map();
+
+  function registerProvider(id, provider) {
+    if (!id || typeof provider?.getEntries !== "function") return;
+    providers.set(id, { order: 100, ...provider });
+  }
+
+  async function getProviderEntries(charId) {
+    const list = [...providers.values()].sort((a, b) => a.order - b.order);
+    const results = [];
+    for (const provider of list) {
+      try {
+        const entries = await provider.getEntries(String(charId));
+        (entries || []).forEach((e) => e?.key && results.push({ ...e, order: provider.order }));
+      } catch (_error) {}
+    }
+    return results;
+  }
+
+  /** Stable key of a bar item: injected folders carry their own. */
+  function keyOf(item) {
+    if (!item) return null;
+    if (item.n21Key) return item.n21Key;
+    if (item.id !== undefined && item.id !== null && item.id !== "") return `native:${item.id}`;
+    return item.name ? `native-name:${item.name}` : null;
+  }
+
+  function getLayout(charId) {
+    try {
+      const raw = localStorage.getItem(STORAGE_PREFIX + charId);
+      const data = raw ? JSON.parse(raw) : null;
+      if (!data || typeof data !== "object") return null;
+      return {
+        order: Array.isArray(data.order) ? data.order : [],
+        hidden: Array.isArray(data.hidden) ? data.hidden : [],
+      };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function saveLayout(charId, layout) {
+    try {
+      localStorage.setItem(
+        STORAGE_PREFIX + charId,
+        JSON.stringify({ order: layout?.order || [], hidden: layout?.hidden || [] }),
+      );
+    } catch (_error) {}
+  }
+
+  /**
+   * Reorder (and hide) root items in place according to the saved layout.
+   * Items the layout doesn't know keep their position.
+   */
+  function apply(items, charId) {
+    const layout = getLayout(charId);
+    if (!layout || !Array.isArray(items)) return items;
+
+    const hidden = new Set(layout.hidden);
+    for (let i = items.length - 1; i >= 0; i -= 1) {
+      if (hidden.has(keyOf(items[i]))) items.splice(i, 1);
+    }
+
+    const rankOf = (item) => {
+      let rank = layout.order.indexOf(keyOf(item));
+      if (rank === -1 && item?.name) rank = layout.order.indexOf(`native-name:${item.name}`);
+      return rank;
+    };
+    const slots = [];
+    const known = [];
+    items.forEach((item, index) => {
+      const rank = rankOf(item);
+      if (rank !== -1) {
+        slots.push(index);
+        known.push({ item, rank });
+      }
+    });
+    known.sort((a, b) => a.rank - b.rank);
+    slots.forEach((slot, i) => {
+      items[slot] = known[i].item;
+    });
+    return items;
+  }
+
+  window._n21_.actionBarLayout = {
+    registerProvider,
+    getProviderEntries,
+    keyOf,
+    getLayout,
+    saveLayout,
+    apply,
+  };
+})();

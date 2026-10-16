@@ -164,6 +164,13 @@
 
       activePing.marker.style.left = `${screenPosition.x}px`;
       activePing.marker.style.top = `${screenPosition.y}px`;
+      // Lie on the board plane (identity with the top-down camera).
+      const ground = CameraManager.getGroundAffine(activePing.worldX, activePing.worldZ);
+      if (ground) {
+        const [ma, mb, mc, md] = ground.matrix;
+        activePing.marker.style.transformOrigin = "0 0";
+        activePing.marker.style.transform = `matrix(${ma}, ${mb}, ${mc}, ${md}, 0, 0) translate(-50%, -50%)`;
+      }
 
       const pingSizePx = getPingSizePx();
       activePing.marker.style.width = `${pingSizePx}px`;
@@ -414,7 +421,16 @@
         commandArgs += ` ${emoji}`;
       }
 
-      ChatManager.send(commandArgs, messageOptions);
+      // The ping reaches everyone (and shows) through this message.
+      window._n21_.chatConsent
+        ?.confirm("ping", {
+          title: "¿Enviar el ping al chat?",
+          description: "Los pings se muestran a todos mediante un mensaje en el chat.",
+          required: true,
+        })
+        .then((send) => {
+          if (send) ChatManager.send(commandArgs, messageOptions);
+        });
     }
 
     CanvasDropdownManager.registerOption({
@@ -442,6 +458,73 @@
           },
         })),
       ],
+    });
+
+    /* ---------- Quick ping: double middle click or "F" at the cursor ---------- */
+
+    const DOUBLE_CLICK_MS = 350;
+    const DOUBLE_CLICK_MAX_MOVE_PX = 6;
+    let pointer = null; // last cursor position over the board, canvas coords
+    let lastMiddleDown = null;
+
+    function boardCanvas() {
+      return document.querySelector("#application-canvas");
+    }
+
+    function pingAtCanvasPoint(x, y) {
+      const position = getWorldPositionFromContext({ canvasCoords: { x, y } });
+      if (!position) return;
+      // sendPingCommand keeps its own debounce, so this can't spam the chat.
+      sendPingCommand(position.x, position.z, null);
+    }
+
+    document.addEventListener(
+      "mousemove",
+      (event) => {
+        const canvas = boardCanvas();
+        if (!canvas || event.target !== canvas) {
+          pointer = null;
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      },
+      { passive: true },
+    );
+
+    // Leaving the window doesn't fire mousemove on another element.
+    document.addEventListener("mouseout", (event) => {
+      if (!event.relatedTarget) pointer = null;
+    });
+
+    document.addEventListener("mousedown", (event) => {
+      if (event.button !== 1) return;
+      const canvas = boardCanvas();
+      if (!canvas || event.target !== canvas) return;
+      const now = Date.now();
+      const previous = lastMiddleDown;
+      lastMiddleDown = { time: now, x: event.clientX, y: event.clientY };
+      if (
+        previous &&
+        now - previous.time <= DOUBLE_CLICK_MS &&
+        Math.hypot(event.clientX - previous.x, event.clientY - previous.y) <= DOUBLE_CLICK_MAX_MOVE_PX
+      ) {
+        lastMiddleDown = null;
+        const rect = canvas.getBoundingClientRect();
+        pingAtCanvasPoint(event.clientX - rect.left, event.clientY - rect.top);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (String(event.key).toLowerCase() !== "f") return;
+      // Never while typing anywhere (chat, forms, editors...).
+      const isEditable = (el) =>
+        !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+      if (isEditable(event.target) || isEditable(document.activeElement)) return;
+      if (!pointer) return; // cursor isn't over the board
+      event.preventDefault();
+      pingAtCanvasPoint(pointer.x, pointer.y);
     });
 
     ChatManager.onMessage((messageData) => {

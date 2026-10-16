@@ -79,7 +79,7 @@
       // Feature enable/disable settings
       this.registerSetting({
         name: "feature.advantage-disadvantage.enabled",
-        label: "Tiradas con Ventaja/Desventaja",
+        label: "Tiradas con ventaja/desventaja",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -87,7 +87,7 @@
 
       this.registerSetting({
         name: "feature.send-to-chat.enabled",
-        label: "Compartir Contenido al Chat",
+        label: "Compartir contenido al chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -95,7 +95,7 @@
 
       this.registerSetting({
         name: "feature.parse-chat-links.enabled",
-        label: "Enlaces en Mensajes del Chat",
+        label: "Enlaces en mensajes del chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -103,7 +103,7 @@
 
       this.registerSetting({
         name: "feature.token-hotkeys.enabled",
-        label: "Atajos para Tokens",
+        label: "Atajos para tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -113,7 +113,7 @@
 
       this.registerSetting({
         name: "feature.token-move-arrows.enabled",
-        label: "Mover Tokens con el Teclado",
+        label: "Mover tokens con el teclado",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -121,7 +121,7 @@
 
       this.registerSetting({
         name: "feature.multi-measurement.enabled",
-        label: "Mediciones Persistentes",
+        label: "Mediciones persistentes",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -129,7 +129,7 @@
 
       this.registerSetting({
         name: "feature.whisper-mode.enabled",
-        label: "Susurrar en el Chat",
+        label: "Susurrar en el chat",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -144,10 +144,20 @@
       });
 
       this.registerSetting({
+        name: "feature.action-bar-editor.enabled",
+        label: "Editor de la barra de acciones",
+        type: "boolean",
+        defaultValue: true,
+        dependsOn: ["feature.multi-level-action-bar.enabled"],
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.spell-action-bar.enabled",
         label: "Conjuros en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -156,6 +166,7 @@
         label: "Acciones estándar en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -164,6 +175,7 @@
         label: "Rasgos en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -180,6 +192,7 @@
         label: "Inventario en la barra de acciones",
         type: "boolean",
         defaultValue: true,
+        live: true,
         category: "features",
       });
 
@@ -200,8 +213,63 @@
       });
 
       this.registerSetting({
+        name: "ambient-fx.animated-weather",
+        label: "Mostrar el clima animado (lluvia, nieve...). Desactívalo en equipos lentos",
+        type: "boolean",
+        defaultValue: true,
+        category: "advanced",
+      });
+
+      this.registerSetting({
+        name: "feature.character-frame.enabled",
+        label: "Marco de personaje",
+        type: "boolean",
+        defaultValue: true,
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.creature-resources.enabled",
+        label: "Recursos de criaturas",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-health-bar.enabled",
+        label: "Puntos de golpe en los tokens",
+        type: "boolean",
+        defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.token-conditions.enabled",
+        label: "Estados en los tokens",
+        type: "boolean",
+        defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.invisible-condition.enabled",
+        label: "Ocultar tokens con el estado Invisible",
+        type: "boolean",
+        defaultValue: true,
+        dependsOn: ["feature.token-assign-character.enabled"],
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.notes-panel.enabled",
-        label: "Panel de Notas",
+        label: "Panel de notas",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -217,7 +285,7 @@
 
       this.registerSetting({
         name: "feature.token-drag-measurement.enabled",
-        label: "Medición de Distancias al Arrastrar",
+        label: "Medición de distancias al arrastrar",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -225,7 +293,7 @@
 
       this.registerSetting({
         name: "token-drag-measurement.show-distance",
-        label: "Mostrar/Ocultar distancia al mover token",
+        label: "Mostrar la distancia al mover un token",
         type: "boolean",
         defaultValue: true,
         category: "medicion",
@@ -233,7 +301,7 @@
 
       this.registerSetting({
         name: "feature.token-drag-speed.enabled",
-        label: "Velocidad de Movimiento de Tokens",
+        label: "Velocidad de movimiento de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -241,7 +309,7 @@
 
       this.registerSetting({
         name: "feature.token-notes.enabled",
-        label: "Notas de Token",
+        label: "Notas de token",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -249,7 +317,7 @@
 
       this.registerSetting({
         name: "feature.turn-order.enabled",
-        label: "Orden de Turnos",
+        label: "Orden de turnos",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -257,7 +325,7 @@
 
       this.registerSetting({
         name: "feature.dice-visibility.enabled",
-        label: "Visibilidad de Tiradas de Dados",
+        label: "Visibilidad de tiradas de dados",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -265,7 +333,7 @@
 
       this.registerSetting({
         name: "feature.token-layers.enabled",
-        label: "Capas de Tokens",
+        label: "Capas de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -273,7 +341,7 @@
 
       this.registerSetting({
         name: "feature.token-aura.enabled",
-        label: "Auras de Tokens",
+        label: "Auras de tokens",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -281,7 +349,7 @@
 
       this.registerSetting({
         name: "feature.token-assign-player.enabled",
-        label: "Asignar Tokens a Jugadores",
+        label: "Asignar tokens a jugadores",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -289,7 +357,7 @@
 
       this.registerSetting({
         name: "feature.token-assign-character.enabled",
-        label: "Asignar Tokens a Personajes",
+        label: "Asignar tokens a personajes",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -297,7 +365,7 @@
 
       this.registerSetting({
         name: "feature.ping-map.enabled",
-        label: "Ping en Mapa",
+        label: "Ping en el mapa",
         type: "boolean",
         defaultValue: true,
         category: "features",
@@ -305,10 +373,27 @@
 
       this.registerSetting({
         name: "feature.straighten-camera.enabled",
-        label: "Enderezar camara",
+        label: "Enderezar cámara",
         type: "boolean",
         defaultValue: true,
         category: "features",
+      });
+
+      this.registerSetting({
+        name: "feature.camera-rotation-lock.enabled",
+        label: "Bloquear rotación de la cámara",
+        type: "boolean",
+        defaultValue: true,
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
+        name: "camera-rotation-lock.locked",
+        label: "Rotación de la cámara bloqueada",
+        type: "boolean",
+        defaultValue: true,
+        category: "advanced",
       });
 
       this.registerSetting({
@@ -374,6 +459,84 @@
         type: "hotkey",
         defaultValue: "pagedown",
         category: "token-shortcuts",
+      });
+
+      this.registerSetting({
+        name: "chat-consent.spell-cast",
+        label: "Anunciar en el chat los conjuros lanzados",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.ambient-fx",
+        label: "Enviar al chat los efectos ambientales",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.turn-order",
+        label: "Enviar al chat el orden de turnos",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.ping",
+        label: "Enviar al chat los pings",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.send-to-chat",
+        label: "Compartir contenido al chat",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.token-notes",
+        label: "Enviar notas de tokens al chat",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
       });
 
       this.registerSetting({
@@ -517,7 +680,60 @@
         defaultValue: setting.defaultValue,
         category: setting.category || "general",
         options: setting.options || null,
+        // Settings (features) this one needs enabled to work.
+        dependsOn: Array.isArray(setting.dependsOn) ? setting.dependsOn : [],
+        // Applies without reloading the page.
+        live: !!setting.live,
       };
+    }
+
+    /**
+     * Call `callback(value)` now and whenever the effective value of a
+     * setting changes (including through its dependencies).
+     * @returns {Function} Unsubscribe
+     */
+    watch(name, callback) {
+      if (typeof callback !== "function") return () => {};
+      let last = this.get(name);
+      callback(last);
+      return this.onChange(() => {
+        const next = this.get(name);
+        if (next === last) return;
+        last = next;
+        try {
+          callback(next);
+        } catch (error) {
+          console.warn("[SettingsManager] watch callback error:", error);
+        }
+      });
+    }
+
+    /**
+     * Value chosen by the user (or default), ignoring dependencies.
+     * @param {string} name
+     */
+    getRaw(name) {
+      const setting = this._settings[name];
+      if (!setting) return undefined;
+      const storedValue = this._getFromStorage(this._storagePrefix + name);
+      if (storedValue !== null) return this._parseValue(storedValue, setting.type);
+      return setting.defaultValue;
+    }
+
+    /**
+     * Dependencies of a setting that are currently disabled (recursively).
+     * @param {string} name
+     * @returns {string[]} setting names
+     */
+    getMissingDependencies(name, seen = new Set()) {
+      const setting = this._settings[name];
+      if (!setting || seen.has(name)) return [];
+      seen.add(name);
+      const missing = [];
+      setting.dependsOn.forEach((dep) => {
+        if (!this.getRaw(dep) || this.getMissingDependencies(dep, seen).length) missing.push(dep);
+      });
+      return missing;
     }
 
     /**
@@ -563,14 +779,12 @@
         return undefined;
       }
 
-      const storageKey = this._storagePrefix + name;
-      const storedValue = this._getFromStorage(storageKey);
-
-      if (storedValue !== null) {
-        return this._parseValue(storedValue, setting.type);
+      // A feature is off when any feature it depends on is off.
+      if (setting.dependsOn.length && this.getMissingDependencies(name).length) {
+        return setting.type === "boolean" ? false : setting.defaultValue;
       }
 
-      return setting.defaultValue;
+      return this.getRaw(name);
     }
 
     /**

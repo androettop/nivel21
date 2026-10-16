@@ -46,6 +46,19 @@
     }
 
     /**
+     * Root schema collection of tokens (null until the room state is ready).
+     * @returns {Object|null}
+     */
+    _getSchemaRoot() {
+      try {
+        const root = this._getEntityManager()?.schema?.();
+        return root && typeof root.onAdd === "function" ? root : null;
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    /**
      * Get a specific token by its networkId
      * @param {string} networkId - The network ID of the token
      * @returns {Object|null} The token instance or null if not found
@@ -97,6 +110,108 @@
     }
 
     /**
+     * Read a [key:value] tag from a token's description.
+     * @param {string} networkId
+     * @param {string} key
+     * @returns {string|null}
+     */
+    getTokenTag(networkId, key) {
+      const schema = this.getTokenSchema(networkId);
+      if (!schema) return null;
+      let description = "";
+      try {
+        description = JSON.parse(
+          typeof schema.metadata === "string" ? schema.metadata : "{}",
+        )?.description || "";
+      } catch (_error) {}
+      return window._n21_.utils.parseTokenTag(String(description), key);
+    }
+
+    /** Image shown by a token on the board, or null. */
+    getTokenImageUrl(networkId) {
+      const instance = this.getToken(networkId)?.script?.tokenInstance;
+      return instance?.imageUrl || instance?.schema?.imageUrl || null;
+    }
+
+    /** Network ids of the tokens currently selected on the board. */
+    getSelectedTokenIds() {
+      const selected = Array.isArray(window.selectedSchemas) ? window.selectedSchemas : [];
+      return selected.map((schema) => schema?.networkId).filter(Boolean);
+    }
+
+    /**
+     * Character a token belongs to natively: tokens added from the campaign's
+     * characters folder carry tokenizable_type "Character" + tokenizable_id.
+     * Nivel20 drops that link whenever the token is edited.
+     * @param {string} networkId
+     * @returns {string|null}
+     */
+    getNativeCharacterId(networkId) {
+      const schema = this.getTokenSchema(networkId);
+      if (!schema) return null;
+      try {
+        const metadata = JSON.parse(typeof schema.metadata === "string" ? schema.metadata : "{}");
+        if (metadata?.tokenizable_type === "Character" && metadata.tokenizable_id != null) {
+          return String(metadata.tokenizable_id);
+        }
+      } catch (_error) {}
+      return null;
+    }
+
+    /**
+     * Row (character/creature) a token is linked to: its [char:id] tag
+     * ([char:id#n] for creature n of a group), or else the character Nivel20
+     * links it to natively.
+     * @param {string} networkId
+     * @returns {{rowId: string, index: number|null}|null} index is 0-based,
+     *   null when the tag doesn't name a creature of a group
+     */
+    getLinkedRow(networkId) {
+      const tag = this.getTokenTag(networkId, "char");
+      if (tag) {
+        const match = /^(.+?)#(\d+)$/.exec(tag);
+        return match
+          ? { rowId: match[1], index: Math.max(0, parseInt(match[2], 10) - 1) }
+          : { rowId: tag, index: null };
+      }
+      const nativeId = this.getNativeCharacterId(networkId);
+      return nativeId ? { rowId: nativeId, index: null } : null;
+    }
+
+    /** Row id a token is linked to (see getLinkedRow), or null. */
+    getLinkedRowId(networkId) {
+      return this.getLinkedRow(networkId)?.rowId || null;
+    }
+
+    /**
+     * Screen rectangle (canvas CSS pixels) covered by a token, or null.
+     * @param {string} networkId
+     * @param {Object} cameraManager - CameraManager (for worldToScreen)
+     * @returns {{x: number, y: number, width: number, height: number}|null}
+     */
+    getTokenScreenRect(networkId, cameraManager) {
+      const pos = this.getTokenPosition(networkId);
+      if (!pos || !cameraManager) return null;
+      const scale = this.getTokenScale(networkId) || { x: 1, z: 1 };
+      const halfX = Math.abs(scale.x || 1) / 2;
+      const halfZ = Math.abs(scale.z || 1) / 2;
+      const corners = [
+        [pos.x - halfX, pos.z - halfZ],
+        [pos.x + halfX, pos.z - halfZ],
+        [pos.x + halfX, pos.z + halfZ],
+        [pos.x - halfX, pos.z + halfZ],
+      ]
+        .map(([wx, wz]) => cameraManager.worldToScreen(wx, wz, 0))
+        .filter(Boolean);
+      if (corners.length !== 4) return null;
+      const xs = corners.map((p) => p.x);
+      const ys = corners.map((p) => p.y);
+      const x = Math.min(...xs);
+      const y = Math.min(...ys);
+      return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
+    }
+
+    /**
      * Subscribe to token metadata changes
      * Automatically registers listeners on all tokens (current and future)
      * @param {Function} callback - Called with (networkId, metadataString) when metadata changes
@@ -105,10 +220,10 @@
     onTokenMetadataChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenMetadataChange(callback), 500);
         return () => {};
       }
 
@@ -152,10 +267,10 @@
     onTokenTagsChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenTagsChange(callback), 500);
         return () => {};
       }
 
@@ -275,10 +390,27 @@
       const token = this.getToken(networkId);
       if (!token) return null;
 
-      return {
-        hidden: !!token.hidden,
-        translucent: !!token.translucent,
-      };
+      return this._readVisibility(token);
+    }
+
+    /**
+     * Read the visibility Nivel20 is currently applying to a token entity
+     * (kept by its visibility handler script; the entity has no flags).
+     * @param {Object} token - Token entity
+     * @returns {{hidden: boolean, translucent: boolean}}
+     */
+    _readVisibility(token) {
+      const handler = token?.script?.scripts?.find(
+        (script) =>
+          script?.visibility &&
+          typeof script.visibility === "object" &&
+          "hidden" in script.visibility,
+      );
+      const state = handler?.visibility;
+      if (!state) {
+        return { hidden: !!token?.hidden, translucent: !!token?.translucent };
+      }
+      return { hidden: !!state.hidden, translucent: !!state.seeThrough };
     }
 
     /**
@@ -290,10 +422,10 @@
     onTokenVisibilityChange(callback) {
       if (typeof callback !== "function") return () => {};
 
-      const entityManager = this._getEntityManager();
-      const schemaRoot = entityManager?.schema?.();
-
-      if (!schemaRoot || typeof schemaRoot.onAdd !== "function") {
+      const schemaRoot = this._getSchemaRoot();
+      if (!schemaRoot) {
+        // The room state may not be connected yet; subscribe when it is.
+        setTimeout(() => this.onTokenVisibilityChange(callback), 500);
         return () => {};
       }
 
@@ -314,11 +446,244 @@
 
         // Emit initial visibility state for newly tracked tokens
         try {
-          callback(networkId, !!token?.hidden, !!token?.translucent);
+          const state = this._readVisibility(token);
+          callback(networkId, state.hidden, state.translucent);
         } catch (_error) {}
       });
 
       return () => {};
+    }
+
+    /* ----------------- Local visibility overrides ----------------- */
+
+    /**
+     * Hide (or make translucent) a token ONLY on this client, on top of what
+     * Nivel20 decides. It can never reveal a token the server hides: the
+     * effective state is always the most restrictive of the native state and
+     * every active override. Several features can override the same token
+     * independently (keyed by `source`).
+     *
+     * Implemented by re-emitting the token's native "hidden" event, which
+     * Nivel20's own handlers use to hide the image, border and name label.
+     *
+     * @param {string} networkId
+     * @param {string} source - Feature key owning this override
+     * @param {"hidden"|"translucent"|null} mode - null removes the override
+     */
+    setLocalVisibilityOverride(networkId, source, mode) {
+      if (!networkId || !source) return;
+      this._ensureVisibilityOverrides();
+
+      let sources = this._visibilityOverrides.get(networkId);
+      if (mode) {
+        if (!sources) {
+          sources = new Map();
+          this._visibilityOverrides.set(networkId, sources);
+        }
+        if (sources.get(source) === mode) return;
+        sources.set(source, mode);
+      } else {
+        if (!sources || !sources.has(source)) return;
+        sources.delete(source);
+        if (!sources.size) this._visibilityOverrides.delete(networkId);
+      }
+
+      this._applyVisibilityOverride(networkId);
+    }
+
+    /**
+     * Current local override mode for a token from a given source.
+     * @returns {"hidden"|"translucent"|null}
+     */
+    getLocalVisibilityOverride(networkId, source) {
+      return this._visibilityOverrides?.get(networkId)?.get(source) || null;
+    }
+
+    /** Whether some feature hides this token from this user (e.g. Invisible). */
+    isLocallyHidden(networkId) {
+      const sources = this._visibilityOverrides?.get(networkId);
+      return !!sources && [...sources.values()].includes("hidden");
+    }
+
+    _ensureVisibilityOverrides() {
+      if (this._visibilityOverrides) return;
+      this._visibilityOverrides = new Map(); // networkId -> Map(source -> mode)
+      this._nativeVisibility = new Map(); // networkId -> { hidden, translucent }
+      this._visibilityHooked = new WeakSet(); // token entities with a listener
+      this._applyingOverride = false;
+
+      const schemaRoot = this._getSchemaRoot();
+      if (schemaRoot) {
+        // Tokens can be re-created by Nivel20 (e.g. after an edit); hook every
+        // new instance and re-apply its override.
+        schemaRoot.onAdd((_schema, networkId) => {
+          if (!networkId) return;
+          setTimeout(() => {
+            this._hookTokenVisibility(networkId);
+            if (this._visibilityOverrides.has(networkId)) {
+              this._applyVisibilityOverride(networkId);
+            }
+          }, 0);
+        });
+      }
+    }
+
+    _hookTokenVisibility(networkId) {
+      const token = this.getToken(networkId);
+      if (!token || typeof token.on !== "function") return null;
+      if (this._visibilityHooked.has(token)) return token;
+      this._visibilityHooked.add(token);
+
+      if (!this._nativeVisibility.has(networkId)) {
+        this._nativeVisibility.set(networkId, this._readVisibility(token));
+      }
+
+      token.on("hidden", (hidden, translucent) => {
+        // Ignore the events we emit ourselves; track the real native state.
+        if (this._applyingOverride) return;
+        this._nativeVisibility.set(networkId, {
+          hidden: !!hidden,
+          translucent: !!translucent,
+        });
+        if (this._visibilityOverrides.has(networkId)) {
+          // Re-apply after Nivel20 finished handling its own event.
+          Promise.resolve().then(() => this._applyVisibilityOverride(networkId));
+        }
+      });
+      return token;
+    }
+
+    _applyVisibilityOverride(networkId) {
+      const token = this._hookTokenVisibility(networkId);
+      if (!token || typeof token.fire !== "function") return;
+
+      const native = this._nativeVisibility.get(networkId) || {
+        hidden: false,
+        translucent: false,
+      };
+      const modes = Array.from(this._visibilityOverrides.get(networkId)?.values() || []);
+
+      let hidden = native.hidden;
+      let translucent = native.translucent;
+      const nativeFullyHidden = native.hidden && !native.translucent;
+
+      if (!nativeFullyHidden) {
+        if (modes.includes("hidden")) {
+          hidden = true;
+          translucent = false;
+        } else if (modes.includes("translucent")) {
+          hidden = true;
+          translucent = true;
+        }
+      }
+
+      this._applyingOverride = true;
+      try {
+        token.fire("hidden", hidden, translucent);
+      } catch (_error) {
+      } finally {
+        this._applyingOverride = false;
+      }
+    }
+
+    /**
+     * Prevent this client from selecting a token (removes Nivel20's
+     * "selectable" tag locally) for a given reason. The tag is restored only
+     * when no reason blocks it anymore and only if we were the ones removing it.
+     * @param {string} networkId
+     * @param {string} reason - Feature key
+     * @param {boolean} blocked
+     */
+    setSelectionBlocked(networkId, reason, blocked) {
+      if (!networkId || !reason) return;
+      if (!this._selectionBlocks) {
+        this._selectionBlocks = new Map(); // networkId -> Set(reason)
+        this._removedSelectable = new Set(); // networkIds we stripped
+      }
+
+      let reasons = this._selectionBlocks.get(networkId);
+      if (blocked) {
+        if (!reasons) {
+          reasons = new Set();
+          this._selectionBlocks.set(networkId, reasons);
+        }
+        reasons.add(reason);
+      } else if (reasons) {
+        reasons.delete(reason);
+        if (!reasons.size) this._selectionBlocks.delete(networkId);
+      }
+
+      this.refreshSelectionBlock(networkId);
+    }
+
+    /**
+     * Re-apply the selection block of a token (Nivel20 re-adds "selectable"
+     * when it resets a token's tags, e.g. after an edit).
+     * @param {string} networkId
+     */
+    refreshSelectionBlock(networkId) {
+      const tags = this.getToken(networkId)?.tags;
+      if (!tags || !this._selectionBlocks) return;
+
+      const blocked = this._selectionBlocks.has(networkId);
+      if (blocked) {
+        if (tags.has?.("selectable")) {
+          tags.remove?.("selectable");
+          this._removedSelectable.add(networkId);
+        }
+      } else if (this._removedSelectable.has(networkId)) {
+        this._removedSelectable.delete(networkId);
+        if (!tags.has?.("selectable")) tags.add?.("selectable");
+      }
+    }
+
+    /**
+     * Keep a decoration child (e.g. an aura) out of the bounds Nivel20 uses to
+     * place and size the token's name label, so big auras don't push the name
+     * away from the token. Wraps the label handler once per token entity.
+     * @param {string} networkId
+     * @param {Object} child - Child entity to ignore
+     */
+    excludeChildFromLabelBounds(networkId, child) {
+      const token = this.getToken(networkId);
+      if (!token || !child) return;
+      child.n21ExcludeFromLabelBounds = true;
+
+      const handler = token.script?.scripts?.find(
+        (script) => typeof script?.updateFollowTargetPosition === "function",
+      );
+      if (!handler) return;
+
+      if (!handler.n21LabelPatched) {
+        handler.n21LabelPatched = true;
+        const original = handler.updateFollowTargetPosition;
+        handler.updateFollowTargetPosition = function (...args) {
+          const excluded = (token.children || []).filter(
+            (c) => c?.n21ExcludeFromLabelBounds && c.enabled,
+          );
+          excluded.forEach((c) => {
+            c.enabled = false;
+          });
+          try {
+            return original.apply(this, args);
+          } finally {
+            excluded.forEach((c) => {
+              c.enabled = true;
+            });
+          }
+        };
+      }
+
+      handler.needsUpdate = true;
+    }
+
+    /**
+     * Whether a token is blocked from selection by any reason.
+     * @param {string} networkId
+     * @returns {boolean}
+     */
+    isSelectionBlocked(networkId) {
+      return !!this._selectionBlocks?.has(networkId);
     }
   }
 

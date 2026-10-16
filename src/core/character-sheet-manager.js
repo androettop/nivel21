@@ -74,18 +74,27 @@
       if (cached) return cached;
 
       const request = (async () => {
-        const response = await fetch(url, {
-          method: "GET",
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-        if (!response.ok) {
-          throw new Error(
-            `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
-          );
+        // Nivel20's firewall answers bursts of requests with an empty 202
+        // (a challenge); retry a few times with growing waits.
+        const waits = [2000, 5000, 10000];
+        for (let attempt = 0; ; attempt += 1) {
+          const response = await window._n21_.utils.queuedFetch(url, {
+            method: "GET",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+          const text = response.ok ? await response.text() : "";
+          if (response.ok && response.status !== 202 && text) {
+            const data = JSON.parse(text);
+            return data?.printable_hash || data;
+          }
+          if (attempt >= waits.length || (!response.ok && response.status !== 429)) {
+            throw new Error(
+              `CharacterSheetManager: failed to fetch ${url} (HTTP ${response.status})`,
+            );
+          }
+          await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
         }
-        const data = await response.json();
-        return data?.printable_hash || data;
       })();
 
       // Cache the in-flight promise so concurrent callers reuse it; drop it on
@@ -142,6 +151,27 @@
      */
     getProficiencyBonus(ph) {
       return ph?.info?.proficiency_bonus ?? 0;
+    }
+
+    /**
+     * Total saving throw bonus for an ability slug ("fue", "des", "con"...).
+     * @param {Object} ph
+     * @param {string} slug
+     * @returns {number|null} null if unknown
+     */
+    getSavingThrowBonus(ph, slug) {
+      const total = ph?.saving_throw?.[slug]?.total;
+      return Number.isFinite(total) ? total : null;
+    }
+
+    /**
+     * Armor class from a printable_hash.
+     * @param {Object} ph
+     * @returns {number|null}
+     */
+    getArmorClass(ph) {
+      const value = ph?.armor?.normal;
+      return Number.isFinite(value) ? value : null;
     }
 
     /**
