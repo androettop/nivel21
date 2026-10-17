@@ -532,6 +532,10 @@ Panel para lanzar efectos animados sobre el tablero (aliento de dragón, rayos, 
 - **Esc** - Deja de lanzar el efecto elegido
 - **Comando manual** - `/efecto tipo color x z [x2 z2]`
 
+<a id="effects-panel">
+ <img src="popup/img/effects-panel.png" alt="Efectos en el Tablero" />
+</a>
+
 ---
 
 ## Comunidad y Soporte
