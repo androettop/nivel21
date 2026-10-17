@@ -23,6 +23,7 @@
            project(x, z) -> {x, y} board point in canvas CSS pixels
          effects.play({ type, palette, from: {x, z}, to: {x, z} })
          effects.setPreview({ type, palette, from, to } | null)
+           palette: a PALETTES key or a custom { colors: ["#rrggbb"...], glow }
     ======================================================================= */
 
   // aim: drag from the origin to the target; otherwise a single click.
@@ -30,6 +31,12 @@
     { key: "aliento", label: "Aliento", aim: true },
     { key: "haz", label: "Haz", aim: true },
     { key: "cohete", label: "Cohete", aim: true },
+    { key: "flecha", label: "Flecha", aim: true },
+    { key: "bala", label: "Bala", aim: true },
+    { key: "pocion", label: "Poción", aim: true },
+    { key: "espadazo", label: "Espadazo", aim: false },
+    { key: "punetazo", label: "Puñetazo", aim: false },
+    { key: "lluvia-flechas", label: "Lluvia de flechas", aim: false },
     { key: "explosion", label: "Explosión", aim: false },
     { key: "nova", label: "Nova", aim: false },
     { key: "quemar", label: "Quemar", aim: false },
@@ -70,11 +77,23 @@
 
   const typeByKey = new Map(TYPES.map((t) => [t.key, t]));
   const paletteByKey = new Map(PALETTES.map((p) => [p.key, p]));
+  const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+  /** A palette key, or a custom palette object (validated). */
+  function resolvePalette(palette) {
+    if (typeof palette === "string") return paletteByKey.get(palette) || null;
+    const colors = Array.isArray(palette?.colors) ? palette.colors : [];
+    if (colors.length < 2 || colors.length > 8 || !colors.every((c) => HEX_COLOR.test(c))) return null;
+    return { key: "personalizado", glow: !!palette.glow, colors: colors.map((c) => c.toLowerCase()) };
+  }
 
   let getContainer = null;
   let project = null;
   let canvas = null;
   let ctx = null;
+  // Offscreen layer for effects whose particles show at a set opacity as
+  // a whole (overlaps don't get darker).
+  let layer = null;
   let frame = null;
   let lastTime = 0;
   let preview = null;
@@ -106,6 +125,8 @@
     const key = `${style}|${color}`;
     let cached = sprites.get(key);
     if (cached) return cached;
+    // Custom colors add sprites over time: keep the cache bounded.
+    if (sprites.size > 400) sprites.clear();
 
     const c = document.createElement("canvas");
     c.width = SPRITE_PX;
@@ -183,6 +204,224 @@
         life: rand(life * 0.6, life),
         size: rand(0.25, 0.45) * Math.max(1, radius * 0.5),
         endSize: rand(0.5, 0.9) * Math.max(1, radius * 0.6),
+      });
+    }
+  }
+
+  /** Crescent between two angles of a circle, thickest in the middle. */
+  function crescent(cx, cz, r, a0, a1, width, steps = 24) {
+    const outer = [];
+    const inner = [];
+    for (let i = 0; i <= steps; i += 1) {
+      const s = i / steps;
+      const a = a0 + (a1 - a0) * s;
+      const w = width * Math.sin(Math.PI * s);
+      outer.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r]);
+      inner.push([cx + Math.cos(a) * (r - w), cz + Math.sin(a) * (r - w)]);
+    }
+    return outer.concat(inner.reverse());
+  }
+
+  /** Same angle for the same board point on every client. */
+  function angleFromPoint(point) {
+    const n = Math.sin(point.x * 12.9898 + point.z * 78.233) * 43758.5453;
+    return (n - Math.floor(n)) * Math.PI * 2;
+  }
+
+  /**
+   * Arrow with its tip at (x, z) pointing along `angle`, drawn in its own
+   * frame (tip at 0, the arrow along -x, 1 = a cell). `sunk` hides that
+   * much of the front (stuck in the ground or a target).
+   */
+  function drawArrow(g, x, z, angle, alpha, tint, sunk = 0) {
+    const c = g.ctx;
+    if (!g.frame(x, z, angle)) return;
+    c.globalCompositeOperation = "source-over";
+    c.lineJoin = "round";
+    const tail = -1.0;
+    const edge = "rgba(15, 10, 5, 0.5)";
+
+    // Soft shadow on the board under a stuck arrow.
+    if (sunk > 0) {
+      c.globalAlpha = alpha * 0.25;
+      c.fillStyle = "#000000";
+      c.beginPath();
+      c.moveTo(-sunk, 0.03);
+      c.lineTo(tail + 0.04, 0.07);
+      c.lineTo(tail + 0.04, 0.1);
+      c.lineTo(-sunk, 0.045);
+      c.fill();
+    }
+    c.globalAlpha = alpha;
+
+    // Fletching: two curved feather vanes with a dark quill line.
+    for (const side of [1, -1]) {
+      c.beginPath();
+      c.moveTo(-0.66, side * 0.012);
+      c.quadraticCurveTo(-0.76, side * 0.075, -0.92, side * 0.07);
+      c.lineTo(-0.95, side * 0.012);
+      c.closePath();
+      c.fillStyle = tint;
+      c.fill();
+      c.fillStyle = "rgba(255, 255, 255, 0.25)";
+      c.beginPath();
+      c.moveTo(-0.7, side * 0.02);
+      c.quadraticCurveTo(-0.78, side * 0.05, -0.9, side * 0.05);
+      c.lineTo(-0.9, side * 0.03);
+      c.closePath();
+      c.fill();
+      c.strokeStyle = edge;
+      c.lineWidth = 0.006;
+      c.beginPath();
+      c.moveTo(-0.66, side * 0.012);
+      c.quadraticCurveTo(-0.76, side * 0.075, -0.92, side * 0.07);
+      c.lineTo(-0.95, side * 0.012);
+      c.stroke();
+    }
+
+    // Wooden shaft, lit on one side.
+    const shaft = c.createLinearGradient(0, -0.014, 0, 0.014);
+    shaft.addColorStop(0, "#7a5734");
+    shaft.addColorStop(0.45, "#d8b47e");
+    shaft.addColorStop(1, "#6a4a2b");
+    c.fillStyle = shaft;
+    c.fillRect(tail, -0.013, tail * -1 - Math.max(0.17, sunk), 0.026);
+    c.strokeStyle = edge;
+    c.lineWidth = 0.005;
+    c.strokeRect(tail, -0.013, tail * -1 - Math.max(0.17, sunk), 0.026);
+    // Nock.
+    c.fillStyle = "#2e2a26";
+    c.fillRect(tail - 0.03, -0.017, 0.035, 0.034);
+
+    if (sunk === 0) {
+      // Ferrule and a steel leaf-shaped head.
+      c.fillStyle = "#3a3632";
+      c.fillRect(-0.2, -0.018, 0.04, 0.036);
+      const steel = c.createLinearGradient(0, -0.05, 0, 0.05);
+      steel.addColorStop(0, "#f4f6f8");
+      steel.addColorStop(0.5, "#aab1b8");
+      steel.addColorStop(1, "#6f777f");
+      c.fillStyle = steel;
+      c.beginPath();
+      c.moveTo(0, 0);
+      c.quadraticCurveTo(-0.07, 0.05, -0.16, 0.022);
+      c.lineTo(-0.17, 0);
+      c.lineTo(-0.16, -0.022);
+      c.quadraticCurveTo(-0.07, -0.05, 0, 0);
+      c.fill();
+      c.strokeStyle = "rgba(20, 20, 25, 0.6)";
+      c.lineWidth = 0.006;
+      c.stroke();
+    }
+  }
+
+  const GLASS = "#e8f4fa";
+
+  /**
+   * Potion flask in its own frame (1 = a cell), upright on screen while the
+   * rest of the board may rotate: `spin` turns it in flight. `colors` is
+   * the palette: the liquid goes from its light to its dark tones.
+   */
+  function drawFlask(c, m, spin, colors, scale) {
+    const dpr = window.devicePixelRatio || 1;
+    const cell = Math.hypot(m[2], m[3]) / dpr;
+    const k = cell * scale * dpr;
+    const cos = Math.cos(spin) * k;
+    const sin = Math.sin(spin) * k;
+    c.setTransform(cos, sin, -sin, cos, m[4], m[5]);
+    c.globalCompositeOperation = "source-over";
+    c.globalAlpha = 1;
+    c.lineJoin = "round";
+
+    const R = 0.15; // body radius
+    const cy = 0.05; // body centre
+    const light = colors[Math.min(1, colors.length - 1)];
+    const dark = colors[Math.min(3, colors.length - 1)];
+    const outline = "rgba(10, 18, 22, 0.55)";
+    const thin = 0.012;
+
+    // Neck, lip and cork (behind the body's top edge).
+    c.fillStyle = "rgba(215, 236, 245, 0.55)";
+    c.strokeStyle = outline;
+    c.lineWidth = thin;
+    c.beginPath();
+    c.rect(-0.035, -0.19, 0.07, 0.11);
+    c.fill();
+    c.stroke();
+    c.beginPath();
+    c.rect(-0.047, -0.205, 0.094, 0.022);
+    c.fill();
+    c.stroke();
+    const cork = c.createLinearGradient(-0.035, 0, 0.035, 0);
+    cork.addColorStop(0, "#c08a55");
+    cork.addColorStop(1, "#6b4223");
+    c.fillStyle = cork;
+    c.beginPath();
+    c.rect(-0.03, -0.255, 0.06, 0.055);
+    c.fill();
+    c.stroke();
+
+    // Liquid: lower part of the body, light at the surface, dark below.
+    c.save();
+    c.beginPath();
+    c.arc(0, cy, R - thin, 0, Math.PI * 2);
+    c.clip();
+    const level = cy - R * 0.25;
+    const liquid = c.createLinearGradient(0, level, 0, cy + R);
+    liquid.addColorStop(0, light);
+    liquid.addColorStop(1, dark);
+    c.globalAlpha = 0.92;
+    c.fillStyle = liquid;
+    c.fillRect(-R, level, R * 2, R * 2);
+    // Meniscus.
+    c.globalAlpha = 0.6;
+    c.fillStyle = "#ffffff";
+    c.fillRect(-R, level, R * 2, 0.012);
+    c.restore();
+
+    // Glass over it: faint tint and a soft shine.
+    const glass = c.createRadialGradient(-0.05, cy - 0.06, 0.01, 0, cy, R);
+    glass.addColorStop(0, "rgba(255, 255, 255, 0.45)");
+    glass.addColorStop(0.5, "rgba(220, 240, 250, 0.12)");
+    glass.addColorStop(1, "rgba(180, 215, 230, 0.3)");
+    c.globalAlpha = 1;
+    c.fillStyle = glass;
+    c.beginPath();
+    c.arc(0, cy, R, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = outline;
+    c.lineWidth = thin;
+    c.stroke();
+    // Curved reflection on the left and a small highlight.
+    c.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    c.lineWidth = 0.018;
+    c.lineCap = "round";
+    c.beginPath();
+    c.arc(0, cy, R * 0.72, Math.PI * 1.05, Math.PI * 1.45);
+    c.stroke();
+    c.fillStyle = "rgba(255, 255, 255, 0.85)";
+    c.beginPath();
+    c.arc(0.06, cy + 0.07, 0.016, 0, Math.PI * 2);
+    c.fill();
+  }
+
+  const DUST = "#b9a88a";
+
+  function dust(fx, x, z, count) {
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = rand(0.6, 2);
+      addParticle(fx, {
+        x,
+        z,
+        vx: Math.cos(angle) * speed,
+        vz: Math.sin(angle) * speed,
+        drag: 6,
+        life: rand(0.3, 0.55),
+        size: 0.06,
+        endSize: 0.16,
+        color: DUST,
+        style: "soft",
       });
     }
   }
@@ -321,6 +560,373 @@
           if (f < 1) {
             g.ctx.globalAlpha = 1 - f;
             g.sprite(sprite(colors[1 % colors.length]), fx.dx, fx.dz, 1 + f * 1.8);
+          }
+        }
+      },
+    },
+
+    // Melee: a click on the target; the angle comes from the point so every
+    // client sees the same cut. The palette only tints them.
+    espadazo: {
+      setup(fx) {
+        fx.angle = angleFromPoint(fx.from);
+        fx.duration = 1;
+        fx.sweep = 0.2;
+        fx.span = 1.35; // radians each side of the attack direction
+        fx.radius = 1.4;
+        // Arc centre a bit before the target, so the cut passes through it.
+        fx.cx = fx.dx - Math.cos(fx.angle) * 0.8;
+        fx.cz = fx.dz - Math.sin(fx.angle) * 0.8;
+      },
+      update(fx, t, dt) {
+        if (t > fx.sweep) return;
+        const head = fx.angle - fx.span + (t / fx.sweep) * fx.span * 2;
+        const count = Math.round(140 * dt);
+        for (let i = 0; i < count; i += 1) {
+          const speed = rand(1.5, 4);
+          const out = head + rand(-0.4, 0.4);
+          addParticle(fx, {
+            x: fx.cx + Math.cos(head) * fx.radius,
+            z: fx.cz + Math.sin(head) * fx.radius,
+            vx: Math.cos(out) * speed,
+            vz: Math.sin(out) * speed,
+            drag: 5,
+            life: rand(0.2, 0.4),
+            size: 0.07,
+            endSize: 0.02,
+            colorAge: 0,
+          });
+        }
+      },
+      draw(fx, t, g) {
+        const c = g.ctx;
+        const start = fx.angle - fx.span;
+        const end = fx.angle + fx.span;
+        const head = Math.min(end, start + (t / fx.sweep) * fx.span * 2);
+        // After the sweep the trail catches up with the head and fades.
+        const tailLag = 2.2 - Math.max(0, t - fx.sweep) * 4;
+        const tail = Math.max(start, head - Math.max(0, tailLag));
+        if (head - tail < 0.02) return;
+        const fade = t < fx.sweep ? 1 : clamp(1 - (t - fx.sweep) / 0.6, 0, 1);
+        const tint = fx.palette.colors[Math.min(1, fx.palette.colors.length - 1)];
+        c.globalAlpha = 0.6 * fade;
+        c.fillStyle = tint;
+        g.path(crescent(fx.cx, fx.cz, fx.radius + 0.12, tail, head, 0.75));
+        c.fill();
+        c.globalCompositeOperation = "source-over";
+        c.globalAlpha = 0.95 * fade;
+        c.fillStyle = "#ffffff";
+        g.path(crescent(fx.cx, fx.cz, fx.radius, tail, head, 0.34));
+        c.fill();
+        if (fx.palette.glow) c.globalCompositeOperation = "lighter";
+      },
+    },
+
+    punetazo: {
+      setup(fx) {
+        fx.angle = angleFromPoint(fx.from);
+        fx.duration = 0.9;
+        fx.spikes = Array.from({ length: 9 }, (_, i) => ({
+          angle: (i / 9) * Math.PI * 2 + rand(-0.15, 0.15),
+          length: rand(0.55, 1),
+        }));
+        // Dust thrown forward, away from the attacker.
+        for (let i = 0; i < 22; i += 1) {
+          const angle = fx.angle + rand(-0.9, 0.9);
+          const speed = rand(1, 4);
+          addParticle(fx, {
+            x: fx.dx,
+            z: fx.dz,
+            vx: Math.cos(angle) * speed,
+            vz: Math.sin(angle) * speed,
+            drag: 6,
+            life: rand(0.35, 0.7),
+            size: rand(0.08, 0.16),
+            endSize: rand(0.2, 0.3),
+          });
+        }
+      },
+      draw(fx, t, g) {
+        const c = g.ctx;
+        const colors = fx.palette.colors;
+        // Flash.
+        if (t < 0.15) {
+          c.globalAlpha = 1 - t / 0.15;
+          g.sprite(sprite(colors[0]), fx.dx, fx.dz, 0.7);
+        }
+        // Shockwave ring.
+        const f = t / 0.35;
+        if (f < 1) {
+          const r = 0.2 + easeOut(f) * 1.1;
+          const half = 0.07 * (1 - f) + 0.02;
+          c.globalAlpha = (1 - f) * 0.9;
+          c.fillStyle = colors[Math.min(1, colors.length - 1)];
+          g.path(circle(r + half).map(([x, z]) => [fx.dx + x, fx.dz + z]));
+          g.path(circle(Math.max(0, r - half)).reverse().map(([x, z]) => [fx.dx + x, fx.dz + z]), true);
+          c.fill("evenodd");
+        }
+        // Comic impact spikes.
+        const k = t / 0.3;
+        if (k < 1) {
+          const grow = easeOut(Math.min(1, k * 2));
+          c.globalCompositeOperation = "source-over";
+          c.globalAlpha = 1 - k * k;
+          c.fillStyle = "#ffffff";
+          for (const spike of fx.spikes) {
+            const a = spike.angle;
+            const inner = 0.3;
+            const outer = inner + spike.length * grow;
+            const w = 0.06;
+            const px = -Math.sin(a) * w;
+            const pz = Math.cos(a) * w;
+            g.path([
+              [fx.dx + Math.cos(a) * inner + px, fx.dz + Math.sin(a) * inner + pz],
+              [fx.dx + Math.cos(a) * outer, fx.dz + Math.sin(a) * outer],
+              [fx.dx + Math.cos(a) * inner - px, fx.dz + Math.sin(a) * inner - pz],
+            ]);
+            c.fill();
+          }
+          if (fx.palette.glow) c.globalCompositeOperation = "lighter";
+        }
+      },
+    },
+
+    flecha: {
+      setup(fx) {
+        fx.travel = clamp(fx.dist / 30, 0.12, 1);
+        fx.duration = fx.travel + 1.3;
+      },
+      update(fx, t) {
+        if (t > fx.travel && !fx.hit) {
+          fx.hit = true;
+          dust(fx, fx.dx, fx.dz, 10);
+        }
+      },
+      draw(fx, t, g) {
+        const tint = fx.palette.colors[Math.min(1, fx.palette.colors.length - 1)];
+        const k = Math.min(1, t / fx.travel);
+        const x = fx.dx * k;
+        const z = fx.dz * k;
+        if (k < 1) {
+          // Faint streak behind the arrow.
+          const back = Math.min(1.6, fx.dist * k);
+          g.ctx.globalAlpha = 0.35;
+          g.ctx.fillStyle = tint;
+          const nx = -Math.sin(fx.angle) * 0.03;
+          const nz = Math.cos(fx.angle) * 0.03;
+          const bx = x - Math.cos(fx.angle) * back;
+          const bz = z - Math.sin(fx.angle) * back;
+          g.path([[x + nx, z + nz], [x - nx, z - nz], [bx, bz]]);
+          g.ctx.fill();
+          drawArrow(g, x, z, fx.angle, 1, tint);
+        } else {
+          const fade = clamp(1 - (t - fx.travel - 0.9) / 0.4, 0, 1);
+          drawArrow(g, fx.dx, fx.dz, fx.angle, fade, tint, 0.18);
+        }
+      },
+    },
+
+    bala: {
+      setup(fx) {
+        fx.travel = clamp(fx.dist / 45, 0.08, 0.6);
+        fx.duration = fx.travel + 0.8;
+        // Muzzle: sparks thrown forward in a narrow cone.
+        for (let i = 0; i < 14; i += 1) {
+          const angle = fx.angle + rand(-0.35, 0.35);
+          const speed = rand(2, 6);
+          addParticle(fx, {
+            x: Math.cos(fx.angle) * 0.25,
+            z: Math.sin(fx.angle) * 0.25,
+            vx: Math.cos(angle) * speed,
+            vz: Math.sin(angle) * speed,
+            drag: 9,
+            life: rand(0.15, 0.3),
+            size: rand(0.1, 0.18),
+            endSize: 0.03,
+          });
+        }
+      },
+      update(fx, t) {
+        if (t <= fx.travel || fx.hit) return;
+        fx.hit = true;
+        fx.hitAt = t;
+        burst(fx, fx.dx, fx.dz, 26, 0.5, 0.45);
+        for (let i = 0; i < 10; i += 1) {
+          // Sparks bounce back towards the shooter.
+          const angle = fx.angle + Math.PI + rand(-1.1, 1.1);
+          const speed = rand(2, 5);
+          addParticle(fx, {
+            x: fx.dx,
+            z: fx.dz,
+            vx: Math.cos(angle) * speed,
+            vz: Math.sin(angle) * speed,
+            drag: 7,
+            life: rand(0.2, 0.4),
+            size: 0.05,
+            endSize: 0.02,
+            colorAge: 0,
+          });
+        }
+      },
+      draw(fx, t, g) {
+        const c = g.ctx;
+        const colors = fx.palette.colors;
+        const ux = Math.cos(fx.angle);
+        const uz = Math.sin(fx.angle);
+        // Muzzle flash.
+        if (t < 0.12) {
+          const f = t / 0.12;
+          c.globalAlpha = 1 - f;
+          g.sprite(sprite(colors[0]), ux * 0.3, uz * 0.3, 0.35 + f * 0.25);
+          g.sprite(sprite(colors[Math.min(2, colors.length - 1)]), ux * 0.5, uz * 0.5, 0.25);
+        }
+        // Tracer: a short bright streak that runs to the target.
+        if (t <= fx.travel) {
+          const k = t / fx.travel;
+          const hx = fx.dx * k;
+          const hz = fx.dz * k;
+          const tail = Math.min(1.4, fx.dist * k);
+          const bx = hx - ux * tail;
+          const bz = hz - uz * tail;
+          for (const [color, w, alpha] of [
+            [colors[Math.min(1, colors.length - 1)], 0.09, 0.55],
+            ["#ffffff", 0.035, 1],
+          ]) {
+            c.globalAlpha = alpha;
+            c.fillStyle = color;
+            g.path([[hx + uz * w, hz - ux * w], [hx + ux * w, hz + uz * w], [hx - uz * w, hz + ux * w], [bx, bz]]);
+            c.fill();
+          }
+        }
+        // Impact flash.
+        if (fx.hitAt !== undefined) {
+          const f = (t - fx.hitAt) / 0.2;
+          if (f < 1) {
+            c.globalAlpha = 1 - f;
+            g.sprite(sprite(colors[0]), fx.dx, fx.dz, 0.35 + f * 0.5);
+          }
+        }
+      },
+    },
+
+    pocion: {
+      setup(fx) {
+        fx.travel = clamp(fx.dist / 10, 0.5, 1.4);
+        fx.peak = clamp(fx.dist * 0.3, 0.8, 3.5); // cells above the board
+        fx.duration = fx.travel + 2.6;
+        // Liquid is painted with its color, never added up into white, and
+        // the splash is see-through.
+        fx.paint = true;
+        fx.layerAlpha = 0.5;
+      },
+      update(fx, t) {
+        if (t <= fx.travel || fx.broken) return;
+        fx.broken = true;
+        const colors = fx.palette.colors;
+        // Liquid splashes out, then stays as a puddle that fades.
+        for (let i = 0; i < 40; i += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = rand(0.5, 4.5);
+          addParticle(fx, {
+            x: fx.dx,
+            z: fx.dz,
+            vx: Math.cos(angle) * speed,
+            vz: Math.sin(angle) * speed,
+            drag: 7,
+            life: rand(2, 2.5),
+            size: rand(0.1, 0.28) * (speed < 2 ? 1.8 : 1),
+            style: "disc",
+            colorAge: rand(0.3, 0.75),
+            fadeOut: 0.4,
+          });
+        }
+        // Glass shards.
+        for (let i = 0; i < 12; i += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = rand(1.5, 4);
+          addParticle(fx, {
+            x: fx.dx,
+            z: fx.dz,
+            vx: Math.cos(angle) * speed,
+            vz: Math.sin(angle) * speed,
+            drag: 6,
+            life: rand(0.6, 1.1),
+            size: 0.05,
+            style: "disc",
+            color: GLASS,
+            fadeOut: 0.5,
+          });
+        }
+        fx.flashColor = colors[0];
+      },
+      draw(fx, t, g) {
+        const c = g.ctx;
+        const colors = fx.palette.colors;
+        if (t <= fx.travel) {
+          const k = t / fx.travel;
+          const x = fx.dx * k;
+          const z = fx.dz * k;
+          const height = 4 * fx.peak * k * (1 - k);
+          // Shadow on the board, smaller and fainter the higher it flies.
+          c.globalCompositeOperation = "source-over";
+          c.globalAlpha = 0.45 - height * 0.07;
+          g.sprite(sprite("#000000"), x, z, 0.28 - height * 0.03);
+          const m = g.lifted(x, z, height);
+          if (m) drawFlask(c, m, k * Math.PI * 3, colors, 1.15 + height * 0.12);
+          return;
+        }
+        const f = (t - fx.travel) / 0.3;
+        if (f < 1) {
+          c.globalAlpha = 1 - f;
+          g.sprite(sprite(fx.flashColor || colors[0]), fx.dx, fx.dz, 0.6 + f * 1.4);
+        }
+      },
+    },
+
+    "lluvia-flechas": {
+      setup(fx) {
+        fx.duration = 2.2;
+        const base = angleFromPoint(fx.from);
+        fx.arrows = Array.from({ length: 16 }, () => {
+          const a = Math.random() * Math.PI * 2;
+          const r = Math.sqrt(Math.random()) * 1.9;
+          return {
+            x: Math.cos(a) * r,
+            z: Math.sin(a) * r,
+            angle: base + rand(-0.25, 0.25),
+            delay: rand(0, 0.7),
+            flight: 0.14,
+            hit: false,
+          };
+        });
+      },
+      update(fx, t) {
+        for (const arrow of fx.arrows) {
+          if (!arrow.hit && t > arrow.delay + arrow.flight) {
+            arrow.hit = true;
+            dust(fx, arrow.x, arrow.z, 4);
+          }
+        }
+      },
+      draw(fx, t, g) {
+        const tint = fx.palette.colors[Math.min(1, fx.palette.colors.length - 1)];
+        const fade = clamp(1 - (t - 1.7) / 0.5, 0, 1);
+        for (const arrow of fx.arrows) {
+          const k = (t - arrow.delay) / arrow.flight;
+          if (k < 0) continue;
+          if (k < 1) {
+            // Comes in from 2.5 cells away along its angle.
+            const back = (1 - k) * 2.5;
+            drawArrow(
+              g,
+              arrow.x - Math.cos(arrow.angle) * back,
+              arrow.z - Math.sin(arrow.angle) * back,
+              arrow.angle,
+              0.6 + 0.4 * k,
+              tint,
+            );
+          } else {
+            drawArrow(g, arrow.x, arrow.z, arrow.angle, fade, tint, 0.18);
           }
         }
       },
@@ -631,6 +1237,33 @@
         c.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
         c.drawImage(img, -r, -r, r * 2, r * 2);
       },
+      /**
+       * Board point (x, z) seen `height` cells above the board: the local
+       * affine there, raised on screen. Shapes drawn with it face the
+       * board's axes, like everything else.
+       */
+      lifted(x, z, height) {
+        const m = view.affineAt(ox + x, oz + z);
+        if (!m) return null;
+        const cell = Math.hypot(m[2], m[3]);
+        return [m[0], m[1], m[2], m[3], m[4], m[5] - height * cell];
+      },
+      /** Local frame at (x, z) turned by `angle` (x axis = that direction). */
+      frame(x, z, angle) {
+        const m = view.affineAt(ox + x, oz + z);
+        if (!m) return false;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        c.setTransform(
+          m[0] * cos + m[2] * sin,
+          m[1] * cos + m[3] * sin,
+          -m[0] * sin + m[2] * cos,
+          -m[1] * sin + m[3] * cos,
+          m[4],
+          m[5],
+        );
+        return true;
+      },
       // Projected polygon; `keep` adds it to the current path (holes).
       path(points, keep = false) {
         c.setTransform(1, 0, 0, 1, 0, 0);
@@ -657,7 +1290,7 @@
       else alpha = k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9;
       if (p.twinkle) alpha *= 0.5 + 0.5 * Math.sin(p.seed + p.age * 18);
       c.globalAlpha = clamp(alpha * p.alpha, 0, 1);
-      const color = colorFor(fx.palette, p.colorAge ?? k, p.seed);
+      const color = p.color || colorFor(fx.palette, p.colorAge ?? k, p.seed);
       g.sprite(sprite(color, p.style), p.x, p.z, size);
     }
   }
@@ -738,9 +1371,27 @@
 
       if (!view) continue;
       const g = painter(c, view, fx.from.x, fx.from.z);
-      c.globalCompositeOperation = fx.palette.glow ? "lighter" : "source-over";
+      c.globalCompositeOperation = fx.palette.glow && !fx.paint ? "lighter" : "source-over";
       fx.behavior.draw?.(fx, t, g);
-      drawParticles(g, fx);
+      // Draws may switch blending (arrows are always painted): restore it.
+      c.globalCompositeOperation = fx.palette.glow && !fx.paint ? "lighter" : "source-over";
+      if (fx.layerAlpha === undefined) {
+        drawParticles(g, fx);
+        continue;
+      }
+      if (!layer) layer = document.createElement("canvas");
+      if (layer.width !== canvas.width || layer.height !== canvas.height) {
+        layer.width = canvas.width;
+        layer.height = canvas.height;
+      }
+      const lc = layer.getContext("2d");
+      lc.setTransform(1, 0, 0, 1, 0, 0);
+      lc.clearRect(0, 0, layer.width, layer.height);
+      drawParticles(painter(lc, view, fx.from.x, fx.from.z), fx);
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.globalCompositeOperation = "source-over";
+      c.globalAlpha = fx.layerAlpha;
+      c.drawImage(layer, 0, 0);
     }
 
     if (preview && view) drawPreview(c, view);
@@ -771,7 +1422,7 @@
 
   function play({ type, palette, from, to }) {
     const typeDef = typeByKey.get(type);
-    const paletteDef = paletteByKey.get(palette);
+    const paletteDef = resolvePalette(palette);
     if (!typeDef || !paletteDef || !from) return false;
     const target = typeDef.aim && to ? to : from;
     const dx = target.x - from.x;
@@ -804,7 +1455,7 @@
       return;
     }
     const type = typeByKey.get(next.type);
-    const palette = paletteByKey.get(next.palette);
+    const palette = resolvePalette(next.palette);
     if (!type || !palette || !next.from || !next.to) return;
     preview = { type, palette, from: next.from, to: next.to };
     wake();
