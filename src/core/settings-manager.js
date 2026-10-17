@@ -372,6 +372,14 @@
       });
 
       this.registerSetting({
+        name: "feature.effects-panel.enabled",
+        label: "Efectos en el tablero",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.straighten-camera.enabled",
         label: "Enderezar cámara",
         type: "boolean",
@@ -503,6 +511,19 @@
       this.registerSetting({
         name: "chat-consent.ping",
         label: "Enviar al chat los pings",
+        type: "select",
+        defaultValue: "ask",
+        category: "chat",
+        options: [
+          { value: "ask", label: "Preguntar" },
+          { value: "always", label: "Enviar siempre" },
+          { value: "never", label: "No enviar" },
+        ],
+      });
+
+      this.registerSetting({
+        name: "chat-consent.efectos",
+        label: "Enviar al chat los efectos",
         type: "select",
         defaultValue: "ask",
         category: "chat",

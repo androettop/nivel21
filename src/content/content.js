@@ -56,6 +56,7 @@
     await injectScript("src/core/money.js");
     await injectScript("src/core/resource-icons.js");
     await injectScript("src/core/weather-renderer.js");
+    await injectScript("src/core/effects-renderer.js");
     await injectScript("src/core/action-bar-layout.js");
     await injectScript("src/core/chat-consent.js");
 
@@ -115,6 +116,7 @@
       injectScript("src/features/token-notes.js"),
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),
+      injectScript("src/features/effects-panel.js"),
       injectScript("src/features/straighten-camera.js"),
       injectScript("src/features/camera-rotation-lock.js"),
       injectScript("src/features/generate-spell-actions.js"),
