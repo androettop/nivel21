@@ -522,6 +522,22 @@ Sistema de marcadores visuales animados para señalar ubicaciones en el mapa. So
 
 ---
 
+### Efectos en el Tablero
+
+Panel para lanzar efectos animados sobre el tablero (aliento de dragón, rayos, proyectiles, explosiones...). Lo pueden usar el DM y los jugadores, y todos los que tienen la extensión lo ven en su mapa.
+
+- **Botón de rayo en la barra derecha** - Abre el panel de efectos
+- **Tipo de efecto** - La forma: Aliento, Haz y Cohete (se apuntan arrastrando desde el origen hasta el objetivo) o Explosión, Nova, Quemar, Brillo, Burbujeo y Salpicadura (un clic en el tablero)
+- **Color** - Fuego, Encanto, Ácido, Muerte, Sagrada, Sangre, Escarcha, Limo, Humo, Agua o Magia; cada uno es una gama de colores
+- **Esc** - Deja de lanzar el efecto elegido
+- **Comando manual** - `/efecto tipo color x z [x2 z2]`
+
+<a id="effects-panel">
+ <img src="popup/img/effects-panel.png" alt="Efectos en el Tablero" />
+</a>
+
+---
+
 ## Comunidad y Soporte
 
 Este proyecto se desarrolla en conjunto con la comunidad.

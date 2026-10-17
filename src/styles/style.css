@@ -3010,3 +3010,179 @@ body.darkmode--activated .card.floating-panel.n21-panel input[type="number"] {
 	border-color: rgba(127, 127, 127, 0.5);
 	box-shadow: none;
 }
+
+/* ----------------------------- Effects panel ----------------------------- */
+
+.n21-effects-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 0;
+}
+
+body.n21-effects-armed #application-canvas {
+	cursor: crosshair !important;
+}
+
+.n21-effects {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+	font-size: 14px;
+}
+
+.n21-effects-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.n21-effects-label {
+	font-weight: 600;
+}
+
+.n21-effects-select {
+	position: relative;
+}
+
+.n21-effects-select-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 7px 10px;
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.12);
+	color: inherit;
+	font-size: 15px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.n21-effects-select-btn:hover,
+.n21-effects-select-btn:focus-visible {
+	border-color: rgba(127, 127, 127, 0.75);
+	outline: none;
+}
+
+.n21-effects-select-btn i {
+	margin-left: auto;
+	opacity: 0.7;
+}
+
+.n21-effects-hint-tag {
+	font-size: 14px;
+	opacity: 0.6;
+}
+
+.n21-effects-options {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	z-index: 5;
+	margin: 0;
+	padding: 4px;
+	list-style: none;
+	border: 1px solid rgba(127, 127, 127, 0.4);
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+body.darkmode--activated .n21-effects-options {
+	background: #1e1e20;
+}
+
+.n21-effects-option {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 7px 10px;
+	border-radius: 6px;
+	font-size: 15px;
+	cursor: pointer;
+}
+
+.n21-effects-option:hover,
+.n21-effects-option:focus {
+	background: rgba(127, 127, 127, 0.16);
+	outline: none;
+}
+
+.n21-effects-option[aria-selected="true"] {
+	background: rgba(127, 127, 127, 0.24);
+	font-weight: 600;
+}
+
+.n21-effects-colors {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.n21-effects-color {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	min-width: 0;
+	padding: 7px 8px;
+	border: 1px solid rgba(127, 127, 127, 0.35);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.06);
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.n21-effects-color > span:last-child {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.n21-effects-color:hover {
+	border-color: rgba(127, 127, 127, 0.6);
+	background: rgba(127, 127, 127, 0.12);
+}
+
+.n21-effects-color[aria-pressed="true"],
+.n21-effects-color[aria-pressed="true"]:hover {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.25);
+	box-shadow: inset 0 0 0 1px #822020;
+}
+
+.n21-effects-swatch {
+	flex: 0 0 auto;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.5);
+}
+
+.n21-effects-help {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.35;
+	/* Room for the longest hint (2 lines) so the panel never changes height. */
+	min-height: calc(2 * 1.35em);
+	opacity: 0.75;
+}
+
+/* The type list drops over the panel's edge instead of being clipped. */
+.card.floating-panel.n21-effects-panel,
+.n21-effects-panel .card-body,
+.n21-effects-panel .floating-block {
+	overflow: visible;
+}

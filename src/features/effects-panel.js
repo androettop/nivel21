@@ -1,0 +1,433 @@
+(async () => {
+  try {
+    /* =======================
+       Feature: Effects Panel (Efectos)
+
+       Panel abierto desde el menú rápido (barra derecha) para lanzar efectos
+       sobre el tablero: el "Tipo de efecto" define la forma (aliento, haz,
+       cohete, explosión...) y el color, la paleta (fuego, ácido, magia...).
+
+       Elegir un color arma el efecto: los de "Apuntar" se arrastran desde el
+       origen hasta el objetivo y los de "Punto" se lanzan con un clic. Cada
+       efecto se envía al chat como `/efecto tipo color x z [x2 z2]` y todos
+       los que tienen la extensión lo ven en su tablero.
+    ======================= */
+
+    const { loadManagers } = window._n21_;
+    const effects = window._n21_?.effects;
+
+    const [
+      QuickMenuUIManager,
+      FloatingPanelManager,
+      ChatManager,
+      ChatCommandsManager,
+      CameraManager,
+      SettingsManager,
+    ] = await loadManagers(
+      "QuickMenuUIManager",
+      "FloatingPanelManager",
+      "ChatManager",
+      "ChatCommandsManager",
+      "CameraManager",
+      "SettingsManager",
+    );
+
+    if (!SettingsManager.get("feature.effects-panel.enabled")) return;
+    if (!effects) return;
+
+    const COMMAND_NAME = "efecto";
+    const TOGGLE_ID = "n21-effects-panel-toggle";
+    const PANEL_TITLE = "Efectos";
+    const PANEL_CLASS = "n21-effects-panel";
+    const PANEL_STYLE = "width: 344px; min-width: 344px; max-width: 344px; height: auto; min-height: 0;";
+    const SEND_DEBOUNCE_MS = 400;
+    const MIN_AIM_DISTANCE = 0.3; // cells
+    const MAX_COORD = 100000;
+
+    const typeByKey = new Map(effects.TYPES.map((t) => [t.key, t]));
+    const paletteByKey = new Map(effects.PALETTES.map((p) => [p.key, p]));
+
+    let selectedType = effects.TYPES[0].key;
+    let armedPalette = null;
+    let drag = null; // { pointerId, from }
+    let lastSentAt = 0;
+
+    function boardCanvas() {
+      return document.querySelector("#application-canvas");
+    }
+
+    effects.mount(
+      () => boardCanvas()?.parentElement || null,
+      (x, z) => CameraManager.worldToScreen(x, z, 0),
+    );
+
+    /* ---------------------------- chat ---------------------------- */
+
+    function formatCoordinate(value) {
+      return (Math.round(Number(value) * 100) / 100).toString();
+    }
+
+    function getSenderInfo() {
+      return document.getElementById("room_message_sender_info")?.value || null;
+    }
+
+    function parseEffectMessage(text) {
+      if (typeof text !== "string") return null;
+      const num = "(-?\\d+(?:\\.\\d+)?)";
+      const match = text
+        .trim()
+        .match(new RegExp(`^/${COMMAND_NAME}\\s+(\\S+)\\s+(\\S+)\\s+${num}\\s+${num}(?:\\s+${num}\\s+${num})?\\s*$`, "i"));
+      if (!match) return null;
+
+      const type = typeByKey.get(match[1].toLowerCase());
+      const palette = paletteByKey.get(match[2].toLowerCase());
+      if (!type || !palette) return null;
+
+      const coords = match.slice(3).filter((v) => v !== undefined).map(Number);
+      if (coords.some((v) => !Number.isFinite(v) || Math.abs(v) > MAX_COORD)) return null;
+
+      const from = { x: coords[0], z: coords[1] };
+      const to = coords.length === 4 ? { x: coords[2], z: coords[3] } : null;
+      if (type.aim && !to) return null;
+      return { type: type.key, palette: palette.key, from, to };
+    }
+
+    function sendEffect(typeKey, paletteKey, from, to) {
+      const now = Date.now();
+      if (now - lastSentAt < SEND_DEBOUNCE_MS) return;
+      lastSentAt = now;
+
+      let command = `/${COMMAND_NAME} ${typeKey} ${paletteKey} ${formatCoordinate(from.x)} ${formatCoordinate(from.z)}`;
+      if (to) command += ` ${formatCoordinate(to.x)} ${formatCoordinate(to.z)}`;
+
+      const options = { visibility: "public" };
+      const senderInfo = getSenderInfo();
+      if (senderInfo) options.sender_info = senderInfo;
+
+      // The effect reaches everyone (and shows) through this message.
+      window._n21_.chatConsent
+        ?.confirm("efectos", {
+          title: "¿Enviar el efecto al chat?",
+          description: "Los efectos se muestran a todos mediante un mensaje en el chat.",
+          required: true,
+        })
+        .then((send) => {
+          if (send) ChatManager.send(command, options);
+        });
+    }
+
+    ChatManager.onMessage((messageData) => {
+      const effect = parseEffectMessage(messageData?.message);
+      if (effect) effects.play(effect);
+      return true;
+    });
+
+    ChatCommandsManager.registerCommand(COMMAND_NAME, {
+      description: "Lanzar un efecto en el tablero (tipo, color, origen y objetivo)",
+      params: [
+        {
+          name: "tipo",
+          getSuggestions: (fragment) =>
+            effects.TYPES.map((t) => t.key).filter((k) => k.startsWith(String(fragment || "").toLowerCase())),
+        },
+        {
+          name: "color",
+          getSuggestions: (fragment) =>
+            effects.PALETTES.map((p) => p.key).filter((k) => k.startsWith(String(fragment || "").toLowerCase())),
+        },
+        { name: "x" },
+        { name: "z" },
+        { name: "x2" },
+        { name: "z2" },
+      ],
+      validate: ({ input }) => !!parseEffectMessage(input),
+    });
+
+    /* ---------------------------- board input ---------------------------- */
+
+    function worldFromEvent(event) {
+      const canvas = boardCanvas();
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      const point = CameraManager.screenToWorld(event.clientX - rect.left, event.clientY - rect.top, 0);
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.z)) return null;
+      return { x: point.x, z: point.z };
+    }
+
+    function block(event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+
+    function isArmedBoardEvent(event) {
+      return !!armedPalette && event.target === boardCanvas() && (event.button === 0 || event.button === undefined);
+    }
+
+    function onPointerDown(event) {
+      if (!isArmedBoardEvent(event)) return;
+      block(event);
+      const from = worldFromEvent(event);
+      if (!from) return;
+
+      const type = typeByKey.get(selectedType);
+      if (!type.aim) {
+        sendEffect(type.key, armedPalette, from, null);
+        return;
+      }
+      drag = { pointerId: event.pointerId, from };
+      effects.setPreview({ type: type.key, palette: armedPalette, from, to: from });
+    }
+
+    function onPointerMove(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      block(event);
+      const to = worldFromEvent(event);
+      if (!to) return;
+      effects.setPreview({ type: selectedType, palette: armedPalette, from: drag.from, to });
+    }
+
+    function onPointerUp(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      block(event);
+      const { from } = drag;
+      const to = worldFromEvent(event);
+      drag = null;
+      effects.setPreview(null);
+      if (!to || Math.hypot(to.x - from.x, to.z - from.z) < MIN_AIM_DISTANCE) return;
+      sendEffect(selectedType, armedPalette, from, to);
+    }
+
+    function cancelDrag() {
+      if (!drag) return;
+      drag = null;
+      effects.setPreview(null);
+    }
+
+    // Capture on window so the board never sees the clicks (no panning or
+    // token selection) while an effect is armed.
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerUp, true);
+    window.addEventListener("pointercancel", cancelDrag, true);
+    for (const type of ["mousedown", "mouseup", "click", "touchstart", "touchend"]) {
+      window.addEventListener(
+        type,
+        (event) => {
+          if (drag || isArmedBoardEvent(event)) block(event);
+        },
+        { capture: true, passive: false },
+      );
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !armedPalette) return;
+      cancelDrag();
+      setArmed(null);
+    });
+
+    /* ---------------------------- panel ---------------------------- */
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = String(value ?? "");
+      return div.innerHTML;
+    }
+
+    function swatchBackground(palette) {
+      const colors = palette.colors;
+      if (palette.random) return `conic-gradient(${colors.join(", ")}, ${colors[0]})`;
+      return `radial-gradient(circle at 35% 35%, ${colors[0]}, ${colors[2]} 55%, ${colors[colors.length - 2]})`;
+    }
+
+    function typeHint(type) {
+      return type.aim ? "Apuntar" : "Punto";
+    }
+
+    function buildPanelHtml() {
+      const type = typeByKey.get(selectedType);
+      const options = effects.TYPES.map(
+        (t) => `
+          <li class="n21-effects-option" role="option" tabindex="-1" data-type="${t.key}" aria-selected="${t.key === selectedType}">
+            <span>${escapeHtml(t.label)}</span><span class="n21-effects-hint-tag">${typeHint(t)}</span>
+          </li>`,
+      ).join("");
+      const colors = effects.PALETTES.map(
+        (p) => `
+          <button type="button" class="n21-effects-color" data-palette="${p.key}" aria-pressed="false">
+            <span class="n21-effects-swatch" style="background: ${swatchBackground(p)}"></span>
+            <span>${escapeHtml(p.label)}</span>
+          </button>`,
+      ).join("");
+
+      return `
+        <div class="n21-effects">
+          <div class="n21-effects-field">
+            <span class="n21-effects-label" id="n21-effects-type-label">Tipo de efecto</span>
+            <div class="n21-effects-select">
+              <button type="button" class="n21-effects-select-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="n21-effects-type-label">
+                <span class="n21-effects-select-name">${escapeHtml(type.label)}</span>
+                <span class="n21-effects-hint-tag">${typeHint(type)}</span>
+                <i class="ft-chevron-down" aria-hidden="true"></i>
+              </button>
+              <ul class="n21-effects-options" role="listbox" hidden>${options}</ul>
+            </div>
+          </div>
+          <div class="n21-effects-colors">${colors}</div>
+          <p class="n21-effects-help" aria-live="polite"></p>
+        </div>`;
+    }
+
+    function getPanel() {
+      return document.querySelector(`.floating-panel.${PANEL_CLASS}`);
+    }
+
+    function updateHelp() {
+      const panel = getPanel();
+      const help = panel?.querySelector(".n21-effects-help");
+      if (!help) return;
+      const type = typeByKey.get(selectedType);
+      if (!armedPalette) {
+        help.textContent = "Elige un color para lanzar el efecto.";
+      } else if (type.aim) {
+        help.textContent = "Arrastra en el tablero desde el origen hasta el objetivo. Esc para terminar.";
+      } else {
+        help.textContent = "Haz clic en el tablero para lanzarlo. Esc para terminar.";
+      }
+    }
+
+    function setArmed(paletteKey) {
+      armedPalette = paletteKey && paletteByKey.has(paletteKey) ? paletteKey : null;
+      document.body.classList.toggle("n21-effects-armed", !!armedPalette);
+      getPanel()
+        ?.querySelectorAll(".n21-effects-color")
+        .forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.palette === armedPalette));
+        });
+      updateHelp();
+    }
+
+    function setType(typeKey) {
+      if (!typeByKey.has(typeKey)) return;
+      selectedType = typeKey;
+      cancelDrag();
+      const panel = getPanel();
+      if (!panel) return;
+      const type = typeByKey.get(typeKey);
+      panel.querySelector(".n21-effects-select-name").textContent = type.label;
+      panel.querySelector(".n21-effects-select-btn .n21-effects-hint-tag").textContent = typeHint(type);
+      panel.querySelectorAll(".n21-effects-option").forEach((option) => {
+        option.setAttribute("aria-selected", String(option.dataset.type === typeKey));
+      });
+      updateHelp();
+    }
+
+    function setListOpen(panel, open) {
+      const button = panel.querySelector(".n21-effects-select-btn");
+      const list = panel.querySelector(".n21-effects-options");
+      list.hidden = !open;
+      button.setAttribute("aria-expanded", String(open));
+      if (open) {
+        (list.querySelector('[aria-selected="true"]') || list.firstElementChild)?.focus();
+      }
+    }
+
+    function bindPanel(panel) {
+      if (panel.dataset.n21EffectsBound) return;
+      panel.dataset.n21EffectsBound = "1";
+
+      const button = panel.querySelector(".n21-effects-select-btn");
+      const list = panel.querySelector(".n21-effects-options");
+
+      button.addEventListener("click", () => setListOpen(panel, list.hidden));
+
+      list.addEventListener("click", (event) => {
+        const option = event.target.closest(".n21-effects-option");
+        if (!option) return;
+        setType(option.dataset.type);
+        setListOpen(panel, false);
+        button.focus();
+      });
+
+      list.addEventListener("keydown", (event) => {
+        const options = Array.from(list.querySelectorAll(".n21-effects-option"));
+        const index = options.indexOf(document.activeElement);
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+          event.preventDefault();
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          options[(index + step + options.length) % options.length]?.focus();
+        } else if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (index >= 0) setType(options[index].dataset.type);
+          setListOpen(panel, false);
+          button.focus();
+        } else if (event.key === "Escape") {
+          event.stopPropagation();
+          setListOpen(panel, false);
+          button.focus();
+        }
+      });
+
+      document.addEventListener("mousedown", (event) => {
+        if (!list.hidden && !event.target.closest?.(".n21-effects-select")) setListOpen(panel, false);
+      });
+
+      panel.querySelector(".n21-effects-colors").addEventListener("click", (event) => {
+        const color = event.target.closest(".n21-effects-color");
+        if (!color) return;
+        setArmed(armedPalette === color.dataset.palette ? null : color.dataset.palette);
+      });
+    }
+
+    function openPanel() {
+      const $panel = FloatingPanelManager.openStaticPanelWithHtml(
+        PANEL_TITLE,
+        "ft-zap",
+        "#822020",
+        buildPanelHtml(),
+        `${PANEL_CLASS} n21-fixed-panel`,
+        PANEL_STYLE,
+      );
+      const panel = $panel?.[0];
+      if (!panel) return;
+      bindPanel(panel);
+      setArmed(armedPalette);
+      setType(selectedType);
+    }
+
+    function closePanel() {
+      getPanel()?.remove();
+    }
+
+    // The panel can also be closed with its own button: keep the toggle and
+    // the armed state in sync with whether it's on screen.
+    function syncWithPanel() {
+      if (!getPanel()) {
+        cancelDrag();
+        if (armedPalette) setArmed(null);
+      }
+      QuickMenuUIManager.refreshToggleState(TOGGLE_ID);
+    }
+
+    const panelsHolder = document.getElementById("floating-panels-holder");
+    new MutationObserver(syncWithPanel).observe(panelsHolder || document.body, {
+      childList: true,
+      subtree: !panelsHolder,
+    });
+
+    QuickMenuUIManager.registerConnectedActionsToggle({
+      id: TOGGLE_ID,
+      groupId: "nivel21",
+      groupOrder: 10,
+      actionOrder: 30,
+      iconClass: "ft-zap",
+      title: "Efectos",
+      getState: () => !!getPanel(),
+      onToggle: (open) => {
+        if (open) openPanel();
+        else closePanel();
+      },
+    });
+  } catch (error) {
+    window._n21_.utils.registerFeatureError("Effects Panel", error);
+  }
+})();
