@@ -3080,11 +3080,15 @@ body.n21-effects-armed #application-canvas {
 }
 
 .n21-effects-options {
+	/* Drops over the panel (and past its edge, like a native select). */
 	position: absolute;
 	top: calc(100% + 4px);
 	left: 0;
 	right: 0;
 	z-index: 5;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 2px;
 	margin: 0;
 	padding: 4px;
 	list-style: none;
@@ -3092,22 +3096,52 @@ body.n21-effects-armed #application-canvas {
 	border-radius: 8px;
 	background: #fff;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-	max-height: 300px;
-	overflow-y: auto;
+	max-height: none;
+	overflow: visible;
 }
 
 body.darkmode--activated .n21-effects-options {
 	background: #1e1e20;
 }
 
+.n21-effects-options[hidden] {
+	display: none;
+}
+
+.n21-effects-group {
+	grid-column: 1 / -1;
+	padding: 4px 8px 2px;
+	font-size: 14px;
+	opacity: 0.6;
+}
+
 .n21-effects-option {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 8px;
-	padding: 7px 10px;
+	min-width: 0;
+	padding: 4px 8px;
 	border-radius: 6px;
-	font-size: 15px;
+	font-size: 14px;
+	white-space: nowrap;
 	cursor: pointer;
+}
+
+.n21-effects-icon {
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	align-self: center;
+	opacity: 0.85;
+}
+
+.n21-effects-select-icon {
+	display: flex;
+}
+
+.n21-effects-option > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .n21-effects-option:hover,
@@ -3171,6 +3205,48 @@ body.darkmode--activated .n21-effects-options {
 	box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.5);
 }
 
+.n21-effects-color[data-palette="personalizado"] {
+	grid-column: 1 / -1;
+}
+
+.n21-effects-custom {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.n21-effects-custom[hidden] {
+	display: none;
+}
+
+.n21-effects-tones {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 6px;
+}
+
+.card.floating-panel.n21-panel input[type="color"].n21-effects-tone {
+	width: 100%;
+	height: 36px;
+	padding: 3px;
+}
+
+.n21-effects-tones-scale {
+	display: flex;
+	justify-content: space-between;
+	font-size: 14px;
+	opacity: 0.6;
+}
+
+.n21-effects-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 14px;
+	cursor: pointer;
+}
+
 .n21-effects-help {
 	margin: 0;
 	font-size: 14px;
@@ -3180,9 +3256,10 @@ body.darkmode--activated .n21-effects-options {
 	opacity: 0.75;
 }
 
-/* The type list drops over the panel's edge instead of being clipped. */
+/* The type list drops over the panel's edge instead of being clipped
+   (Nivel20 clips .floating-block and scrolls .card-body). */
 .card.floating-panel.n21-effects-panel,
-.n21-effects-panel .card-body,
-.n21-effects-panel .floating-block {
-	overflow: visible;
+.card.floating-panel.n21-effects-panel .card-body,
+.card.floating-panel.n21-effects-panel .floating-block {
+	overflow: visible !important;
 }

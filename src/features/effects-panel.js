@@ -11,6 +11,10 @@
        origen hasta el objetivo y los de "Punto" se lanzan con un clic. Cada
        efecto se envía al chat como `/efecto tipo color x z [x2 z2]` y todos
        los que tienen la extensión lo ven en su tablero.
+
+       El color "Personalizado" tiene 5 tonos editables (del inicio al final
+       del efecto) y la opción "Luminoso"; viaja en el comando como
+       `#rrggbb,#rrggbb,...[,luz]` para que todos vean los mismos colores.
     ======================= */
 
     const { loadManagers } = window._n21_;
@@ -44,6 +48,38 @@
     const MIN_AIM_DISTANCE = 0.3; // cells
     const MAX_COORD = 100000;
 
+    const CUSTOM_KEY = "personalizado";
+    const CUSTOM_STORAGE_KEY = "n21.effects.custom";
+    const CUSTOM_GLOW_TOKEN = "luz";
+    const CUSTOM_DEFAULT = {
+      colors: ["#ffffff", "#d9b8ff", "#a066ff", "#6a2bd9", "#2e0d6b"],
+      glow: true,
+    };
+    const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+    // Line icons (24x24, stroke = currentColor) for each effect type.
+    const TYPE_ICONS = {
+      aliento: '<path d="M3 12h3"/><path d="M6 12l14-6"/><path d="M6 12l14 6"/><path d="M20 6c1.5 3 1.5 9 0 12"/>',
+      haz: '<circle cx="4" cy="12" r="2"/><path d="M6 12h15"/><path d="M8 9.5h11M8 14.5h11" opacity=".5"/>',
+      cohete: '<circle cx="17" cy="7" r="3.5"/><path d="M14.5 9.5L4 20M12 7.5L5 14.5M16.5 12L9.5 19"/>',
+      flecha: '<path d="M4 20L19 5"/><path d="M13 5h6v6"/><path d="M4 20v-4M4 20h4M7 17v-4M7 17h4"/>',
+      bala: '<path d="M3 12h3"/><path d="M8 9.5h7l4 2.5-4 2.5H8z"/><path d="M11 9.5v5"/>',
+      pocion: '<path d="M10 3h4M10.5 3v5.5L6 15a5 5 0 0 0 4 8h4a5 5 0 0 0 4-8l-4.5-6.5V3"/><path d="M7.5 16h9"/>',
+      espadazo: '<path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/>',
+      punetazo: '<path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/><circle cx="12" cy="12" r="2.5"/>',
+      "lluvia-flechas": '<path d="M6 3v13M12 5v15M18 3v13"/><path d="M4 13l2 3 2-3M10 17l2 3 2-3M16 13l2 3 2-3"/>',
+      explosion: '<path d="M12 2l2 6 6-3-3 6 5 2-5 2 3 6-6-3-2 6-2-6-6 3 3-6-5-2 5-2-3-6 6 3z"/>',
+      nova: '<circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10" opacity=".5"/>',
+      quemar: '<path d="M12 22c4 0 7-2.5 7-7 0-4-3-6-4-10-1.5 2-2 3.5-2 5-1.5-1-2.5-3-2.5-5C7 7 5 10.5 5 15c0 4.5 3 7 7 7z"/>',
+      brillo: '<path d="M12 3l1.8 7.2L21 12l-7.2 1.8L12 21l-1.8-7.2L3 12l7.2-1.8z"/>',
+      burbujeo: '<circle cx="8" cy="15" r="5"/><circle cx="17" cy="8" r="3.5"/><circle cx="17" cy="18" r="2"/>',
+      salpicadura: '<path d="M12 4c2.5 3.5 4 6 4 8a4 4 0 0 1-8 0c0-2 1.5-4.5 4-8z"/><path d="M4 18l2-1M20 18l-2-1M3 11l2 1M21 11l-2 1"/>',
+    };
+
+    function typeIcon(key) {
+      return `<svg class="n21-effects-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TYPE_ICONS[key] || ""}</svg>`;
+    }
+
     const typeByKey = new Map(effects.TYPES.map((t) => [t.key, t]));
     const paletteByKey = new Map(effects.PALETTES.map((p) => [p.key, p]));
 
@@ -51,6 +87,7 @@
     let armedPalette = null;
     let drag = null; // { pointerId, from }
     let lastSentAt = 0;
+    let custom = loadCustom();
 
     function boardCanvas() {
       return document.querySelector("#application-canvas");
@@ -60,6 +97,52 @@
       () => boardCanvas()?.parentElement || null,
       (x, z) => CameraManager.worldToScreen(x, z, 0),
     );
+
+    /* ---------------------------- custom color ---------------------------- */
+
+    function loadCustom() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(CUSTOM_STORAGE_KEY) || "null");
+        if (
+          Array.isArray(stored?.colors) &&
+          stored.colors.length === CUSTOM_DEFAULT.colors.length &&
+          stored.colors.every((c) => HEX_COLOR.test(c))
+        ) {
+          return { colors: stored.colors, glow: !!stored.glow };
+        }
+      } catch (_error) {
+        // Unavailable or corrupt storage: use the default.
+      }
+      return { colors: [...CUSTOM_DEFAULT.colors], glow: CUSTOM_DEFAULT.glow };
+    }
+
+    function storeCustom() {
+      try {
+        localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(custom));
+      } catch (_error) {
+        // Only a convenience: the colors still work for this session.
+      }
+    }
+
+    function encodeCustom(palette) {
+      const parts = palette.colors.map((c) => c.toLowerCase());
+      if (palette.glow) parts.push(CUSTOM_GLOW_TOKEN);
+      return parts.join(",");
+    }
+
+    /** "#rrggbb,#rrggbb,...[,luz]" -> { colors, glow } or null. */
+    function decodeCustom(token) {
+      const parts = String(token).toLowerCase().split(",");
+      const glow = parts[parts.length - 1] === CUSTOM_GLOW_TOKEN;
+      if (glow) parts.pop();
+      if (parts.length < 2 || parts.length > 8 || !parts.every((c) => HEX_COLOR.test(c))) return null;
+      return { colors: parts, glow };
+    }
+
+    /** What the renderer takes for a palette key (custom -> its colors). */
+    function paletteValue(key) {
+      return key === CUSTOM_KEY ? { colors: [...custom.colors], glow: custom.glow } : key;
+    }
 
     /* ---------------------------- chat ---------------------------- */
 
@@ -80,7 +163,8 @@
       if (!match) return null;
 
       const type = typeByKey.get(match[1].toLowerCase());
-      const palette = paletteByKey.get(match[2].toLowerCase());
+      const paletteToken = match[2].toLowerCase();
+      const palette = paletteByKey.has(paletteToken) ? paletteToken : decodeCustom(paletteToken);
       if (!type || !palette) return null;
 
       const coords = match.slice(3).filter((v) => v !== undefined).map(Number);
@@ -89,7 +173,7 @@
       const from = { x: coords[0], z: coords[1] };
       const to = coords.length === 4 ? { x: coords[2], z: coords[3] } : null;
       if (type.aim && !to) return null;
-      return { type: type.key, palette: palette.key, from, to };
+      return { type: type.key, palette, from, to };
     }
 
     function sendEffect(typeKey, paletteKey, from, to) {
@@ -97,7 +181,8 @@
       if (now - lastSentAt < SEND_DEBOUNCE_MS) return;
       lastSentAt = now;
 
-      let command = `/${COMMAND_NAME} ${typeKey} ${paletteKey} ${formatCoordinate(from.x)} ${formatCoordinate(from.z)}`;
+      const paletteToken = paletteKey === CUSTOM_KEY ? encodeCustom(custom) : paletteKey;
+      let command = `/${COMMAND_NAME} ${typeKey} ${paletteToken} ${formatCoordinate(from.x)} ${formatCoordinate(from.z)}`;
       if (to) command += ` ${formatCoordinate(to.x)} ${formatCoordinate(to.z)}`;
 
       const options = { visibility: "public" };
@@ -134,6 +219,7 @@
           name: "color",
           getSuggestions: (fragment) =>
             effects.PALETTES.map((p) => p.key).filter((k) => k.startsWith(String(fragment || "").toLowerCase())),
+          // Or custom tones: #rrggbb,#rrggbb,...[,luz]
         },
         { name: "x" },
         { name: "z" },
@@ -175,7 +261,7 @@
         return;
       }
       drag = { pointerId: event.pointerId, from };
-      effects.setPreview({ type: type.key, palette: armedPalette, from, to: from });
+      effects.setPreview({ type: type.key, palette: paletteValue(armedPalette), from, to: from });
     }
 
     function onPointerMove(event) {
@@ -183,7 +269,7 @@
       block(event);
       const to = worldFromEvent(event);
       if (!to) return;
-      effects.setPreview({ type: selectedType, palette: armedPalette, from: drag.from, to });
+      effects.setPreview({ type: selectedType, palette: paletteValue(armedPalette), from: drag.from, to });
     }
 
     function onPointerUp(event) {
@@ -245,12 +331,20 @@
 
     function buildPanelHtml() {
       const type = typeByKey.get(selectedType);
-      const options = effects.TYPES.map(
-        (t) => `
-          <li class="n21-effects-option" role="option" tabindex="-1" data-type="${t.key}" aria-selected="${t.key === selectedType}">
-            <span>${escapeHtml(t.label)}</span><span class="n21-effects-hint-tag">${typeHint(t)}</span>
-          </li>`,
-      ).join("");
+      // Grouped by how they're cast, so each option only needs its name.
+      const options = [true, false]
+        .map((aim) => {
+          const items = effects.TYPES.filter((t) => t.aim === aim)
+            .map(
+              (t) => `
+                <li class="n21-effects-option" role="option" tabindex="-1" data-type="${t.key}" aria-selected="${t.key === selectedType}">
+                  ${typeIcon(t.key)}<span>${escapeHtml(t.label)}</span>
+                </li>`,
+            )
+            .join("");
+          return `<li class="n21-effects-group" role="presentation">${aim ? "Apuntar" : "Punto"}</li>${items}`;
+        })
+        .join("");
       const colors = effects.PALETTES.map(
         (p) => `
           <button type="button" class="n21-effects-color" data-palette="${p.key}" aria-pressed="false">
@@ -258,6 +352,12 @@
             <span>${escapeHtml(p.label)}</span>
           </button>`,
       ).join("");
+      const tones = custom.colors
+        .map(
+          (color, i) =>
+            `<input type="color" class="n21-effects-tone" data-index="${i}" value="${color}" aria-label="Tono ${i + 1} de ${custom.colors.length}" />`,
+        )
+        .join("");
 
       return `
         <div class="n21-effects">
@@ -265,6 +365,7 @@
             <span class="n21-effects-label" id="n21-effects-type-label">Tipo de efecto</span>
             <div class="n21-effects-select">
               <button type="button" class="n21-effects-select-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="n21-effects-type-label">
+                <span class="n21-effects-select-icon">${typeIcon(type.key)}</span>
                 <span class="n21-effects-select-name">${escapeHtml(type.label)}</span>
                 <span class="n21-effects-hint-tag">${typeHint(type)}</span>
                 <i class="ft-chevron-down" aria-hidden="true"></i>
@@ -272,7 +373,20 @@
               <ul class="n21-effects-options" role="listbox" hidden>${options}</ul>
             </div>
           </div>
-          <div class="n21-effects-colors">${colors}</div>
+          <div class="n21-effects-colors">${colors}
+            <button type="button" class="n21-effects-color" data-palette="${CUSTOM_KEY}" aria-pressed="false">
+              <span class="n21-effects-swatch n21-effects-swatch--custom" style="background: ${swatchBackground(custom)}"></span>
+              <span>Personalizado</span>
+            </button>
+          </div>
+          <div class="n21-effects-custom" hidden>
+            <div class="n21-effects-tones">${tones}</div>
+            <div class="n21-effects-tones-scale" aria-hidden="true"><span>Inicio</span><span>Final</span></div>
+            <label class="n21-effects-check">
+              <input type="checkbox" class="n21-effects-glow" ${custom.glow ? "checked" : ""} />
+              Luminoso (se suma a la luz, como el fuego)
+            </label>
+          </div>
           <p class="n21-effects-help" aria-live="polite"></p>
         </div>`;
     }
@@ -296,14 +410,30 @@
     }
 
     function setArmed(paletteKey) {
-      armedPalette = paletteKey && paletteByKey.has(paletteKey) ? paletteKey : null;
+      const valid = paletteByKey.has(paletteKey) || paletteKey === CUSTOM_KEY;
+      armedPalette = paletteKey && valid ? paletteKey : null;
       document.body.classList.toggle("n21-effects-armed", !!armedPalette);
-      getPanel()
-        ?.querySelectorAll(".n21-effects-color")
-        .forEach((button) => {
-          button.setAttribute("aria-pressed", String(button.dataset.palette === armedPalette));
-        });
+      const panel = getPanel();
+      panel?.querySelectorAll(".n21-effects-color").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.palette === armedPalette));
+      });
+      const editor = panel?.querySelector(".n21-effects-custom");
+      if (editor) {
+        editor.hidden = armedPalette !== CUSTOM_KEY;
+        // The panel keeps the height it opened with: let it follow the editor.
+        panel.style.height = "auto";
+      }
       updateHelp();
+    }
+
+    function updateCustom(panel) {
+      custom = {
+        colors: Array.from(panel.querySelectorAll(".n21-effects-tone")).map((input) => input.value.toLowerCase()),
+        glow: !!panel.querySelector(".n21-effects-glow")?.checked,
+      };
+      storeCustom();
+      const swatch = panel.querySelector(".n21-effects-swatch--custom");
+      if (swatch) swatch.style.background = swatchBackground(custom);
     }
 
     function setType(typeKey) {
@@ -313,6 +443,7 @@
       const panel = getPanel();
       if (!panel) return;
       const type = typeByKey.get(typeKey);
+      panel.querySelector(".n21-effects-select-icon").innerHTML = typeIcon(type.key);
       panel.querySelector(".n21-effects-select-name").textContent = type.label;
       panel.querySelector(".n21-effects-select-btn .n21-effects-hint-tag").textContent = typeHint(type);
       panel.querySelectorAll(".n21-effects-option").forEach((option) => {
@@ -326,6 +457,7 @@
       const list = panel.querySelector(".n21-effects-options");
       list.hidden = !open;
       button.setAttribute("aria-expanded", String(open));
+      panel.style.height = "auto";
       if (open) {
         (list.querySelector('[aria-selected="true"]') || list.firstElementChild)?.focus();
       }
@@ -376,6 +508,9 @@
         if (!color) return;
         setArmed(armedPalette === color.dataset.palette ? null : color.dataset.palette);
       });
+
+      panel.querySelector(".n21-effects-custom").addEventListener("input", () => updateCustom(panel));
+      panel.querySelector(".n21-effects-custom").addEventListener("change", () => updateCustom(panel));
     }
 
     function openPanel() {
