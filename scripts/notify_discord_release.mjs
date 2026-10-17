@@ -61,6 +61,32 @@ const message = template
   .replaceAll("{tag}", releaseTag)
   .replaceAll("{description}", cleanDescription);
 
+const IMAGE_TYPES = [
+  { extension: "png", type: "image/png", magic: [0x89, 0x50, 0x4e, 0x47] },
+  { extension: "jpg", type: "image/jpeg", magic: [0xff, 0xd8, 0xff] },
+  { extension: "gif", type: "image/gif", magic: [0x47, 0x49, 0x46, 0x38] },
+  { extension: "webp", type: "image/webp", magic: [0x52, 0x49, 0x46, 0x46] },
+];
+
+// GitHub serves release assets as application/octet-stream, so the
+// content-type can't be trusted: look at the file itself, then the URL.
+function detectImageType(bytes, url, contentType) {
+  const byMagic = IMAGE_TYPES.find((image) =>
+    image.magic.every((byte, i) => bytes[i] === byte),
+  );
+  if (byMagic) return byMagic;
+
+  const urlExtension = new URL(url).pathname.split(".").pop().toLowerCase();
+  const byUrl = IMAGE_TYPES.find(
+    (image) =>
+      image.extension === urlExtension ||
+      (image.extension === "jpg" && urlExtension === "jpeg"),
+  );
+  if (byUrl) return byUrl;
+
+  return { extension: "bin", type: contentType || "application/octet-stream" };
+}
+
 async function fetchImage(url, index) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -69,22 +95,16 @@ async function fetchImage(url, index) {
     );
   }
 
-  const contentType =
-    response.headers.get("content-type") || "application/octet-stream";
-  const data = await response.arrayBuffer();
-  const extension = contentType.includes("png")
-    ? "png"
-    : contentType.includes("jpeg") || contentType.includes("jpg")
-      ? "jpg"
-      : contentType.includes("gif")
-        ? "gif"
-        : contentType.includes("webp")
-          ? "webp"
-          : "bin";
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const { extension, type } = detectImageType(
+    bytes,
+    url,
+    response.headers.get("content-type"),
+  );
 
   return {
     filename: `image_${index + 1}.${extension}`,
-    blob: new Blob([Buffer.from(data)], { type: contentType }),
+    blob: new Blob([Buffer.from(bytes)], { type }),
   };
 }
 
