@@ -22,7 +22,7 @@ Añade funcionalidades útiles para DMs y jugadores de D&D.
 
 ### Desde las tiendas oficiales (recomendado)
 
-- **Chrome Web Store**: [Instalar en Chrome](https://chromewebstore.google.com/detail/jadlpdmjlfghndcehdhjhgndfmigbdoe?utm_source=item-share-cb)
+- **Chrome, Edge, Brave, Opera**: [Chrome Web Store](https://chromewebstore.google.com/detail/jadlpdmjlfghndcehdhjhgndfmigbdoe?utm_source=item-share-cb)
 - **Firefox Add-ons**: [Instalar en Firefox](https://addons.mozilla.org/es-AR/firefox/addon/nivel21/)
 
 ### Instalación manual (ultimos cambios)
