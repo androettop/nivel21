@@ -107,6 +107,7 @@
         "src/features/floating-panel-action.js",
         "src/features/inventory-panel.js",
         "src/features/action-bar-editor.js",
+        "src/features/tabbed-action-bar.js",
         "src/features/money-editor.js",
         "src/features/character-frame.js",
         "src/features/creature-resources.js",
