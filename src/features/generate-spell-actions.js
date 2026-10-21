@@ -72,15 +72,20 @@
    */
   function parseAttackString(attack) {
     if (!attack || typeof attack !== "string") return null;
-    const m = attack.match(/^(.*?)\s*(\d+d\d+(?:\s*[+-]\s*\d+)?)\s*(.*)$/);
+    // "2d10+4d6", "2d10 + 2d10" and "10d6+40" are all one damage roll.
+    const m = attack.match(/^(.*?)\s*(\d+d\d+(?:\s*[+-]\s*\d+(?:d\d+)?)*)\s*(.*)$/);
     if (!m) {
       return { atkType: attack.trim(), dice: null, dmgType: null };
     }
-    return {
-      atkType: m[1].trim(),
-      dice: m[2].replace(/\s+/g, ""),
-      dmgType: m[3].trim() || null,
-    };
+    let dice = m[2].replace(/\s+/g, "");
+    let dmgType = m[3].trim() || null;
+    // Typed groups: "5d6 fuego + 5d6 radiante" (Golpe flamígero).
+    const typed = dmgType && dmgType.match(/^(\S+)\s*\+\s*(\d+d\d+)\s*(.*)$/);
+    if (typed) {
+      dice += `+${typed[2]}`;
+      dmgType = typed[3] ? `${typed[1]} y ${typed[3]}` : typed[1];
+    }
+    return { atkType: m[1].trim(), dice, dmgType };
   }
 
   /** Whether an attack type denotes a spell attack roll (vs. a saving throw). */
