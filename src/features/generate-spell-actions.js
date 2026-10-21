@@ -65,6 +65,13 @@
   // Strips the "upcasting / cantrip scaling" tail so we don't pick its dice.
   const SCALING_RE =
     /(?:\*+\s*)?(?:Mejora de truco|Con un espacio de conjuro|Mejora de conjuro)/i;
+  // Spells castable with a higher slot. There's no structured flag, so we
+  // look for the upcast clause the descriptions use: "**Con un espacio de
+  // conjuro de nivel superior.**" (sometimes without bold, or "Con un espacio
+  // de nivel superior"), or the 2014 "**En niveles superiores.**". Checked
+  // against every D&D 2024 spell in Nivel20 (132 matches, no false positives).
+  const UPCAST_RE =
+    /(?:Con un espacio de (?:conjuro )?(?:de )?nivel superior|En niveles superiores)\s*\**\s*[.:]/i;
 
   /**
    * Decompose an attack string "{tipo} {dado} {tipo_daño}" into parts.
@@ -266,9 +273,137 @@
   }
 
   function buildSpellElements(ctx) {
+    const { spell } = ctx;
+    const baseLevel = spell.n21BaseLevel ?? (spell.level | 0);
+    const upcastable = baseLevel > 0 && UPCAST_RE.test(spell.description || "");
+    const increases = upcastable ? getUpcastIncreases(spell) : { perLevel: [], tiers: [] };
     // Every element of a spell knows its level (used to grey out spells
     // without slots left).
-    return tagLevel(buildSpellElementsInner(ctx), ctx.spell.level | 0);
+    const elements = tagLevel(buildSpellElementsInner(ctx), spell.level | 0);
+    elements.forEach((el) => {
+      el.n21_spell_id = spell.id ?? null;
+      el.n21_spell_base_level = baseLevel;
+      el.n21_upcastable = upcastable;
+      if (spell.n21BaseLevel != null) el.n21_upcast_of = spell.id ?? spell.name;
+      setScaling(el, increases);
+    });
+    if ((spell.level | 0) > baseLevel) elements.forEach((el) => scaleElement(el, spell.level | 0));
+    return elements;
+  }
+
+  /* ----- Upcast dice scaling ----- */
+
+  // Two ways a 2024 spell grows its dice with the slot:
+  //  - per level: "El daño aumenta en 1d6 por cada nivel por encima de 1 que
+  //    tenga el espacio" -> every "aumenta(n) [en] XdY" of a sentence that
+  //    talks about "cada nivel". Some list several (Mano arcana, Muro de hielo).
+  //  - by tiers: "Si usas un espacio de conjuro de niveles 5 o 6, [...] el
+  //    daño adicional aumenta a 2d4" (Arma elemental) -> the dice become XdY.
+  // Checked against every D&D 2024 spell in Nivel20.
+  const INCREASE_RE = /aumentan?\s+(?:en\s+)?(\d+)d(\d+)/gi;
+  const TIER_LEVELS_RE = /nivel(?:es)?\s+(\d+)(?:\s*(?:o|a)\s*(\d+))?(\s*o\s+superior)?/i;
+  const TIER_DICE_RE = /aumentan?\s+a\s+(\d+)d(\d+)/i;
+  const FIRST_DICE_RE = /(\d+)d(\d+)/;
+
+  /**
+   * How the dice grow with the slot, from the upcast clause:
+   * { perLevel: [{count, faces}], tiers: [{min, max, count, faces}] }.
+   */
+  function getUpcastIncreases(spell) {
+    const result = { perLevel: [], tiers: [] };
+    const description = spell.description || "";
+    const index = description.search(UPCAST_RE);
+    if (index === -1) return result;
+    description
+      .slice(index)
+      .split(/\.\s/)
+      .forEach((sentence) => {
+        if (/cada nivel/i.test(sentence)) {
+          for (const m of sentence.matchAll(INCREASE_RE)) {
+            result.perLevel.push({ count: Number(m[1]), faces: Number(m[2]) });
+          }
+          return;
+        }
+        const levels = sentence.match(TIER_LEVELS_RE);
+        const dice = sentence.match(TIER_DICE_RE);
+        if (!levels || !dice) return;
+        const min = Number(levels[1]);
+        result.tiers.push({
+          min,
+          max: levels[3] ? 9 : Number(levels[2] || min),
+          count: Number(dice[1]),
+          faces: Number(dice[2]),
+        });
+      });
+    return result;
+  }
+
+  /**
+   * Remember how a damage / healing roll grows with the slot: the first
+   * increase with the same die as the roll (a critical adds it twice). When
+   * the spell does grow its dice but none matches the roll, flag it instead.
+   */
+  function setScaling(el, increases) {
+    const type = el.roll_options?.roll_type;
+    if (el.action_type !== "dice_roll" || (type !== "damage" && type !== "healing")) return;
+    if (!increases.perLevel.length && !increases.tiers.length) return;
+    const dice = String(el.dice_roll || "").match(FIRST_DICE_RE);
+    const faces = dice ? Number(dice[2]) : null;
+    const factor = /> Crítico$/.test(el.name || "") ? 2 : 1;
+    const increase = increases.perLevel.find((inc) => inc.faces === faces);
+    const tiers = increases.tiers.filter((tier) => tier.faces === faces);
+    if (increase) {
+      el.n21_scaling = { count: increase.count * factor, faces };
+    } else if (tiers.length) {
+      el.n21_scaling = {
+        faces,
+        tiers: tiers.map((tier) => ({ ...tier, count: tier.count * factor })),
+      };
+    } else {
+      el.n21_scaling_failed = true;
+    }
+  }
+
+  /** Change every dice group with `faces` sides: "2d8 + 3" -> "4d8 + 3". */
+  function mapDice(notation, faces, fn) {
+    if (!notation) return notation;
+    return notation.replace(/(\d+)d(\d+)/g, (match, n, f) =>
+      Number(f) === faces ? `${fn(Number(n))}d${f}` : match,
+    );
+  }
+
+  const SCALED_NOTE = "Dados calculados por Nivel21 a partir de la descripción del conjuro.";
+  const NOT_SCALED_NOTE = "Nivel21 no pudo calcular los dados de este nivel: se tiran los del nivel base.";
+
+  /**
+   * Scale a spell element to a higher slot level (in place) and return it.
+   * Only damage / healing rolls change: groups of the matching die grow by the
+   * per-level increase (Tormenta de hielo only grows its d10, Jallarzi both of
+   * its d10 groups) or become the dice of the slot's tier. The description
+   * gets a short note saying the dice were computed.
+   */
+  function scaleElement(el, slotLevel) {
+    const steps = slotLevel - (el.n21_spell_base_level | 0);
+    if (!(steps > 0)) return el;
+    const scaling = el.n21_scaling;
+    let fn = null;
+    if (scaling?.tiers) {
+      const tier = scaling.tiers.find((t) => slotLevel >= t.min && slotLevel <= t.max);
+      if (tier) fn = () => tier.count;
+    } else if (scaling) {
+      fn = (n) => n + scaling.count * steps;
+    }
+    let note = null;
+    if (fn) {
+      el.dice_roll = mapDice(el.dice_roll, scaling.faces, fn);
+      if (el.dice_roll_formula) el.dice_roll_formula = mapDice(el.dice_roll_formula, scaling.faces, fn);
+      el.n21_scaled = true;
+      note = SCALED_NOTE;
+    } else if (el.n21_scaling_failed) {
+      note = NOT_SCALED_NOTE;
+    }
+    if (note) el.description = `${el.description || ""}<p><em>${note}</em></p>\n`;
+    return el;
   }
 
   function tagLevel(elements, level) {
@@ -475,6 +610,24 @@
     return false;
   }
 
+  /**
+   * Spell slot levels (1-9) the character has, regular or pact, from
+   * `resources.spell_slots` / `resources.pact_spell_slots` ({"1": "4", ...}).
+   * @returns {number[]} Sorted ascending.
+   */
+  function getSlotLevels(ph) {
+    const levels = new Set();
+    for (const key of ["spell_slots", "pact_spell_slots"]) {
+      const slots = ph?.resources?.[key];
+      if (!slots || typeof slots !== "object") continue;
+      for (const [id, count] of Object.entries(slots)) {
+        const level = Number(id);
+        if (level >= 1 && level <= 9 && Number(count) > 0) levels.add(level);
+      }
+    }
+    return [...levels].sort((a, b) => a - b);
+  }
+
   function makeFolder(level, order, elements, sourceName) {
     const name = level === 0 ? "Trucos" : `Conjuros de nivel ${level}`;
     return {
@@ -534,6 +687,33 @@
       }
     }
 
+    // Upcastable spells are also listed in every higher level the character
+    // has slots for, cast (and spending a slot) at that level.
+    const slotLevels = getSlotLevels(ph);
+    const upcasts = [];
+    for (const [level, entries] of byLevel) {
+      if (level < 1) continue;
+      for (const entry of entries) {
+        if (!UPCAST_RE.test(entry.spell.description || "")) continue;
+        for (const slotLevel of slotLevels) {
+          if (slotLevel > level) upcasts.push({ slotLevel, entry });
+        }
+      }
+    }
+    upcasts.sort((a, b) => a.entry.spell.level - b.entry.spell.level);
+    for (const { slotLevel, entry } of upcasts) {
+      if (!byLevel.has(slotLevel)) byLevel.set(slotLevel, []);
+      byLevel.get(slotLevel).push({
+        ...entry,
+        spell: {
+          ...entry.spell,
+          name: `${entry.spell.name} (nivel ${slotLevel})`,
+          level: slotLevel,
+          n21BaseLevel: entry.spell.level,
+        },
+      });
+    }
+
     const levels = [...byLevel.keys()].sort((a, b) => a - b);
     const actions = [];
     let folderOrder = 0;
@@ -555,7 +735,7 @@
 
   // Node (unit testing): export the pure generator.
   if (typeof module !== "undefined" && module.exports) {
-    module.exports = { buildSpellActions };
+    module.exports = { buildSpellActions, scaleElement, getSlotLevels };
   }
 
   // Browser: wire the feature into the extension namespace.
@@ -591,7 +771,7 @@
       window._n21_.features = window._n21_.features || {};
       window._n21_.features.generateSpellActions = generateSpellActions;
       // Also expose the pure builder for advanced/manual use.
-      window._n21_.spellActions = { buildSpellActions };
+      window._n21_.spellActions = { buildSpellActions, scaleElement, getSlotLevels };
     } catch (error) {
       window._n21_.utils?.registerFeatureError?.(featureName, error);
     }
