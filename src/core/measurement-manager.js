@@ -135,6 +135,20 @@
     }
 
     /**
+     * The scene's measurement units, as Nivel20 shows them in measurements:
+     * `units` per grid square ("pies", "m"…; null without a grid config).
+     * @returns {{units: string|null, unitScale: number|null}}
+     */
+    getSceneUnits() {
+      const config = this._getNative()?.room?.state?.measurementsConfig;
+      const unitScale = Number(config?.unitScale);
+      return {
+        units: config?.units ? String(config.units) : null,
+        unitScale: Number.isFinite(unitScale) && unitScale > 0 ? unitScale : null,
+      };
+    }
+
+    /**
      * Check if the manager is ready for use
      * @returns {boolean} True if the manager and entityManager are available
      */
