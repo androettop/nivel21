@@ -10,7 +10,7 @@
 // "n21VersionChecked" event on document.
 (function () {
   // Last Nivel20 tabletop version the extension was tested with.
-  const MAX_SUPPORTED_VERSION = "v3.7.11";
+  const MAX_SUPPORTED_VERSION = "v3.7.13";
   const CHOICE_KEY = "_n21_unsupported-version-choice"; // "load" | "skip"
   const WAIT_FOR_CONFIG_MS = 3000;
 
