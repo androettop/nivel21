@@ -127,6 +127,7 @@
       injectScript("src/features/floating-panel-action.js"),
       injectScript("src/features/inventory-panel.js"),
       injectScript("src/features/action-bar-editor.js"),
+      injectScript("src/features/tabbed-action-bar.js"),
       injectScript("src/features/money-editor.js"),
       injectScript("src/features/character-frame.js"),
       injectScript("src/features/creature-resources.js"),

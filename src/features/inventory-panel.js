@@ -89,7 +89,7 @@
      */
     function resolveCharacterId(element) {
       try {
-        const bar = $(element).closest(".action-bar")[0];
+        const bar = $(element).closest(".action-bar, .n21-tbar")[0];
         const senderInfo = bar?.getAttribute("data-sender-info") || "";
         const match = senderInfo.match(/Character-(\d+)/);
         return match ? match[1] : null;
@@ -812,6 +812,9 @@
       }
       items.push(buildInventoryItem(charId));
     }
+
+    // Shared with the tabbed action bar's "Inventario" tab.
+    window._n21_.inventoryPanel = { buildItemCell };
 
     // List the item in the action bar editor.
     window._n21_.actionBarLayout?.registerProvider("inventory", {

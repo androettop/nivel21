@@ -153,6 +153,15 @@
       });
 
       this.registerSetting({
+        name: "feature.tabbed-action-bar.enabled",
+        label: "Barra de acciones con pestañas",
+        type: "boolean",
+        defaultValue: false,
+        live: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.spell-action-bar.enabled",
         label: "Conjuros en la barra de acciones",
         type: "boolean",
