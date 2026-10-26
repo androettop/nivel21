@@ -118,6 +118,10 @@
             const pos = this._tokenManager.getTokenPosition(networkId);
             if (!pos) return null;
             const scale = this._tokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
+            return helpers.groundAt(pos, scale);
+          },
+          // Same footprint for any board point (center) and size in cells.
+          groundAt: (pos, scale) => {
             const halfX = Math.abs(scale.x || 1) / 2;
             const halfZ = Math.abs(scale.z || 1) / 2;
             const ground = this._cameraManager.getGroundAffine(pos.x - halfX, pos.z - halfZ);

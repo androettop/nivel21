@@ -62,6 +62,7 @@ Sistema de capas para organizar y posicionar tokens en profundidad. Permite que 
 
 - **Click derecho en token (DM)** - Menú "Capa"
 - **Seleccionar capa** - El token se posiciona según la capa asignada
+- **RePág / AvPág** - Sube o baja una capa los tokens seleccionados
 - **Capas predefinidas** Fondo, Capa 1, Capa 2, Capa 3, Capa 4, Capa 5
 
 <a id="token-layers">
@@ -142,6 +143,7 @@ Muestra en la esquina superior izquierda del tablero al personaje o criatura sel
 - **Vida y CA** - Click en la vida para curar, dañar o dar puntos temporales. Si tiene el estado Concentración y recibe daño, ofrece tirar la salvación de Constitución con la CD correcta
 - **Recursos** - Espacios de conjuro (con su número romano) y recursos con icono propio (Furia, Canalizar divinidad, Puntos de ki, Acciones legendarias…). Click gasta, click derecho recupera
 - **Estados** - Click derecho quita un estado; el botón **+** permite buscar y agregar uno
+- **Agregar recursos** - El botón **+** al final de los recursos abre el modal de Nivel20 «Recursos de…» para crear, editar o quitar recursos del personaje
 
 Las ediciones solo están disponibles si tienes permiso para editar la vida de ese personaje en Nivel20, y se guardan con un pequeño retraso para no saturar el servidor si haces muchos clicks.
 
@@ -177,6 +179,39 @@ Si el personaje o criatura tiene el estado **Invisible**, su token se oculta a q
 
 ---
 
+### Barra de acciones con pestañas
+
+Una barra de acciones al estilo de Baldur's Gate 3 que separa las acciones en secciones: Acciones, Conjuros, Inventario y Rasgos. «Todos» las muestra lado a lado (arrastra los divisores para cambiar su ancho) y cada pestaña muestra solo la suya. Al abrir una carpeta con muchos elementos, estos bajan a filas nuevas.
+
+- **Arriba** - Las pestañas. Arrástralas para cambiar el orden de las secciones. Click derecho en una: **Ocultar en «Todos»** (solo se ve desde su pestaña) y, en las secciones propias, **Renombrar** y **Eliminar**
+- **A la derecha** - Las filas (**+** / **−**) y el candado
+- **Abajo a la izquierda** - La rueda de opciones, editar el inventario en la hoja, actualizarlo y el modo de las tiradas de d20: **V** ventaja, **N** normal, **D** desventaja (se recuerda por personaje o criatura)
+- **Abajo a la derecha** - El dinero del personaje. Su botón abre las monedas (ppt, po, pe, pp, pc): escribe las cantidades y pulsa **+** para sumarlas o **−** para restarlas
+- **Inventario** - Click derecho en un objeto: usar uno, añadir uno o eliminarlo. Con el candado abierto, arrastra un objeto a otra sección para tenerlo también ahí (sigue en el inventario); devuélvelo al inventario para quitarlo
+- **Descripciones** - Aparecen al dejar el ratón un segundo sobre un icono
+- **Reordenar acciones** - Con el candado abierto, arrastra las acciones entre casillas o a otra pestaña
+- **Secciones propias** - Desde la rueda, «Nueva sección» crea una sección a la derecha (colapsada en «Todos»: arrastra su divisor para abrirla). Al eliminarla sus acciones vuelven a su sitio. Se guardan por personaje o criatura en tu navegador
+
+<a id="tabbed-action-bar">
+ <img src="popup/img/tabbed-action-bar.png" alt="Barra de acciones con pestañas" />
+</a>
+
+---
+
+### Acciones que modifican recursos
+
+Una acción de la barra puede gastar, recuperar o fijar recursos del personaje al hacer click. Añade etiquetas en su descripción (en **Editar acciones**):
+
+| Etiqueta                   | Efecto                    |
+| -------------------------- | ------------------------- |
+| `[resource Furia -1]`      | Resta uno                 |
+| `[resource Furia +1]`      | Suma uno                  |
+| `[resource Furia 3]`       | Deja el valor en 3        |
+
+El nombre puede ir entre comillas (`[resource "Canalizar divinidad" -1]`) o con guiones bajos en vez de espacios. Las etiquetas no se ven en la descripción y los cambios se guardan igual que desde el marco de personaje.
+
+---
+
 ### Editor de la barra de acciones
 
 En la página **Editar acciones** del personaje reemplaza la lista del formulario por un árbol:
@@ -199,6 +234,7 @@ Se guarda en el mismo formulario de Nivel20 al pulsar «Actualizar Personaje». 
 Mantén tus mediciones en el mapa de forma persistente. Usa el botón de anclaje en el panel de mediciones para activar o desactivar este modo.
 
 - **Botón Toggle** - Activa/desactiva la persistencia de mediciones
+- **Click derecho sobre una medición** (con el ancla activa) - La borra; manteniéndolo pulsado se borran las que vayas tocando
 
 <a id="multi-measurement">
  <img src="popup/img/multi-measurement.png" alt="Mediciones Persistentes" />
@@ -284,8 +320,10 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 | **Ctrl + H** | Alternar visibilidad del token |
 | **Ctrl + B** | Bloquear/desbloquear el token  |
 | **Ctrl + E** | Editar el token seleccionado   |
-| **Ctrl + D** | Duplicar el token seleccionado |
-| **Delete**   | Eliminar el token seleccionado |
+| **Ctrl + J** | Duplicar el token seleccionado |
+| **Supr**     | Eliminar el token seleccionado |
+| **RePág**    | Subir el token una capa (DM)   |
+| **AvPág**    | Bajar el token una capa (DM)   |
 
 <a id="token-hotkeys">
  <img src="popup/img/token-hotkeys.png" alt="Atajos para Tokens" />
@@ -295,11 +333,11 @@ Controla rápidamente los tokens/fichas del mapa usando atajos de teclado. Selec
 
 ### Mover Tokens con el Teclado
 
-Permite mover uno o varios tokens seleccionados con las flechas del teclado.
+Permite mover uno o varios tokens seleccionados con las flechas del teclado. El token se mueve como si lo arrastraras: los muros lo detienen igual que con el ratón.
 
 | Tecla       | Accion                  |
 | ----------- | ----------------------- |
-| **Flechas** | Mover token una casilla |
+| **Flechas** | Mover token una casilla (dos a la vez: en diagonal) |
 
 <a id="token-move-arrows">
  <img src="popup/img/token-move-arrows.png" alt="Mover Tokens con el Teclado" />
@@ -310,6 +348,8 @@ Permite mover uno o varios tokens seleccionados con las flechas del teclado.
 ### Distancia recorrida
 
 Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
+
+Con la previsualización activada (botón del ojo, desactivado por defecto), el token no se mueve mientras lo arrastras: una copia semitransparente marca a dónde iría. Con clic derecho, sin soltar, fijas puntos intermedios. Al soltar, el token recorre el camino; con Escape se cancela.
 
 <a id="token-drag-measurement">
  <img src="popup/img/token-drag-measurement.png" alt="Distancia recorrida" />

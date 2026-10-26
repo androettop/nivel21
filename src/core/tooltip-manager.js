@@ -68,6 +68,25 @@
     }
 
     /**
+     * Change how long the pointer must rest on processed tooltips before they
+     * show (and how long they take to hide).
+     *
+     * @param {HTMLElement[]|NodeList} elements - Already processed elements
+     * @param {number} showMs
+     * @param {number} [hideMs=100]
+     */
+    setDelay(elements, showMs, hideMs = 100) {
+      if (!elements || typeof window.$ !== "function") return;
+      elements.forEach((element) => {
+        const $element = window.$(element);
+        if (!$element.hasClass("tooltipstered")) return;
+        try {
+          $element.tooltipster("option", "delay", [showMs, hideMs]);
+        } catch (_error) {}
+      });
+    }
+
+    /**
      * Process all elements with [title] attribute within a root element
      *
      * @param {HTMLElement} root - Root element to search within

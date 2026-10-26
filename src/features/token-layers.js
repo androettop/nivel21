@@ -206,6 +206,51 @@
 
 
 
+    /* ----------------------- hotkeys ----------------------- */
+
+    /** Whether a keydown matches a hotkey string like "ctrl+pageup". */
+    function matchesHotkey(event, hotkeyString) {
+      const parts = String(hotkeyString || "").toLowerCase().split("+").map((p) => p.trim());
+      const key = parts.filter((p) => !["ctrl", "alt", "shift"].includes(p))[0] || "";
+      return (
+        key === String(event.key || "").toLowerCase() &&
+        parts.includes("ctrl") === event.ctrlKey &&
+        parts.includes("alt") === event.altKey &&
+        parts.includes("shift") === event.shiftKey
+      );
+    }
+
+    // Layer each token is being saved to: quick presses build on it instead
+    // of on the not yet saved description.
+    const pendingLayers = new Map();
+
+    // RePág / AvPág move the selected tokens one layer up / down.
+    document.addEventListener("keydown", (event) => {
+      const up = matchesHotkey(event, SettingsManager.get("hotkey.token.layer.up"));
+      const down = !up && matchesHotkey(event, SettingsManager.get("hotkey.token.layer.down"));
+      if (!up && !down) return;
+      const target = event.target;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+      if (!PlayerManager.isGameMaster()) return;
+      const ids = TokenManager.getSelectedTokenIds();
+      if (!ids.length) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      const maxLayer = getLayers().length - 1;
+      ids.forEach(async (networkId) => {
+        const current = pendingLayers.get(networkId) ?? getTokenLayerFromSchema(networkId);
+        const next = Math.min(Math.max(current + (up ? 1 : -1), 0), maxLayer);
+        if (next === current) return;
+        pendingLayers.set(networkId, next);
+        try {
+          if (next === 0) await EditTokenUIManager.clearTokenLayerMarkers(networkId);
+          else await EditTokenUIManager.setTokenLayerMarker(networkId, next);
+        } finally {
+          if (pendingLayers.get(networkId) === next) pendingLayers.delete(networkId);
+        }
+      });
+    });
+
     // Register option with dynamic submenu
     CanvasDropdownManager.registerOption({
       id: "n21-token-layers",

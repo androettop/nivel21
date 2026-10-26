@@ -59,6 +59,8 @@
     const DEFAULT_ROWS = 3;
     const DEFAULT_CREATURE_ROWS = 1;
     const STORAGE_PREFIX = "_n21_tabbed-bar:";
+    const CUSTOM_PREFIX = "custom:";
+    const CUSTOM_LABEL_MAX = 30;
     // Bar width (desktop), the same for every character.
     const WIDTH_KEY = "_n21_tabbed-bar-width";
     const DEFAULT_WIDTH = 800;
@@ -127,13 +129,20 @@
     }
 
     const ROLL_MODES = [
-      { id: "advantage", label: "Ventaja", short: "Vent." },
-      { id: "normal", label: "Normal", short: "Norm." },
-      { id: "disadvantage", label: "Desventaja", short: "Desv." },
+      { id: "advantage", short: "V", title: "Tiradas de d20 con ventaja" },
+      { id: "normal", short: "N", title: "Tiradas de d20 normales" },
+      { id: "disadvantage", short: "D", title: "Tiradas de d20 con desventaja" },
     ];
 
-    // Lives for the page: the mode is never remembered across reloads, so a
-    // forgotten "Ventaja" can't silently stick.
+    // Outline of a d20 (hexagon with its front triangle).
+    const D20_ICON =
+      '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.6" stroke-linejoin="round"><path d="M12 2 21 7v10l-9 5-9-5V7z"/>' +
+      '<path d="M12 7 17 15H7z"/><path d="M12 2v5M21 7l-4 8M3 7l4 8M7 15l-4 2M17 15l4 2M7 15l5 7 5-7"/></svg>';
+
+    const TILE_TOOLTIP_DELAY_MS = 1000;
+
+    // Of the bar shown; remembered per character / creature (layout).
     let rollMode = "normal";
 
     // The bar currently shown: { charId, senderInfo, tabs, $root, $nativeBar }.
@@ -180,9 +189,19 @@
           locked: data?.locked !== false,
           // Item keys per section, with null for empty slots.
           slots: data?.slots && typeof data.slots === "object" ? data.slots : {},
+          // Sections made by the user, after the built-in ones: [{id, label}].
+          custom: (Array.isArray(data?.custom) ? data.custom : []).filter(
+            (section) => typeof section?.id === "string" && section.id.startsWith(CUSTOM_PREFIX),
+          ),
+          // Tab ids in the order the user dragged them to.
+          order: (Array.isArray(data?.order) ? data.order : []).filter((id) => typeof id === "string"),
+          // d20 roll mode: advantage, normal or disadvantage.
+          rollMode: ROLL_MODES.some((mode) => mode.id === data?.rollMode) ? data.rollMode : "normal",
+          // Sections left out of «Todos» (shown only from their tab).
+          hidden: (Array.isArray(data?.hidden) ? data.hidden : []).filter((id) => typeof id === "string"),
         };
       } catch (_error) {
-        return { rows: defaultRows, solo: null, widths: {}, locked: true, slots: {} };
+        return { rows: defaultRows, solo: null, widths: {}, locked: true, slots: {}, custom: [], order: [], hidden: [], rollMode: "normal" };
       }
     }
 
@@ -341,9 +360,28 @@
      * moved elsewhere (so they can be dragged back).
      */
     function visibleTabs(sections) {
-      return TABS.filter(
-        (tab) => sections[tab.id]?.some(Boolean) || current?.tabs?.[tab.id]?.length,
-      );
+      const tabs = [
+        ...TABS.filter((tab) => sections[tab.id]?.some(Boolean) || current?.tabs?.[tab.id]?.length),
+        // The user's own sections always show (even empty, to drop into).
+        ...(current?.custom || []),
+      ];
+      // In the user's order; tabs not ordered yet keep their place after.
+      const order = current?.order || [];
+      const rank = (tab, index) => {
+        const at = order.indexOf(tab.id);
+        return at === -1 ? order.length + index : at;
+      };
+      return tabs
+        .map((tab, index) => ({ tab, rank: rank(tab, index) }))
+        .sort((a, b) => a.rank - b.rank)
+        .map(({ tab }) => tab);
+    }
+
+    const isCustom = (tabId) => String(tabId).startsWith(CUSTOM_PREFIX);
+
+    /** Arrangeable sections: the built-in ones and the user's own. */
+    function slotTabs() {
+      return [...SLOT_TABS, ...(current?.custom || []).map((section) => section.id)];
     }
 
     /* ----------------------- arrangement ----------------------- */
@@ -351,6 +389,8 @@
     // Sections whose items can be rearranged. Inventory items only move
     // inside the inventory (they do nothing elsewhere).
     const SLOT_TABS = ["actions", "spells", "inventory", "traits"];
+
+    const COPY_PREFIX = "copy:";
 
     /** Stable key of a root item, to remember where the user put it. */
     function nodeKey(node) {
@@ -369,6 +409,7 @@
      */
     function arrangeSections(tabs, layout) {
       const natural = (tab) => (tab === "inventory" ? inventoryNodes() : tabs[tab] || []);
+      const sectionIds = slotTabs();
       const byKey = new Map();
       SLOT_TABS.forEach((tab) =>
         natural(tab).forEach((node) => {
@@ -376,9 +417,15 @@
           if (!byKey.has(key)) byKey.set(key, node);
         }),
       );
+      // Inventory items placed in other sections: another view of the same
+      // item (it stays in the inventory too).
+      inventoryNodes().forEach((node) => {
+        const key = COPY_PREFIX + nodeKey(node);
+        byKey.set(key, { ...node, n21_item_key: key, n21_inventory_copy: true });
+      });
       const placed = new Set();
       const sections = {};
-      SLOT_TABS.forEach((tab) => {
+      sectionIds.forEach((tab) => {
         const list = (layout.slots[tab] || []).map((key) => {
           if (!key || placed.has(key) || !byKey.has(key)) return null;
           placed.add(key);
@@ -596,7 +643,10 @@
     /** Tabs shown: all of them side by side, or only the clicked one. */
     function shownTabs(layout) {
       const ids = visibleTabs(current.sections).map((t) => t.id);
-      return ids.includes(layout.solo) ? [layout.solo] : ids;
+      if (ids.includes(layout.solo)) return [layout.solo];
+      // Hidden sections are left out of «Todos» (all of them hidden: show them).
+      const shown = ids.filter((id) => !layout.hidden.includes(id));
+      return shown.length ? shown : ids;
     }
 
     function renderTabStrip(layout) {
@@ -608,12 +658,22 @@
         $("<button type='button'>")
           .addClass("n21-tbar-tab")
           .toggleClass("is-active", on)
-          .attr({ role: "tab", "aria-selected": on, title: tab.id ? `Ver solo ${tab.title || tab.label}` : tab.title })
+          .attr({
+            role: "tab",
+            "aria-selected": on,
+            title: !tab.id
+              ? tab.title
+              : `Ver solo ${tab.title || tab.label}${layout.hidden.includes(tab.id) ? " (oculta en «Todos»)" : ""}. ` +
+                "Arrástrala para reordenar; click derecho para más opciones",
+          })
+          .attr("draggable", tab.id ? "true" : null)
+          .toggleClass("n21-tbar-tab--custom", isCustom(tab.id))
+          .toggleClass("n21-tbar-tab--hidden", layout.hidden.includes(tab.id))
           .attr("data-n21-tab", tab.id)
           .text(tab.label)
           .appendTo($tabs);
       });
-      return $("<div>").addClass("n21-tbar-tabs").append($tabs, renderControls(layout));
+      return $("<div>").addClass("n21-tbar-tabs").append($tabs);
     }
 
     // Sections have no side padding (the grid has it), so they can collapse
@@ -634,7 +694,8 @@
       // Widths work as proportions, so the sections always fill the bar.
       if (!alone) {
         const saved = layout.widths[tabId];
-        const width = Number.isFinite(saved) ? saved : defaultWidth(tabId, layout.rows);
+        // The user's sections start collapsed: a divider opens them.
+        const width = Number.isFinite(saved) ? saved : isCustom(tabId) ? 0 : defaultWidth(tabId, layout.rows);
         // Narrow sections keep their one column (don't take a share of the
         // extra width) until a divider is dragged.
         const fixed = !Number.isFinite(saved) && NARROW_TABS.includes(tabId);
@@ -644,7 +705,14 @@
       }
       const $grid = $("<div>").addClass("n21-tbar-grid");
       renderSlots($grid, tabId, nodes, layout);
-      return $section.append($grid);
+      $section.append($grid);
+      if (isCustom(tabId) && layout.locked && !nodes.some(Boolean)) {
+        $("<div>")
+          .addClass("n21-tbar-empty")
+          .text("Desbloquea la barra (candado) y arrastra acciones aquí.")
+          .appendTo($section);
+      }
+      return $section;
     }
 
     /**
@@ -685,7 +753,7 @@
       const rows = loadLayout(current.layoutKey).rows;
       current.$root.find(".n21-tbar-section[data-n21-section]").each(function () {
         const tabId = this.getAttribute("data-n21-section");
-        if (!SLOT_TABS.includes(tabId)) return;
+        if (!slotTabs().includes(tabId)) return;
         const grid = this.querySelector(".n21-tbar-grid");
         if (!grid) return;
         const style = getComputedStyle(grid);
@@ -724,7 +792,6 @@
         .attr("title", "Volver")
         .html('<i class="fa fa-chevron-left" aria-hidden="true"></i><span>Volver</span>')
         .appendTo($head);
-      $head.append(renderControls(loadLayout(current.layoutKey)));
 
       // Title (and the scaled dice note) right above the rolls / levels,
       // which go side by side, centered in the whole bar.
@@ -792,19 +859,25 @@
         .addClass("n21-tbar-tile");
     }
 
-    /** Roll mode toggle and rows +/-, at the right of the header. */
-    function renderControls(layout) {
-      const $controls = $("<div>").addClass("n21-tbar-controls");
+    /** d20 roll mode (V / N / D), in the bottom strip. */
+    function renderModes() {
       const $modes = $("<div>").addClass("n21-tbar-modes").attr({ role: "radiogroup", "aria-label": "Tiradas" });
+      $("<span>").addClass("n21-tbar-d20").attr("title", "Tiradas de d20").html(D20_ICON).appendTo($modes);
       ROLL_MODES.forEach((mode) => {
         $("<button type='button'>")
           .addClass(`n21-tbar-mode n21-tbar-mode--${mode.id}`)
           .toggleClass("is-active", rollMode === mode.id)
-          .attr({ role: "radio", "aria-checked": rollMode === mode.id, title: `Tiradas de d20: ${mode.label.toLowerCase()}` })
+          .attr({ role: "radio", "aria-checked": rollMode === mode.id, title: mode.title, "aria-label": mode.title })
           .attr("data-n21-mode", mode.id)
-          .html(`<span class="n21-tbar-long">${mode.label}</span><span class="n21-tbar-short">${mode.short}</span>`)
+          .text(mode.short)
           .appendTo($modes);
       });
+      return $modes;
+    }
+
+    /** Rows +/-, lock and options, at the right of the bar. */
+    function renderControls(layout) {
+      const $controls = $("<div>").addClass("n21-tbar-controls");
       const $rows = $("<div>").addClass("n21-tbar-rows").attr({ role: "group", "aria-label": "Filas" });
       $("<button type='button'>")
         .addClass("n21-tbar-row-btn")
@@ -828,6 +901,11 @@
         })
         .html(`<i class="fa ${layout.locked ? "fa-lock" : "fa-unlock"}" aria-hidden="true"></i>`)
         .appendTo($controls);
+      return $controls.prepend($rows);
+    }
+
+    /** Options (gear), at the right of the bottom strip. */
+    function renderGear() {
       const $menu = $("<div>").addClass("n21-tbar-menu-wrap");
       $("<button type='button'>")
         .addClass("n21-tbar-gear")
@@ -839,6 +917,9 @@
         .attr({ role: "menu", hidden: "" })
         .append(
           $("<button type='button'>")
+            .attr({ role: "menuitem", "data-n21-option": "new-section" })
+            .text("Nueva sección"),
+          $("<button type='button'>")
             .attr({ role: "menuitem", "data-n21-option": "hide" })
             .text("Ocultar barra"),
           $("<button type='button'>")
@@ -846,7 +927,67 @@
             .text("Volver a la barra clásica"),
         )
         .appendTo($menu);
-      return $controls.prepend($modes, $rows).append($menu);
+      return $menu;
+    }
+
+    /* ----------------------- custom sections ----------------------- */
+
+    function addCustomSection() {
+      const layout = loadLayout(current.layoutKey);
+      const id = `${CUSTOM_PREFIX}${uuid()}`;
+      layout.custom.push({ id, label: `Sección ${layout.custom.length + 1}` });
+      saveLayout(current.layoutKey, layout);
+      nav = [];
+      render();
+      startRename(id);
+    }
+
+    function deleteCustomSection(id) {
+      const layout = loadLayout(current.layoutKey);
+      // Its items go back to their own sections (they're no longer placed).
+      layout.custom = layout.custom.filter((s) => s.id !== id);
+      delete layout.slots[id];
+      delete layout.widths[id];
+      layout.order = layout.order.filter((other) => other !== id);
+      layout.hidden = layout.hidden.filter((other) => other !== id);
+      if (layout.solo === id) layout.solo = null;
+      saveLayout(current.layoutKey, layout);
+      render();
+    }
+
+    /** Edit a section's name right on its tab. */
+    function startRename(id) {
+      const $tab = current?.$root.find(".n21-tbar-tab").filter((_, el) => el.getAttribute("data-n21-tab") === id);
+      if (!$tab.length) return;
+      const section = loadLayout(current.layoutKey).custom.find((s) => s.id === id);
+      if (!section) return;
+      const $input = $("<input type='text'>")
+        .addClass("n21-tbar-tab-input")
+        .attr({ maxlength: CUSTOM_LABEL_MAX, "aria-label": "Nombre de la sección" })
+        .val(section.label);
+      let done = false;
+      const finish = (save) => {
+        if (done) return;
+        done = true;
+        const label = String($input.val() || "").trim().slice(0, CUSTOM_LABEL_MAX);
+        if (save && label) {
+          const layout = loadLayout(current.layoutKey);
+          const target = layout.custom.find((s) => s.id === id);
+          if (target) target.label = label;
+          saveLayout(current.layoutKey, layout);
+        }
+        render();
+      };
+      $input.on("keydown", (event) => {
+        // Keep the tabletop shortcuts (token hotkeys, camera) out of it.
+        event.stopPropagation();
+        if (event.key === "Enter") finish(true);
+        else if (event.key === "Escape") finish(false);
+      });
+      $input.on("keyup keypress", (event) => event.stopPropagation());
+      $input.on("blur", () => finish(true));
+      $tab.replaceWith($input);
+      $input.trigger("focus").trigger("select");
     }
 
     /**
@@ -866,31 +1007,155 @@
       current.$root.css("--n21-tbar-right-inset", `${Math.round(inset)}px`);
     }
 
+    /* Bottom strip. Left: options, (characters) edit the items on the sheet
+       and refresh them, and the d20 roll mode. Right: the character's money
+       and its editor. */
+    const moneyCache = new Map(); // charId -> { currency: amount }
+    const editableCache = new Map(); // charId -> Promise<boolean>
+    const REFRESH_COOLDOWN_MS = 5000;
+    let lastRefresh = 0;
+    // Money changes shown right away and saved once the clicks stop.
+    const MONEY_SAVE_MS = 800;
+    const pendingMoney = new Map(); // charId -> { totals, timer }
+    // The money editor stays open (with what was typed) across re-renders.
+    let moneyEditor = null; // { charId, amounts: { currency: text } }
+
+    function hasInventory() {
+      return !!(window._n21_.inventoryPanel && current?.charId && current.tabs?.inventory?.length);
+    }
+
+    function renderFoot() {
+      const $left = $("<div>").addClass("n21-tbar-foot-side").append(renderGear());
+      const $right = $("<div>").addClass("n21-tbar-foot-side n21-tbar-foot-side--right");
+      if (hasInventory()) {
+        const charId = current.charId;
+        $("<a>")
+          .addClass("n21-tbar-gear")
+          .attr({
+            href: window._n21_.inventoryPanel.editUrl(charId),
+            target: "_blank",
+            rel: "noopener",
+            title: "Editar el equipo en la hoja del personaje",
+          })
+          .html('<i class="fa fa-pencil" aria-hidden="true"></i>')
+          .appendTo($left);
+        $("<button type='button'>")
+          .addClass("n21-tbar-gear n21-tbar-refresh")
+          .attr({ "data-n21-refresh": "", title: "Actualizar inventario" })
+          .html('<i class="fa fa-refresh" aria-hidden="true"></i>')
+          .appendTo($left);
+        renderMoney(charId).appendTo($right);
+      }
+      $left.append(renderModes());
+      return $("<div>").addClass("n21-tbar-foot").append($left, $right);
+    }
+
+    function moneyHtml(totals) {
+      return (
+        window._n21_.inventoryPanel.buildMoneyHtml(totals || {}) ||
+        '<span class="n21-tbar-money-empty">Sin dinero</span>'
+      );
+    }
+
+    function renderMoney(charId) {
+      const $wrap = $("<div>").addClass("n21-tbar-money-wrap");
+      const $money = $("<div>").addClass("n21-tbar-money").appendTo($wrap);
+      if (moneyCache.has(charId)) $money.html(moneyHtml(moneyCache.get(charId)));
+      else {
+        window._n21_.inventoryPanel
+          .getMoney(charId)
+          .then((totals) => {
+            moneyCache.set(charId, totals);
+            if ($money[0].isConnected) $money.html(moneyHtml(totals));
+          })
+          .catch(() => {});
+      }
+      if (!editableCache.has(charId)) editableCache.set(charId, CharacterItemsManager.canEdit(charId));
+      editableCache.get(charId).then((editable) => {
+        if (!editable || !$wrap[0].isConnected) return;
+        $("<button type='button'>")
+          .addClass("n21-tbar-gear")
+          .attr({ "data-n21-money-edit": "", title: "Editar el dinero", "aria-expanded": "false" })
+          .html('<i class="fa fa-pencil-square-o" aria-hidden="true"></i>')
+          .appendTo($wrap);
+        if (moneyEditor?.charId === charId) openMoneyEditor($wrap);
+      });
+      return $wrap;
+    }
+
     /**
-     * Stack the header in two levels when the tabs (or "Volver") don't fit
-     * next to the controls.
+     * Upward popup: the currencies side by side, each with an amount, and a
+     * single + / − that applies every amount typed and closes it.
      */
-    function updateHeaderLayout() {
-      const panel = current?.$root?.find(".n21-tbar-panel")[0];
-      if (!panel) return;
-      panel.classList.remove("is-stacked", "is-compact");
-      const header = panel.querySelector(".n21-tbar-tabs, .n21-tbar-head");
-      const fill = header?.querySelector(".n21-tbar-tablist");
-      const controls = header?.querySelector(".n21-tbar-controls");
-      if (!header || !controls) return;
-      const overflows =
-        (fill && fill.scrollWidth > fill.clientWidth + 1) ||
-        header.scrollWidth > header.clientWidth + 1;
-      panel.classList.toggle("is-stacked", overflows);
-      // Still too narrow for the controls alone: short roll mode labels.
-      // (Centered, they overflow on both sides and scrollWidth doesn't count
-      // the left part: add up their widths instead.)
-      if (overflows) {
-        const items = [...controls.children];
-        const gap = parseFloat(getComputedStyle(controls).columnGap) || 0;
-        const needed =
-          items.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0) + gap * (items.length - 1);
-        if (needed > controls.clientWidth) panel.classList.add("is-compact");
+    function openMoneyEditor($wrap) {
+      const charId = current.charId;
+      if (moneyEditor?.charId !== charId) moneyEditor = { charId, amounts: {} };
+      $wrap.find(".n21-tbar-money-pop").remove();
+      const $pop = $("<div>").addClass("n21-tbar-money-pop").attr({ role: "dialog", "aria-label": "Editar el dinero" });
+      window._n21_.money.CURRENCIES.forEach((currency) => {
+        const key = currency.key.toLowerCase();
+        const $cell = $("<label>").addClass("n21-tbar-money-cell").attr({ "data-n21-currency": key, title: currency.label });
+        $("<span>")
+          .addClass("n21-tbar-money-code")
+          .append($("<img>").attr({ src: window._n21_.money.iconUrl(currency), alt: "" }), document.createTextNode(currency.short))
+          .appendTo($cell);
+        $("<input type='number'>")
+          .attr({ min: 0, step: 1, inputmode: "numeric", placeholder: "0", "aria-label": `Cantidad de ${currency.label}` })
+          .val(moneyEditor.amounts[key] || "")
+          .appendTo($cell);
+        $pop.append($cell);
+      });
+      $("<div>")
+        .addClass("n21-tbar-money-actions")
+        .append(
+          $("<button type='button'>").attr({ "data-n21-money-delta": "1", title: "Sumar las cantidades" }).text("+"),
+          $("<button type='button'>").attr({ "data-n21-money-delta": "-1", title: "Restar las cantidades" }).text("−"),
+        )
+        .appendTo($pop);
+      $wrap.append($pop);
+      $wrap.find("[data-n21-money-edit]").attr("aria-expanded", "true");
+      $pop.find(`[data-n21-currency="gp"] input`).trigger("focus"); // Gold changes most
+    }
+
+    function closeMoneyEditor() {
+      moneyEditor = null;
+      $(".n21-tbar-money-pop").remove();
+      $("[data-n21-money-edit]").attr("aria-expanded", "false");
+    }
+
+    /** Add (or, negative, take) amounts: { currency: delta }. */
+    function changeMoney(charId, deltas) {
+      const totals = { ...(moneyCache.get(charId) || {}) };
+      Object.entries(deltas).forEach(([key, delta]) => {
+        totals[key] = Math.max(0, (Number(totals[key]) || 0) + delta);
+        if (!totals[key]) delete totals[key];
+      });
+      moneyCache.set(charId, totals);
+      current?.$root.find(".n21-tbar-money").html(moneyHtml(totals));
+      const pending = pendingMoney.get(charId) || {};
+      clearTimeout(pending.timer);
+      pending.totals = totals;
+      pending.timer = setTimeout(() => saveMoney(charId), MONEY_SAVE_MS);
+      pendingMoney.set(charId, pending);
+    }
+
+    async function saveMoney(charId) {
+      const pending = pendingMoney.get(charId);
+      if (!pending) return;
+      const totals = pending.totals;
+      let saved = false;
+      try {
+        saved = await CharacterItemsManager.updateEquipmentText(charId, (text, max) => {
+          const updated = window._n21_.money.setInText(text, totals);
+          // Never drop the player's text: skip if the field can't hold it.
+          return max && updated.length > max ? null : updated;
+        });
+      } catch (_error) {}
+      if (pendingMoney.get(charId)?.totals === totals) pendingMoney.delete(charId);
+      if (!saved) {
+        window.alert("No se pudo guardar el dinero (¿falta espacio en «Otras posesiones»?).");
+        moneyCache.delete(charId);
+        if (current?.charId === charId) render();
       }
     }
 
@@ -900,6 +1165,9 @@
       const { $root, layoutKey } = current;
       const layout = loadLayout(layoutKey);
       const view = currentView();
+      current.custom = layout.custom;
+      rollMode = layout.rollMode;
+      current.order = layout.order;
       current.sections = arrangeSections(current.tabs, layout);
       $root.toggleClass("is-unlocked", !layout.locked);
       // Hidden (the eye in Nivel20's quick menu): still rendered, so showing
@@ -907,6 +1175,7 @@
       $root.toggleClass("is-hidden", isHidden());
 
       const $panel = $("<div>").addClass("n21-tbar-panel");
+      const $main = $("<div>").addClass("n21-tbar-main");
       if (view.kind === "tabs") {
         const shown = shownTabs(layout);
         // Saved widths that add up to nothing would leave every section
@@ -922,10 +1191,17 @@
           }
           $sections.append(renderSection(tabId, layout, shown.length === 1));
         });
-        $panel.append(renderTabStrip(layout), $sections);
+        $main.append(renderTabStrip(layout), $sections);
       } else {
-        $panel.append(...renderFolder(view));
+        $main.append(...renderFolder(view));
       }
+      // Bottom strip: inventory info and options.
+      $main.append(renderFoot());
+      // Rows and lock in a column at the right.
+      $panel.append(
+        $main,
+        $("<div>").addClass("n21-tbar-side").append(renderControls(layout)),
+      );
 
       $root.css("--n21-tbar-rows", layout.rows).attr("data-sender-info", current.senderInfo);
       const $inner = $("<div>")
@@ -939,12 +1215,66 @@
           .appendTo($inner);
       });
       $root.empty().append($inner);
-      updateHeaderLayout();
       fillEmptySlots();
+      // Item tooltips only after resting on them a moment.
+      TooltipManager.setDelay($root[0].querySelectorAll(".n21-tbar-tile .tooltipstered, .n21-tbar-tile.tooltipstered"), TILE_TOOLTIP_DELAY_MS);
       // Grey out spells without slots now, not after the spell bar's
       // debounced observer (they'd flash in colour).
       window._n21_.spellSlotStyles?.refresh?.();
     }
+
+    /* ----------------------- section menu ----------------------- */
+
+    function closeTabMenu() {
+      $(".n21-tbar-tabmenu").remove();
+    }
+
+    /** Right click on a tab: rename / delete (user's sections), hide. */
+    function openTabMenu(id, x, y) {
+      closeTabMenu();
+      const layout = loadLayout(current.layoutKey);
+      const hidden = layout.hidden.includes(id);
+      const options = [];
+      if (isCustom(id)) options.push({ label: "Renombrar", run: () => startRename(id) });
+      options.push({
+        label: hidden ? "Mostrar en «Todos»" : "Ocultar en «Todos»",
+        run: () => {
+          const next = loadLayout(current.layoutKey);
+          next.hidden = hidden ? next.hidden.filter((other) => other !== id) : [...next.hidden, id];
+          saveLayout(current.layoutKey, next);
+          render();
+        },
+      });
+      // Its actions go back to their place, so nothing is lost.
+      if (isCustom(id)) options.push({ label: "Eliminar", run: () => deleteCustomSection(id) });
+      const $menu = $("<div>").addClass("n21-tbar-menu n21-tbar-tabmenu").attr("role", "menu");
+      options.forEach((option) => {
+        $("<button type='button'>")
+          .attr("role", "menuitem")
+          .text(option.label)
+          .on("click", (event) => {
+            event.stopPropagation();
+            closeTabMenu();
+            option.run();
+          })
+          .appendTo($menu);
+      });
+      current.$root.append($menu);
+      const width = $menu.outerWidth();
+      const height = $menu.outerHeight();
+      $menu.css({
+        left: Math.max(Math.min(x, window.innerWidth - width - 8), 8),
+        top: Math.max(y - height - 4, 8),
+      });
+    }
+
+    $(document).on("mousedown", (event) => {
+      if (!$(event.target).closest(".n21-tbar-tabmenu").length) closeTabMenu();
+      if (moneyEditor && !$(event.target).closest(".n21-tbar-money-wrap").length) closeMoneyEditor();
+    });
+    $(document).on("keydown", (event) => {
+      if (event.key === "Escape") closeTabMenu();
+    });
 
     /* ----------------------- interaction ----------------------- */
 
@@ -953,6 +1283,63 @@
         const tab = this.getAttribute("data-n21-tab");
         const layout = loadLayout(current.layoutKey);
         layout.solo = tab || null;
+        saveLayout(current.layoutKey, layout);
+        render();
+      });
+
+      $root.on("contextmenu", ".n21-tbar-tab[data-n21-tab]", function (event) {
+        const id = this.getAttribute("data-n21-tab");
+        if (!id) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openTabMenu(id, event.clientX, event.clientY);
+      });
+
+      /* Tabs are dragged to reorder the sections. */
+      let tabDrag = null;
+      const clearTabDrop = () => $root.find(".is-drop-before, .is-drop-after").removeClass("is-drop-before is-drop-after");
+      const dropSide = (el, event) => {
+        const rect = el.getBoundingClientRect();
+        return event.originalEvent.clientX < rect.left + rect.width / 2 ? "before" : "after";
+      };
+
+      $root.on("dragstart", ".n21-tbar-tab[draggable='true']", function (event) {
+        tabDrag = this.getAttribute("data-n21-tab");
+        const transfer = event.originalEvent.dataTransfer;
+        transfer.effectAllowed = "move";
+        transfer.setData("text/plain", tabDrag);
+        this.classList.add("is-dragging");
+      });
+
+      $root.on("dragend", ".n21-tbar-tab", function () {
+        this.classList.remove("is-dragging");
+        tabDrag = null;
+        clearTabDrop();
+      });
+
+      $root.on("dragover", ".n21-tbar-tab[data-n21-tab]", function (event) {
+        const id = this.getAttribute("data-n21-tab");
+        if (!tabDrag || !id || id === tabDrag) return;
+        event.preventDefault();
+        event.originalEvent.dataTransfer.dropEffect = "move";
+        clearTabDrop();
+        this.classList.add(`is-drop-${dropSide(this, event)}`);
+      });
+
+      $root.on("drop", ".n21-tbar-tab[data-n21-tab]", function (event) {
+        const target = this.getAttribute("data-n21-tab");
+        if (!tabDrag || !target || target === tabDrag) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const side = dropSide(this, event);
+        const ids = visibleTabs(current.sections)
+          .map((tab) => tab.id)
+          .filter((id) => id !== tabDrag);
+        ids.splice(ids.indexOf(target) + (side === "after" ? 1 : 0), 0, tabDrag);
+        tabDrag = null;
+        const layout = loadLayout(current.layoutKey);
+        // Keep the place of tabs that aren't shown now.
+        layout.order = [...ids, ...layout.order.filter((id) => !ids.includes(id))];
         saveLayout(current.layoutKey, layout);
         render();
       });
@@ -1029,8 +1416,7 @@
         const move = (e) => {
           const width = startWidth + 2 * direction * (e.clientX - startX);
           inner.style.width = `${Math.min(Math.max(width, MIN_WIDTH), maxWidth)}px`;
-          updateHeaderLayout();
-          fillEmptySlots();
+              fillEmptySlots();
         };
         const end = () => {
           window.removeEventListener("pointermove", move);
@@ -1086,6 +1472,8 @@
           setVisible(false);
         } else if (option === "classic") {
           SettingsManager.set(SETTING, false);
+        } else if (option === "new-section") {
+          addCustomSection();
         }
       });
 
@@ -1097,12 +1485,19 @@
       });
 
       /* Drag & drop (unlocked): onto a slot swaps with what's there; onto a
-         tab moves the item to that section's first free slot. */
+         tab moves the item to that section's first free slot. An inventory
+         item dragged out of the inventory is copied (a view of the same
+         item, it stays there too); dragging a copy back removes it. */
       let dragFrom = null;
-      // Inventory items stay in the inventory, and nothing else goes there.
       const isDropTarget = (el) => {
         const tab = el.getAttribute("data-n21-slot-section") || el.getAttribute("data-n21-tab");
-        return SLOT_TABS.includes(tab) && (tab === "inventory") === (dragFrom?.tab === "inventory");
+        if (!slotTabs().includes(tab) || !dragFrom) return false;
+        const toInventory = tab === "inventory";
+        if (dragFrom.tab === "inventory") {
+          // Copying out: onto a tab or an empty slot.
+          return toInventory || !el.hasAttribute("data-n21-key");
+        }
+        return !toInventory || dragFrom.copy;
       };
       const clearDrop = () => $root.find(".is-drop-target").removeClass("is-drop-target");
 
@@ -1110,6 +1505,7 @@
         dragFrom = {
           tab: this.getAttribute("data-n21-slot-section"),
           index: Number(this.getAttribute("data-n21-slot")),
+          copy: String(this.getAttribute("data-n21-key") || "").startsWith(COPY_PREFIX),
         };
         const transfer = event.originalEvent.dataTransfer;
         transfer.effectAllowed = "move";
@@ -1142,11 +1538,44 @@
         const from = dragFrom;
         dragFrom = null;
         const keys = {};
-        SLOT_TABS.forEach((tab) => {
+        slotTabs().forEach((tab) => {
           keys[tab] = (current.sections[tab] || []).map((node) => (node ? nodeKey(node) : null));
         });
         const moving = keys[from.tab][from.index];
         if (!moving) return;
+        const save = () => {
+          const layout = loadLayout(current.layoutKey);
+          layout.slots = keys;
+          saveLayout(current.layoutKey, layout);
+          render();
+        };
+        const targetTab = this.getAttribute("data-n21-slot-section") || this.getAttribute("data-n21-tab");
+
+        // A copy back to the inventory: gone (the item is still there).
+        if (from.copy && targetTab === "inventory") {
+          keys[from.tab][from.index] = null;
+          save();
+          return;
+        }
+
+        // Out of the inventory: a copy (only one per item: the old one goes).
+        if (from.tab === "inventory" && targetTab !== "inventory") {
+          const copy = COPY_PREFIX + moving;
+          Object.keys(keys).forEach((tab) => {
+            keys[tab] = keys[tab].map((key) => (key === copy ? null : key));
+          });
+          if (this.hasAttribute("data-n21-slot")) {
+            const index = Number(this.getAttribute("data-n21-slot"));
+            while (keys[targetTab].length <= index) keys[targetTab].push(null);
+            keys[targetTab][index] = copy;
+          } else {
+            const free = keys[targetTab].indexOf(null);
+            if (free === -1) keys[targetTab].push(copy);
+            else keys[targetTab][free] = copy;
+          }
+          save();
+          return;
+        }
 
         if (this.hasAttribute("data-n21-slot")) {
           const tab = this.getAttribute("data-n21-slot-section");
@@ -1162,21 +1591,71 @@
           if (free === -1) keys[tab].push(moving);
           else keys[tab][free] = moving;
         }
-
-        const layout = loadLayout(current.layoutKey);
-        layout.slots = keys;
-        saveLayout(current.layoutKey, layout);
-        render();
+        save();
       });
 
       // Only the toggle changes: no re-render.
       $root.on("click", "[data-n21-mode]", function () {
         rollMode = this.getAttribute("data-n21-mode");
+        const layout = loadLayout(current.layoutKey);
+        layout.rollMode = rollMode;
+        saveLayout(current.layoutKey, layout);
         $root.find("[data-n21-mode]").each(function () {
           const on = this.getAttribute("data-n21-mode") === rollMode;
           this.classList.toggle("is-active", on);
           this.setAttribute("aria-checked", String(on));
         });
+      });
+
+      $root.on("click", "[data-n21-money-edit]", function (event) {
+        event.stopPropagation();
+        if (moneyEditor) closeMoneyEditor();
+        else openMoneyEditor($(this).closest(".n21-tbar-money-wrap"));
+      });
+
+      $root.on("click", "[data-n21-money-delta]", function (event) {
+        event.stopPropagation();
+        const $pop = $(this).closest(".n21-tbar-money-pop");
+        const sign = Number(this.getAttribute("data-n21-money-delta"));
+        const deltas = {};
+        $pop.find("[data-n21-currency]").each(function () {
+          const amount = Math.floor(Number($(this).find("input").val()));
+          if (amount > 0) deltas[this.getAttribute("data-n21-currency")] = amount * sign;
+        });
+        if (!current?.charId || !Object.keys(deltas).length) {
+          $pop.find(`[data-n21-currency="gp"] input`).trigger("focus");
+          return;
+        }
+        changeMoney(current.charId, deltas);
+        closeMoneyEditor();
+      });
+
+      // Keep the tabletop shortcuts out of the inputs; Enter adds.
+      $root.on("keydown keyup keypress", ".n21-tbar-money-pop input", function (event) {
+        event.stopPropagation();
+        if (event.type === "keydown" && event.key === "Escape") closeMoneyEditor();
+        if (event.type === "keydown" && event.key === "Enter") {
+          $(this).closest(".n21-tbar-money-pop").find("[data-n21-money-delta='1']").trigger("click");
+        }
+      });
+
+      $root.on("input", ".n21-tbar-money-pop input", function () {
+        if (!moneyEditor) return;
+        moneyEditor.amounts[$(this).closest("[data-n21-currency]").attr("data-n21-currency")] = this.value;
+      });
+
+      $root.on("click", "[data-n21-refresh]", function () {
+        const charId = current?.charId;
+        if (!charId) return;
+        const wait = Math.ceil((lastRefresh + REFRESH_COOLDOWN_MS - Date.now()) / 1000);
+        if (wait > 0) {
+          this.title = `Espera ${wait} s antes de volver a actualizar`;
+          return;
+        }
+        lastRefresh = Date.now();
+        this.title = "Actualizar inventario";
+        this.classList.add("is-loading");
+        CharacterItemsManager.refresh(charId);
       });
 
       $root.on("click", "[data-n21-rows]", function () {
@@ -1212,6 +1691,38 @@
           event.stopPropagation();
           rollNode(node);
         }
+      });
+
+      // Inventory items: the inventory panel's menu (use, add, delete).
+      $root.on("contextmenu", ".n21-inventory-item", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const charId = current?.charId;
+        const items = inventoryCache.get(charId);
+        const item = Array.isArray(items) ? items[Number(this.getAttribute("data-index"))] : null;
+        if (!item || !(await CharacterItemsManager.canEdit(charId))) return;
+        window._n21_.inventoryPanel.showItemMenu(this, event.clientX, event.clientY, item, {
+          onQuantity: (delta) => {
+            const next = Math.max(0, (item.quantity ?? 1) + delta);
+            if (!CharacterItemsManager.setQuantity(charId, item, next)) return;
+            // Shown right away; saved once the clicks stop.
+            item.quantity = next;
+            render();
+          },
+          onDelete: async () => {
+            if (!window.confirm(`¿Eliminar «${item.name}» del inventario?`)) return;
+            // Gone right away; back if the deletion fails.
+            inventoryCache.set(charId, items.filter((other) => other !== item));
+            render();
+            try {
+              await CharacterItemsManager.deleteItem(charId, item);
+            } catch (error) {
+              inventoryCache.set(charId, items);
+              render();
+              window.alert("No se pudo eliminar el objeto.");
+            }
+          },
+        });
       });
     }
 
@@ -1376,6 +1887,29 @@
         }),
       )
       .catch(() => {});
+
+    // Saved inventory edits (here or in the inventory panel): reload them.
+    // The items shown stay until the new ones arrive.
+    CharacterItemsManager.onChange((charId) => {
+      // Money: unless changes of ours are still waiting to be saved.
+      if (moneyCache.has(charId)) {
+        window._n21_.inventoryPanel
+          ?.getMoney(charId)
+          .then((totals) => {
+            if (pendingMoney.has(charId)) return;
+            moneyCache.set(charId, totals);
+            if (current?.charId === charId) render();
+          })
+          .catch(() => {});
+      }
+      if (!Array.isArray(inventoryCache.get(charId))) return;
+      CharacterItemsManager.getItems(charId)
+        .then((items) => {
+          inventoryCache.set(charId, items || []);
+          if (current?.charId === charId) render();
+        })
+        .catch(() => {});
+    });
 
     syncVisibilityToggle();
     if (featureEnabled) ActionBarManager.rerenderCharacterBars();

@@ -40,7 +40,11 @@
     setTimeout(() => el.remove(), 5000);
   }
 
-  function showDialog(key, { title, description, required }) {
+  const REQUIRED_WARNING = "Si no se envía, el cambio no se aplica.";
+
+  function showDialog(key, { title, description, required, warning }) {
+    // Actions that only exist to send the message don't need the warning.
+    const warningText = warning !== undefined ? warning : required ? REQUIRED_WARNING : "";
     return new Promise((resolve) => {
       document.getElementById(DIALOG_ID)?.remove();
       const overlay = document.createElement("div");
@@ -50,11 +54,7 @@
         <div class="n21-chat-consent-box" role="dialog" aria-modal="true" aria-labelledby="${DIALOG_ID}-title">
           <h5 id="${DIALOG_ID}-title">${escapeHtml(title || "¿Enviar al chat?")}</h5>
           ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-          ${
-            required
-              ? "<p class=\"n21-chat-consent-warning\">Si no se envía, el cambio no se aplica.</p>"
-              : ""
-          }
+          ${warningText ? `<p class="n21-chat-consent-warning">${escapeHtml(warningText)}</p>` : ""}
           <label class="n21-chat-consent-remember">
             <input type="checkbox" /> No volver a preguntar
           </label>
@@ -89,7 +89,11 @@
 
   /**
    * @param {string} key - Action type (see chat-consent.* settings)
-   * @param {{title?: string, description?: string, required?: boolean}} [options]
+   * @param {{title?: string, description?: string, required?: boolean,
+   *   warning?: string, blockedMessage?: string}} [options] - `required`:
+   *   the action only happens if sent (warns in the dialog, or with
+   *   `warning`; "" for none) and tells when sending is turned off (or
+   *   `blockedMessage`).
    * @returns {Promise<boolean>} Whether to send the message
    */
   function confirm(key, options = {}) {
@@ -97,7 +101,10 @@
     if (value === "always") return Promise.resolve(true);
     if (value === "never") {
       if (options.required) {
-        toast("No se aplicó: el envío al chat está desactivado en la configuración de Nivel 21.");
+        toast(
+          options.blockedMessage ||
+            "No se aplicó: el envío al chat está desactivado en la configuración de Nivel 21.",
+        );
       }
       return Promise.resolve(false);
     }

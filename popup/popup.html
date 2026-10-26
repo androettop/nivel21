@@ -278,7 +278,7 @@
             <b>Click en la vida:</b> curar, dañar o dar puntos temporales. Si tiene Concentración y recibe daño, ofrece tirar la salvación de Constitución.
           </div>
           <div class="feature-description">
-            <b>Recursos:</b> click gasta, click derecho recupera. <b>Estados:</b> click derecho para quitar, <b>+</b> para buscar y agregar.
+            <b>Recursos:</b> click gasta, click derecho recupera; el <b>+</b> del final abre «Recursos de…» para crear o editar recursos. <b>Estados:</b> click derecho para quitar, <b>+</b> para buscar y agregar.
           </div>
           <div class="feature-description">
             Solo puedes editar si tienes permiso para editar la vida de ese personaje en Nivel20.
@@ -335,6 +335,43 @@
         </div>
       </div>
 
+      <!-- Barra de acciones con pestañas -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Barra de acciones con pestañas</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Separa las acciones en Acciones, Conjuros, Inventario y Rasgos. «Todos» las muestra lado a lado y cada pestaña muestra solo la suya.
+          </div>
+          <div class="feature-description">
+            Arriba, las pestañas: arrástralas para reordenar las secciones; con click derecho se ocultan de «Todos» (y las propias se renombran o eliminan). A la derecha, las filas y el candado. Abajo a la izquierda, la rueda, editar y actualizar el inventario y el modo de las tiradas de d20 (V, N, D; se recuerda por personaje o criatura). Abajo a la derecha, el dinero: su botón permite sumar o restar monedas. Click derecho en un objeto para usarlo, añadir uno o eliminarlo; arrastrado a otra sección queda también ahí (sigue en el inventario).
+          </div>
+          <div class="feature-description">
+            <b>Secciones propias:</b> «Nueva sección» en la rueda crea una a la derecha, colapsada; arrastra su divisor para abrirla y, con el candado abierto, arrastra acciones a ella.
+          </div>
+          <img
+            src="img/tabbed-action-bar.png"
+            alt="Barra de acciones con pestañas"
+            class="feature-screenshot"
+          />
+        </div>
+      </div>
+
+      <!-- Acciones que modifican recursos -->
+      <div class="feature">
+        <button class="feature-header" type="button" aria-expanded="false">
+          <span class="feature-title">Acciones que modifican recursos</span>
+          <span class="feature-chevron"></span>
+        </button>
+        <div class="feature-body">
+          <div class="feature-description">
+            Escribe en la descripción de una acción <b>[resource Furia -1]</b> (resta), <b>[resource Furia +1]</b> (suma) o <b>[resource Furia 3]</b> (fija el valor). Al hacer click en la acción se cambia el recurso; la etiqueta no se ve en la descripción.
+          </div>
+        </div>
+      </div>
+
       <!-- Editor de la barra de acciones -->
       <div class="feature">
         <button class="feature-header" type="button" aria-expanded="false">
@@ -371,6 +408,13 @@
             ></span>
             <span class="hotkey-description"
               >Alternar persistencia de mediciones</span
+            >
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">Click derecho</span>
+            <span class="hotkey-description"
+              >Con el ancla activa, borra la medición de debajo (mantenlo
+              pulsado para borrar varias)</span
             >
           </div>
 
@@ -556,12 +600,16 @@
             <span class="hotkey-description">Editar el token seleccionado</span>
           </div>
           <div class="hotkey">
-            <span class="hotkey-key">Ctrl + D</span>
+            <span class="hotkey-key">Ctrl + J</span>
             <span class="hotkey-description">Duplicar el token seleccionado</span>
           </div>
           <div class="hotkey">
-            <span class="hotkey-key">Delete</span>
+            <span class="hotkey-key">Supr</span>
             <span class="hotkey-description">Eliminar el token seleccionado</span>
+          </div>
+          <div class="hotkey">
+            <span class="hotkey-key">RePág / AvPág</span>
+            <span class="hotkey-description">Subir o bajar una capa el token (DM)</span>
           </div>
           <img
             src="img/token-hotkeys.png"
@@ -579,11 +627,11 @@
         </button>
         <div class="feature-body">
           <div class="feature-description">
-            Mueve uno o varios tokens seleccionados con las flechas del teclado.
+            Mueve uno o varios tokens seleccionados con las flechas del teclado. Los muros lo detienen igual que al arrastrar.
           </div>
           <div class="hotkey">
             <span class="hotkey-key">Flechas</span>
-            <span class="hotkey-description">Mover token una casilla</span>
+            <span class="hotkey-description">Mover token una casilla (dos a la vez: en diagonal)</span>
           </div>
           <img
             src="img/token-move-arrows.png"
@@ -602,6 +650,9 @@
         <div class="feature-body">
           <div class="feature-description">
             Muestra automáticamente la distancia recorrida al arrastrar tokens por el mapa.
+          </div>
+          <div class="feature-description">
+            Con la previsualización activada (botón del ojo, desactivado por defecto), el token no se mueve mientras lo arrastras: una copia semitransparente marca a dónde iría. Con clic derecho, sin soltar, fijas puntos intermedios. Al soltar, el token recorre el camino; con Escape se cancela.
           </div>
           <img
             src="img/token-drag-measurement.png"

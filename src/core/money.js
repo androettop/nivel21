@@ -17,12 +17,13 @@
     ======================================================================= */
 
   // Currencies in display / serialization order. Add or replace freely.
+  // `short`: the Spanish abbreviation shown to players.
   const CURRENCIES = [
-    { key: "pp", label: "Platino", icon: "pp.png" },
-    { key: "gp", label: "Oro", icon: "gp.png" },
-    { key: "ep", label: "Electro", icon: "ep.png" },
-    { key: "sp", label: "Plata", icon: "sp.png" },
-    { key: "cp", label: "Cobre", icon: "cp.png" },
+    { key: "pp", short: "ppt", label: "Platino", icon: "pp.png" },
+    { key: "gp", short: "po", label: "Oro", icon: "gp.png" },
+    { key: "ep", short: "pe", label: "Electro", icon: "ep.png" },
+    { key: "sp", short: "pp", label: "Plata", icon: "sp.png" },
+    { key: "cp", short: "pc", label: "Cobre", icon: "cp.png" },
   ];
 
   /** Build the bundled-asset URL for a currency icon. */

@@ -175,13 +175,46 @@
 
       $("#floating-panels-holder").append($panel);
 
-      
-
       if (typeof window.bindFloatingPanels === "function") {
         window.bindFloatingPanels();
       }
 
+      this._fitToViewport($panel[0]);
+      if (!this._fitOnResize) {
+        this._fitOnResize = true;
+        window.addEventListener("resize", () => {
+          document.querySelectorAll(".floating-panel.n21-panel").forEach((panel) => this._fitToViewport(panel));
+        });
+      }
+
       return $panel;
+    }
+
+    /**
+     * Keep one of our panels inside the window: shrink it when it's larger
+     * (its content scrolls) and move it back when it sticks out.
+     * @private
+     */
+    _fitToViewport(panel) {
+      if (!panel?.isConnected) return;
+      const MARGIN = 8;
+      const maxWidth = window.innerWidth - MARGIN * 2;
+      const maxHeight = window.innerHeight - MARGIN * 2;
+      const style = panel.style;
+      let rect = panel.getBoundingClientRect();
+      if (rect.width > maxWidth) {
+        style.minWidth = "0px";
+        style.width = `${maxWidth}px`;
+      }
+      if (rect.height > maxHeight) {
+        style.minHeight = "0px";
+        style.height = `${maxHeight}px`;
+      }
+      rect = panel.getBoundingClientRect();
+      const left = Math.min(Math.max(rect.left, MARGIN), window.innerWidth - rect.width - MARGIN);
+      const top = Math.min(Math.max(rect.top, MARGIN), window.innerHeight - rect.height - MARGIN);
+      if (left !== rect.left) style.left = `${(parseFloat(style.left) || 0) + left - rect.left}px`;
+      if (top !== rect.top) style.top = `${(parseFloat(style.top) || 0) + top - rect.top}px`;
     }
 
     /**

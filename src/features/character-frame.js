@@ -255,6 +255,10 @@
       const resources = [
         ...entry.resources.map((r) => buildResourceHtml(r, "native", entry.editable)),
         ...getLocalResources(entry).map((r) => buildResourceHtml(r, "local")),
+        // Characters' resources live in Nivel20: its "Recursos de" modal.
+        entry.type === "character" && entry.editable
+          ? `<button type="button" class="n21-cframe-res n21-cframe-res-add" title="Agregar o editar recursos" aria-label="Agregar o editar recursos">+</button>`
+          : "",
       ].join("");
 
 
@@ -558,6 +562,11 @@
           return;
         }
 
+        if (target.closest(".n21-cframe-res-add")) {
+          if (current) CombatTrackingManager.openResourcesModal(current.id);
+          return;
+        }
+
         const resource = target.closest(".n21-cframe-res");
         if (resource) changeResource(resource, 1);
       });
@@ -573,7 +582,7 @@
           }
           return;
         }
-        const resource = event.target.closest(".n21-cframe-res");
+        const resource = event.target.closest(".n21-cframe-res:not(.n21-cframe-res-add)");
         if (!resource) return;
         event.preventDefault();
         changeResource(resource, -1);

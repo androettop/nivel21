@@ -206,6 +206,14 @@
       });
 
       this.registerSetting({
+        name: "feature.resource-actions.enabled",
+        label: "Acciones que modifican recursos",
+        type: "boolean",
+        defaultValue: true,
+        category: "features",
+      });
+
+      this.registerSetting({
         name: "feature.money-editor.enabled",
         label: "Editor de monedas en el equipo",
         type: "boolean",
@@ -305,6 +313,14 @@
         label: "Mostrar la distancia al mover un token",
         type: "boolean",
         defaultValue: true,
+        category: "medicion",
+      });
+
+      this.registerSetting({
+        name: "token-drag-measurement.preview-move",
+        label: "Previsualizar el movimiento antes de mover un token",
+        type: "boolean",
+        defaultValue: false,
         category: "medicion",
       });
 
@@ -463,16 +479,16 @@
       });
 
       this.registerSetting({
-        name: "hotkey.token.height.up",
-        label: "Subir altura de token",
+        name: "hotkey.token.layer.up",
+        label: "Subir de capa el token",
         type: "hotkey",
         defaultValue: "pageup",
         category: "token-shortcuts",
       });
 
       this.registerSetting({
-        name: "hotkey.token.height.down",
-        label: "Bajar altura de token",
+        name: "hotkey.token.layer.down",
+        label: "Bajar de capa el token",
         type: "hotkey",
         defaultValue: "pagedown",
         category: "token-shortcuts",

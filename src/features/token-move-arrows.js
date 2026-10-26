@@ -2,18 +2,29 @@
   try {
     /* =======================
          Feature: Token Move Arrows
+
+         The arrow keys move the selected tokens as if they were dragged:
+         Nivel20 moves them, so walls stop them just like with the mouse
+         (players can't go through), and they're synced to the room.
       ======================= */
 
     const { loadManagers } = window._n21_;
-    const [SettingsManager] = await loadManagers("SettingsManager");
+    const [SettingsManager, TokenManager, CameraManager] = await loadManagers(
+      "SettingsManager",
+      "TokenManager",
+      "CameraManager",
+    );
 
     // Check if feature is enabled
     if (!SettingsManager.get("feature.token-move-arrows.enabled")) {
       return;
     }
 
-    const { TokenManager } = window._n21_?.managers || {};
-    const selectedTokenWrapper = ".selected-token-wrapper";
+    const ARROWS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    const MOVE_SPEED = 20; // Cells per second
+    // Two arrows pressed together (diagonal) rarely land at the same time:
+    // wait this long for the second one before stepping.
+    const COMBINE_MS = 60;
 
     function getMovementStep() {
       const configured = Number(SettingsManager.get("token-move.step"));
@@ -23,96 +34,91 @@
 
     function isEditableTarget(target) {
       return (
-        target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
       );
     }
 
-    function getSelectedSchemas() {
-      if (Array.isArray(window.selectedSchemas)) {
-        return window.selectedSchemas;
-      }
-
-      return [];
-    }
-
-    function isTokenWrapperActive() {
-      const wrapper = document.querySelector(selectedTokenWrapper);
-      return wrapper && !wrapper.classList.contains("hidden");
-    }
-
-    function updateTokenPositions(selectedSchemas, deltaX, deltaZ) {
-      if (!TokenManager || typeof TokenManager.updatePosition !== "function")
-        return;
-
-      selectedSchemas.forEach((selectedSchema) => {
-        if (
-          !selectedSchema ||
-          !selectedSchema.networkId ||
-          !selectedSchema.position
-        )
-          return;
-
-        if (!TokenManager.isTokenSelectable(selectedSchema.networkId)) return;
-
-        const currentX =
-          typeof selectedSchema.position.x === "number"
-            ? selectedSchema.position.x
-            : 0;
-        const currentZ =
-          typeof selectedSchema.position.z === "number"
-            ? selectedSchema.position.z
-            : 0;
-        const nextX = currentX + deltaX;
-        const nextZ = currentZ + deltaZ;
-
-        TokenManager.updatePosition(selectedSchema.networkId, {
-          ...selectedSchema.position,
-          x: nextX,
-          z: nextZ,
-        });
-      });
-    }
-
     const pressedKeys = new Set();
+    let moving = false;
+    let again = false; // An arrow was pressed during the step
+    let combineTimer = null;
 
-    function applyMovementFromPressed(selectedSchemas) {
+    function movementFromPressed() {
       const step = getMovementStep();
       const hasUp = pressedKeys.has("ArrowUp");
       const hasDown = pressedKeys.has("ArrowDown");
       const hasLeft = pressedKeys.has("ArrowLeft");
       const hasRight = pressedKeys.has("ArrowRight");
-
-      const deltaZ = hasUp && hasDown ? 0 : hasUp ? -step : hasDown ? step : 0;
-      const deltaX =
-        hasLeft && hasRight ? 0 : hasLeft ? -step : hasRight ? step : 0;
-
-      if (deltaX === 0 && deltaZ === 0) return;
-      updateTokenPositions(selectedSchemas, deltaX, deltaZ);
+      return {
+        x: hasLeft && hasRight ? 0 : hasLeft ? -step : hasRight ? step : 0,
+        z: hasUp && hasDown ? 0 : hasUp ? -step : hasDown ? step : 0,
+      };
     }
 
-    $(document).on("keydown keyup", (e) => {
-      if (!isTokenWrapperActive()) return;
-      if (isEditableTarget(e.target)) return;
+    /**
+     * With whole-cell steps, land on a cell: its center (x.5) for tokens of
+     * odd size, a grid corner for even ones, like Nivel20's snap.
+     */
+    function snapToCell(networkId, point) {
+      if (!Number.isInteger(getMovementStep())) return point;
+      const size = Math.max(1, Math.round(Math.abs(TokenManager.getTokenScale(networkId)?.x || 1)));
+      const snap = size % 2 ? (v) => Math.floor(v) + 0.5 : (v) => Math.round(v);
+      return { x: snap(point.x), z: snap(point.z) };
+    }
 
-      if (
-        e.key !== "ArrowUp" &&
-        e.key !== "ArrowDown" &&
-        e.key !== "ArrowLeft" &&
-        e.key !== "ArrowRight"
-      )
+    async function move() {
+      if (moving) {
+        again = true;
         return;
+      }
+      again = false;
+      const delta = movementFromPressed();
+      if (!delta.x && !delta.z) return;
+      // Nivel20 moves the rest of the selection with the grabbed token.
+      const networkId = TokenManager.getSelectedTokenIds().find((id) =>
+        TokenManager.isTokenSelectable(id),
+      );
+      const position = networkId && TokenManager.getTokenPosition(networkId);
+      if (!position) return;
+      moving = true;
+      try {
+        await CameraManager.moveTokenAlongPath(
+          networkId,
+          [snapToCell(networkId, { x: position.x + delta.x, z: position.z + delta.z })],
+          { speed: MOVE_SPEED },
+        );
+      } finally {
+        moving = false;
+      }
+      // Keys still held after the step: keep going.
+      if (again && pressedKeys.size) move();
+    }
 
+    document.addEventListener("keydown", (e) => {
+      if (!ARROWS.includes(e.key) || isEditableTarget(e.target)) return;
+      if (!TokenManager.getSelectedTokenIds().length) return;
       e.preventDefault();
-
-      if (e.type === "keydown") {
-        const selectedSchemas = getSelectedSchemas();
-        if (!selectedSchemas.length) return;
-        pressedKeys.add(e.key);
-        applyMovementFromPressed(selectedSchemas);
-      } else {
-        pressedKeys.delete(e.key);
+      pressedKeys.add(e.key);
+      if (moving) {
+        again = true;
+        return;
+      }
+      if (!combineTimer) {
+        combineTimer = setTimeout(() => {
+          combineTimer = null;
+          move();
+        }, COMBINE_MS);
       }
     });
+
+    document.addEventListener("keyup", (e) => {
+      pressedKeys.delete(e.key);
+    });
+
+    window.addEventListener("blur", () => pressedKeys.clear());
   } catch (error) {
     window._n21_.utils.registerFeatureError("Token Move Arrows", error);
   }
