@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Nivel21",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Automatiza y mejora la experiencia en Nivel20.",
   "permissions": [
     "scripting",
@@ -107,8 +107,10 @@
         "src/features/floating-panel-action.js",
         "src/features/inventory-panel.js",
         "src/features/action-bar-editor.js",
+        "src/features/tabbed-action-bar.js",
         "src/features/money-editor.js",
         "src/features/character-frame.js",
+        "src/features/resource-actions.js",
         "src/features/creature-resources.js",
         "src/features/token-health-bar.js",
         "src/features/token-conditions.js",

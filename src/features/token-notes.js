@@ -205,6 +205,8 @@
             title: "¿Enviar las notas del token al chat?",
             description: "Todos los jugadores verán el token y sus notas en el chat.",
             required: true,
+            warning: "",
+            blockedMessage: "No se envió: el envío al chat está desactivado en la configuración de Nivel 21.",
           })
           .then((send) => {
             if (!send) return;

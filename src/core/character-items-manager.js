@@ -301,6 +301,12 @@
       return true;
     }
 
+    /** Forget the cached sheet and tell listeners to reload (manual refresh). */
+    refresh(charId) {
+      this._invalidate(charId);
+      this._notify(charId);
+    }
+
     /* ----------------------- events ----------------------- */
 
     /** @returns {Function} Unsubscribe. Callback gets (charId). */

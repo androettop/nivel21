@@ -88,6 +88,19 @@
     }
 
     /**
+     * Roll an action bar item the way the native bar does: the notation plus
+     * its full `roll_options` (roll_name, roll_type, sender_info, icon…).
+     * @param {string} notation - e.g. "1d20+3"
+     * @param {Object} [rollOptions]
+     * @returns {boolean} True if the roll was requested
+     */
+    rollAction(notation, rollOptions = {}) {
+      if (typeof window.diceRoll !== "function" || !notation) return false;
+      window.diceRoll(String(notation), { ...rollOptions });
+      return true;
+    }
+
+    /**
      * Hook into the global diceRoll function
      * This is called automatically during initialization
      */

@@ -60,7 +60,7 @@
      */
     function resolveCharacterId(element) {
       try {
-        const bar = $(element).closest(".action-bar")[0];
+        const bar = $(element).closest(".action-bar, .n21-tbar")[0];
         const senderInfo = bar?.getAttribute("data-sender-info") || "";
         const match = senderInfo.match(/Character-(\d+)/);
         return match ? match[1] : null;
@@ -276,7 +276,7 @@
           event.preventDefault();
           event.stopPropagation();
           const ChatManager = window._n21_.managers.ChatManager;
-          const senderInfo = $(element).closest(".action-bar").attr("data-sender-info");
+          const senderInfo = $(element).closest(".action-bar, .n21-tbar").attr("data-sender-info");
           const spellName = action.n21_spell_name || action.name;
           const message = `Lanza ${spellName}${action.n21_concentration ? " (concentración)" : ""}`;
           // The spell is cast either way; only the chat notice is optional.
@@ -316,17 +316,26 @@
     function refreshSlotStyles() {
       const Tracking = window._n21_.managers.CombatTrackingManager;
       if (!Tracking) return; // only on the tabletop (combat tracking panel)
-      document.querySelectorAll(".action-bar[data-sender-info]").forEach((bar) => {
+      document.querySelectorAll(".action-bar[data-sender-info], .n21-tbar[data-sender-info]").forEach((bar) => {
         const match = (bar.getAttribute("data-sender-info") || "").match(/Character-(\d+)/);
         const entry = match ? Tracking.getEntry("character", match[1]) : null;
         const levels = entry ? availableLevels(entry) : null;
         bar.querySelectorAll(".action-bar-element[data-n21-spell-level]").forEach((el) => {
           const level = Number(el.getAttribute("data-n21-spell-level"));
-          const empty = !!levels && level > 0 && !levels.has(level);
+          // Spells castable with a higher slot (tabbed bar) only need any
+          // slot of their level or higher.
+          const castable = el.hasAttribute("data-n21-spell-upcast")
+            ? [...(levels || [])].some((l) => l >= level)
+            : levels?.has(level);
+          const empty = !!levels && level > 0 && !castable;
           el.classList.toggle("n21-spell-no-slots", empty);
         });
       });
     }
+
+    // Lets the tabbed action bar grey its tiles right after rendering, with
+    // no frame in colour.
+    window._n21_.spellSlotStyles = { refresh: refreshSlotStyles };
 
     let slotStyleTimer = null;
     function scheduleSlotStyles() {

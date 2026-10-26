@@ -89,7 +89,7 @@
      */
     function resolveCharacterId(element) {
       try {
-        const bar = $(element).closest(".action-bar")[0];
+        const bar = $(element).closest(".action-bar, .n21-tbar")[0];
         const senderInfo = bar?.getAttribute("data-sender-info") || "";
         const match = senderInfo.match(/Character-(\d+)/);
         return match ? match[1] : null;
@@ -469,10 +469,7 @@
         '<div class="n21-inventory-footer">' +
         '<button class="n21-inventory-refresh">' +
         '<i class="fa fa-refresh"></i></button>' +
-        // The items tab only opens on the campaign URL of the sheet.
-        `<a class="n21-inventory-edit" href="${escapeHtml(
-          CombatTrackingManager.getCharacterSheetUrl(charId),
-        )}?panel=items" target="_blank" rel="noopener" title="Editar el equipo en la hoja del personaje">` +
+        `<a class="n21-inventory-edit" href="${escapeHtml(editUrl(charId))}" target="_blank" rel="noopener" title="Editar el equipo en la hoja del personaje">` +
         '<i class="fa fa-pencil"></i></a>' +
         '<div class="n21-inventory-money"></div>' +
         "</div>" +
@@ -572,6 +569,40 @@
     $(document).on("keydown.n21InventoryMenu", (event) => {
       if (event.key === "Escape") closeContextMenu();
     });
+
+    /**
+     * The item's menu: use one, add one, delete. Also used by the tabbed
+     * action bar's inventory.
+     */
+    function showItemMenu(cell, x, y, item, { onQuantity, onDelete }) {
+      // The item's own tooltip would stay open on top of the menu.
+      $(cell)
+        .find(".tooltipstered")
+        .addBack(".tooltipstered")
+        .each(function () {
+          if (typeof $(this).tooltipster === "function") tooltipster($(this), ["close", "hide"]);
+        });
+      const editable = !!item.itemId;
+      const quantity = item.quantity ?? 1;
+      showContextMenu(x, y, [
+        {
+          label: "Usar uno (−1)",
+          disabled: !editable || quantity <= 0,
+          onClick: () => onQuantity(-1),
+        },
+        {
+          label: "Añadir uno (+1)",
+          disabled: !editable,
+          onClick: () => onQuantity(1),
+        },
+        {
+          label: "Eliminar objeto",
+          danger: true,
+          disabled: !item.deleteUrl,
+          onClick: () => onDelete(),
+        },
+      ]);
+    }
 
     function flashMessage($panel, text) {
       const $msg = $panel.find(".n21-inventory-message");
@@ -686,36 +717,13 @@
         event.preventDefault();
         event.stopPropagation();
         if (!$panel.data("n21InventoryEditable")) return;
-        // The item's own tooltip would stay open on top of the menu.
-        $(this)
-          .find(".tooltipstered")
-          .addBack(".tooltipstered")
-          .each(function () {
-            if (typeof $(this).tooltipster === "function") tooltipster($(this), ["close", "hide"]);
-          });
         const index = Number($(this).attr("data-index"));
         const item = ($panel.data("n21InventoryItems") || [])[index];
         if (!item) return;
-        const editable = !!item.itemId;
-        const quantity = item.quantity ?? 1;
-        showContextMenu(event.clientX, event.clientY, [
-          {
-            label: "Usar uno (−1)",
-            disabled: !editable || quantity <= 0,
-            onClick: () => changeQuantity($panel, charId, index, -1),
-          },
-          {
-            label: "Añadir uno (+1)",
-            disabled: !editable,
-            onClick: () => changeQuantity($panel, charId, index, 1),
-          },
-          {
-            label: "Eliminar objeto",
-            danger: true,
-            disabled: !item.deleteUrl,
-            onClick: () => deleteItem($panel, charId, index),
-          },
-        ]);
+        showItemMenu(this, event.clientX, event.clientY, item, {
+          onQuantity: (delta) => changeQuantity($panel, charId, index, delta),
+          onDelete: () => deleteItem($panel, charId, index),
+        });
       });
 
       // Drag & drop between slots (saved locally for this character):
@@ -812,6 +820,20 @@
       }
       items.push(buildInventoryItem(charId));
     }
+
+    // Shared with the tabbed action bar's "Inventario" tab.
+    /** Money of a character: { currency key (lowercase): amount }. */
+    async function getMoney(charId) {
+      const ph = await CharacterSheetManager.fetchCharacter(`/characters/${charId}.json`);
+      return money.parse(ph?.equipment);
+    }
+
+    /** The sheet's items tab (only opens on the campaign URL of the sheet). */
+    function editUrl(charId) {
+      return `${CombatTrackingManager.getCharacterSheetUrl(charId)}?panel=items`;
+    }
+
+    window._n21_.inventoryPanel = { buildItemCell, showItemMenu, getMoney, buildMoneyHtml, editUrl };
 
     // List the item in the action bar editor.
     window._n21_.actionBarLayout?.registerProvider("inventory", {

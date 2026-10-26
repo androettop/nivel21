@@ -1637,7 +1637,8 @@ body.darkmode--activated .n21-cframe {
 	position: absolute;
 	top: 12px;
 	left: 12px;
-	z-index: 1000;
+	/* Below Nivel20's side menu (z-index 1000), whose labels fly over it. */
+	z-index: 999;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -1956,6 +1957,14 @@ body.darkmode--activated .n21-cframe {
 .n21-cframe-res:hover,
 .n21-cframe-res:focus-visible {
 	border-color: var(--n21-cf-text);
+}
+
+/* "+" after the resources: opens Nivel20's resources modal. */
+.n21-cframe-res-add {
+	border-style: dashed;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
 }
 
 .n21-cframe-res-top,
@@ -3262,4 +3271,866 @@ body.darkmode--activated .n21-effects-options {
 .card.floating-panel.n21-effects-panel .card-body,
 .card.floating-panel.n21-effects-panel .floating-block {
 	overflow: visible !important;
+}
+
+/* ----------------------- Tabbed action bar ----------------------- */
+
+.n21-tbar-native-hidden {
+	display: none !important;
+}
+
+.n21-tbar,
+.n21-tbar-classic {
+	--n21-tbar-bg: rgba(250, 250, 249, 0.92);
+	--n21-tbar-pop-bg: rgb(250, 250, 249);
+	--n21-tbar-surface: rgba(0, 0, 0, 0.06);
+	--n21-tbar-border: #cfcecb;
+	--n21-tbar-text: #1f2023;
+	--n21-tbar-muted: #5f5e5a;
+	--n21-tbar-active: rgba(0, 0, 0, 0.12);
+	--n21-tbar-adv: #2f7d3a;
+	--n21-tbar-dis: #b3261e;
+	--n21-tbar-divider: #b9b8b4;
+	--n21-tbar-divider-edge: rgba(0, 0, 0, 0.18);
+	--n21-tbar-divider-grip: rgba(0, 0, 0, 0.45);
+	--n21-tbar-divider-hover: #9c9b97;
+}
+
+.n21-tbar {
+	--n21-tbar-tile: 54px;
+	--n21-tbar-gap: 4px;
+	--n21-tbar-rows: 1;
+	--n21-tbar-right-inset: 64px;
+	/* Out of Nivel20's bottom layout: it never pushes the quick menu up, and
+	   it ends where that menu starts (inset measured by the feature). */
+	position: absolute;
+	left: 0;
+	right: var(--n21-tbar-right-inset);
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	/* Never widen Nivel20's (resizable) layout with the bar's content. */
+	contain: inline-size;
+	padding: 0 8px 8px;
+	color: var(--n21-tbar-text);
+	font-size: 14px;
+	line-height: 1.3;
+	pointer-events: none;
+}
+
+body.darkmode--activated .n21-tbar,
+body.darkmode--activated .n21-tbar-classic {
+	--n21-tbar-bg: rgba(23, 24, 26, 0.88);
+	--n21-tbar-pop-bg: rgb(23, 24, 26);
+	--n21-tbar-surface: rgba(255, 255, 255, 0.06);
+	--n21-tbar-border: #3a3d42;
+	--n21-tbar-text: #ecebe8;
+	--n21-tbar-muted: #a9a8a4;
+	--n21-tbar-active: rgba(255, 255, 255, 0.14);
+	--n21-tbar-adv: #6fbf73;
+	--n21-tbar-dis: #e5736b;
+	--n21-tbar-divider: #6b6f76;
+	--n21-tbar-divider-edge: rgba(0, 0, 0, 0.5);
+	--n21-tbar-divider-grip: rgba(255, 255, 255, 0.7);
+	--n21-tbar-divider-hover: #8d9198;
+}
+
+.n21-tbar-inner {
+	position: relative;
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+	max-width: 100%;
+	transition: transform 0.22s ease, opacity 0.22s ease, visibility 0s linear 0s;
+	pointer-events: auto;
+}
+
+/* Hidden: slides down and fades out (then stops catching the pointer). */
+.n21-tbar.is-hidden .n21-tbar-inner {
+	opacity: 0;
+	transform: translateY(calc(100% + 12px));
+	visibility: hidden;
+	pointer-events: none;
+	transition: transform 0.22s ease, opacity 0.22s ease, visibility 0s linear 0.22s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.n21-tbar-inner,
+	.n21-tbar.is-hidden .n21-tbar-inner {
+		transition: none;
+	}
+}
+
+/* Side handles: drag to resize the bar (it stays centered). */
+.n21-tbar-resize {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: 1;
+	width: 10px;
+	cursor: ew-resize;
+	touch-action: none;
+}
+
+.n21-tbar-resize--left {
+	left: -10px;
+}
+
+.n21-tbar-resize--right {
+	right: -10px;
+}
+
+.n21-tbar-resize::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 3px;
+	width: 4px;
+	height: 32px;
+	margin-top: -16px;
+	border-radius: 2px;
+	background: var(--n21-tbar-divider);
+	opacity: 0;
+	transition: opacity 0.12s ease;
+}
+
+.n21-tbar-inner:hover .n21-tbar-resize::before,
+.n21-tbar-resize.is-dragging::before {
+	opacity: 1;
+}
+
+.n21-tbar-panel {
+	display: flex;
+	flex: 1 1 auto;
+	min-width: 0;
+	background: var(--n21-tbar-bg);
+	border: 1px solid var(--n21-tbar-border);
+	border-radius: 8px;
+}
+
+.n21-tbar-main {
+	display: flex;
+	flex: 1 1 auto;
+	/* Tabs on top. */
+	flex-direction: column;
+	min-width: 0;
+}
+
+/* Controls column at the right, aligned to the bottom. */
+.n21-tbar-side {
+	display: flex;
+	flex: 0 0 auto;
+	flex-direction: column;
+	justify-content: flex-end;
+	padding: 4px;
+	border-left: 1px solid var(--n21-tbar-border);
+}
+
+.n21-tbar-tabs,
+.n21-tbar-head {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	min-height: 36px;
+	padding: 4px;
+	border-bottom: 1px solid var(--n21-tbar-border);
+}
+
+/* Narrow bar: the tabs that don't fit go to another line. */
+.n21-tbar-tablist {
+	display: flex;
+	flex: 1 1 auto;
+	flex-wrap: wrap;
+	gap: 2px;
+	min-width: 0;
+}
+
+.n21-tbar-tablist::-webkit-scrollbar {
+	display: none;
+}
+
+.n21-tbar button {
+	font: inherit;
+	color: inherit;
+}
+
+/* No focus ring on click (Nivel20 sets one on every button:focus); only a
+   subtle one for keyboard focus. */
+.n21-tbar button:focus,
+.n21-tbar-classic button:focus {
+	outline: none;
+}
+
+.n21-tbar button:focus-visible,
+.n21-tbar-classic button:focus-visible {
+	outline: 2px solid var(--n21-tbar-muted);
+	outline-offset: -2px;
+}
+
+.n21-tbar-tab,
+.n21-tbar-back {
+	flex: 0 0 auto;
+	padding: 4px 10px;
+	border: 0;
+	border-radius: 6px;
+	background: none;
+	color: var(--n21-tbar-muted);
+	font-size: 14px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.n21-tbar-tab:hover,
+.n21-tbar-back:hover {
+	background: var(--n21-tbar-surface);
+	color: var(--n21-tbar-text);
+}
+
+.n21-tbar-tab.is-active {
+	background: var(--n21-tbar-active);
+	color: var(--n21-tbar-text);
+	font-weight: 600;
+}
+
+.n21-tbar-back {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--n21-tbar-text);
+}
+
+/* Name of a section being edited, in place of its tab. */
+.n21-tbar .n21-tbar-tab-input {
+	flex: 0 0 auto;
+	width: 140px;
+	height: 26px;
+	padding: 2px 8px;
+	border: 1px solid var(--n21-tbar-border);
+	border-radius: 6px;
+	background: var(--n21-tbar-surface);
+	color: var(--n21-tbar-text);
+	font-size: 14px;
+}
+
+/* A user's section with nothing in it yet. */
+/* Over the (empty) grid: it mustn't make the bar taller. */
+.n21-tbar-empty {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px 12px;
+	overflow: hidden;
+	color: var(--n21-tbar-muted);
+	font-size: 14px;
+	text-align: center;
+}
+
+.n21-tbar-title {
+	max-width: 100%;
+	padding: 0 8px;
+	overflow: hidden;
+	font-weight: 600;
+	text-align: center;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.n21-tbar-note {
+	max-width: 100%;
+	padding: 0 8px;
+	overflow: hidden;
+	color: var(--n21-tbar-muted);
+	font-size: 14px;
+	font-style: italic;
+	text-align: center;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: help;
+}
+
+/* Sections (one per tab) share the bar; each scrolls sideways. */
+.n21-tbar-sections {
+	display: flex;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.n21-tbar-section {
+	position: relative;
+	flex: 1 1 0px;
+	min-width: 0;
+	padding: 6px 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
+}
+
+.n21-tbar-section::-webkit-scrollbar {
+	display: none;
+}
+
+.n21-tbar-divider {
+	position: relative;
+	flex: 0 0 14px;
+	margin: 6px 0;
+	cursor: col-resize;
+	touch-action: none;
+}
+
+/* A solid grip bar with three notches, like BG3's hotbar separators. */
+.n21-tbar-divider::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 4px;
+	width: 6px;
+	border-radius: 3px;
+	background: var(--n21-tbar-divider);
+	box-shadow: inset 0 0 0 1px var(--n21-tbar-divider-edge);
+	transition: background 0.12s ease;
+}
+
+.n21-tbar-divider::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 6px;
+	width: 2px;
+	height: 14px;
+	margin-top: -7px;
+	background: repeating-linear-gradient(
+		to bottom,
+		var(--n21-tbar-divider-grip) 0 2px,
+		transparent 2px 6px
+	);
+}
+
+.n21-tbar-divider:hover::before,
+.n21-tbar-divider.is-dragging::before {
+	background: var(--n21-tbar-divider-hover);
+}
+
+.n21-tbar-section.is-collapsed {
+	overflow: hidden;
+}
+
+/* An opened folder / level picker: the title over its tiles, all centered
+   (it never gets shorter than the sections, so the bar keeps its height).
+   Tiles that don't fit in a row wrap to the next one; past the height
+   limit, it scrolls down. */
+.n21-tbar-section--focus {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	/* safe: taller than the limit, it scrolls from the top. */
+	justify-content: safe center;
+	gap: 6px;
+	min-height: calc(var(--n21-tbar-rows) * var(--n21-tbar-tile) + (var(--n21-tbar-rows) - 1) * var(--n21-tbar-gap) + 12px);
+	max-height: 50vh;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.n21-tbar-section--focus::-webkit-scrollbar {
+	display: initial;
+}
+
+.n21-tbar-section--focus .n21-tbar-row {
+	flex-wrap: wrap;
+	justify-content: center;
+	max-width: 100%;
+	padding: 0 6px;
+}
+
+.n21-tbar-row {
+	display: flex;
+	flex: 0 0 auto;
+	gap: var(--n21-tbar-gap);
+}
+
+/* Tiles fill each column top to bottom, then grow to the right. */
+.n21-tbar-grid {
+	display: grid;
+	width: max-content;
+	padding: 0 6px;
+	grid-auto-flow: column;
+	grid-template-rows: repeat(var(--n21-tbar-rows), var(--n21-tbar-tile));
+	grid-auto-columns: var(--n21-tbar-tile);
+	gap: var(--n21-tbar-gap);
+}
+
+.n21-tbar .n21-tbar-tile {
+	position: relative;
+	width: var(--n21-tbar-tile);
+	max-width: var(--n21-tbar-tile);
+	padding: 0;
+	font-size: 9px;
+}
+
+.n21-tbar .n21-tbar-tile--dim .action-bar-image {
+	filter: grayscale(1) brightness(0.6);
+}
+
+.n21-tbar-badge {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	padding: 0 4px;
+	border-radius: 4px;
+	background: rgba(0, 0, 0, 0.72);
+	color: #f2f0ea;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 18px;
+	pointer-events: none;
+}
+
+.n21-tbar-badge--roman {
+	font-family: Georgia, "Times New Roman", serif;
+	font-weight: 700;
+}
+
+.n21-tbar-badge--cantrip {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+}
+
+.n21-tbar-badge--cantrip i {
+	width: 10px;
+	height: 10px;
+	border: 2px solid #f2f0ea;
+	border-radius: 1px;
+}
+
+/* Right column: rows +/-, lock and options. */
+.n21-tbar-controls {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.n21-tbar-controls > .n21-tbar-rows {
+	flex-direction: column-reverse;
+}
+
+/* d20 roll mode (V / N / D), in the bottom strip. */
+.n21-tbar-modes {
+	align-items: center;
+	margin-left: 4px;
+}
+
+.n21-tbar-d20 {
+	display: flex;
+	padding: 0 4px 0 3px;
+	color: var(--n21-tbar-muted);
+}
+
+.n21-tbar-modes,
+.n21-tbar-rows {
+	display: flex;
+	padding: 2px;
+	border-radius: 7px;
+	background: var(--n21-tbar-surface);
+	box-shadow: inset 0 0 0 1px var(--n21-tbar-border);
+}
+
+.n21-tbar-mode,
+.n21-tbar-row-btn {
+	padding: 2px 10px;
+	border: 0;
+	border-radius: 5px;
+	background: none;
+	color: var(--n21-tbar-muted);
+	font-size: 14px;
+	line-height: 22px;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background 0.12s ease, color 0.12s ease;
+}
+
+.n21-tbar-mode:hover,
+.n21-tbar-row-btn:hover:not(:disabled) {
+	color: var(--n21-tbar-text);
+}
+
+.n21-tbar-mode.is-active {
+	background: var(--n21-tbar-active);
+	color: var(--n21-tbar-text);
+	font-weight: 600;
+}
+
+.n21-tbar-mode {
+	width: 26px;
+	padding: 2px 0;
+	font-weight: 600;
+	text-align: center;
+}
+
+.n21-tbar .n21-tbar-mode--advantage {
+	color: var(--n21-tbar-adv);
+}
+
+.n21-tbar .n21-tbar-mode--disadvantage {
+	color: var(--n21-tbar-dis);
+}
+
+.n21-tbar-mode--advantage.is-active {
+	color: var(--n21-tbar-adv);
+	box-shadow: inset 0 -2px 0 var(--n21-tbar-adv);
+}
+
+.n21-tbar-mode--disadvantage.is-active {
+	color: var(--n21-tbar-dis);
+	box-shadow: inset 0 -2px 0 var(--n21-tbar-dis);
+}
+
+.n21-tbar-row-btn {
+	width: 26px;
+	padding: 2px 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.n21-tbar-row-btn:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.n21-tbar-money {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-right: 6px;
+}
+
+.n21-tbar-money .n21-inventory-coin {
+	font-size: 14px;
+}
+
+.n21-tbar-money-empty {
+	font-size: 14px;
+	color: var(--n21-tbar-muted);
+}
+
+a.n21-tbar-gear,
+a.n21-tbar-gear:hover {
+	text-decoration: none;
+}
+
+.n21-tbar-refresh.is-loading i {
+	animation: fa-spin 1s linear infinite;
+}
+
+
+/* Lock: unlocked shows the empty slots and lets items be dragged. */
+.n21-tbar-lock.is-unlocked {
+	color: var(--n21-tbar-text);
+	background: var(--n21-tbar-active);
+}
+
+.n21-tbar-slot {
+	width: var(--n21-tbar-tile);
+	height: var(--n21-tbar-tile);
+	border-radius: 5px;
+	visibility: hidden;
+}
+
+.n21-tbar.is-unlocked .n21-tbar-slot {
+	visibility: visible;
+	border: 1px dashed var(--n21-tbar-border);
+	background: var(--n21-tbar-surface);
+}
+
+.n21-tbar.is-unlocked .n21-tbar-tile[draggable="true"] {
+	cursor: grab;
+}
+
+.n21-tbar .n21-tbar-tile.is-dragging {
+	opacity: 0.4;
+}
+
+.n21-tbar .is-drop-target.n21-tbar-slot,
+.n21-tbar .is-drop-target.n21-tbar-tile {
+	outline: 2px solid var(--n21-tbar-muted);
+	outline-offset: 1px;
+	border-radius: 5px;
+}
+
+/* Sections left out of «Todos». */
+.n21-tbar-tab--hidden {
+	opacity: 0.55;
+	font-style: italic;
+}
+
+.n21-tbar-tab.is-dragging {
+	opacity: 0.4;
+}
+
+.n21-tbar .n21-tbar-tab.is-drop-before {
+	box-shadow: inset 2px 0 0 var(--n21-tbar-text);
+}
+
+.n21-tbar .n21-tbar-tab.is-drop-after {
+	box-shadow: inset -2px 0 0 var(--n21-tbar-text);
+}
+
+/* Section menu (right click on a tab), at the pointer. */
+.n21-tbar .n21-tbar-tabmenu {
+	position: fixed;
+	z-index: 10;
+	pointer-events: auto;
+	right: auto;
+	bottom: auto;
+	min-width: 180px;
+}
+
+/* Bottom strip: options, inventory buttons and roll mode at the left;
+   money at the right. */
+.n21-tbar-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px 8px;
+	padding: 4px;
+	border-top: 1px solid var(--n21-tbar-border);
+}
+
+.n21-tbar-foot-side {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+/* Narrow bar: the money goes to its own line, at the right. */
+.n21-tbar-foot-side--right {
+	margin-left: auto;
+}
+
+/* The gear sits at the left: its menu opens up from there. */
+.n21-tbar-foot .n21-tbar-menu {
+	right: auto;
+	left: 0;
+}
+
+.n21-tbar-money-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.n21-tbar-gear[aria-expanded="true"] {
+	color: var(--n21-tbar-text);
+}
+
+/* Money editor: opens upwards. */
+.n21-tbar-money-pop {
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 8px);
+	z-index: 5;
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+	padding: 8px;
+	border: 1px solid var(--n21-tbar-border);
+	border-radius: 8px;
+	background: var(--n21-tbar-pop-bg);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.n21-tbar-money-cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	font-weight: normal;
+}
+
+.n21-tbar-money-code {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	color: var(--n21-tbar-muted);
+	font-size: 14px;
+}
+
+.n21-tbar-money-code img {
+	width: 16px;
+	height: 16px;
+	object-fit: contain;
+}
+
+.n21-tbar .n21-tbar-money-cell input {
+	width: 56px;
+	height: 28px;
+	padding: 0 4px;
+	border: 1px solid var(--n21-tbar-border);
+	border-radius: 6px;
+	background: var(--n21-tbar-surface);
+	color: var(--n21-tbar-text);
+	font-size: 14px;
+	text-align: center;
+}
+
+.n21-tbar-money-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-left: 6px;
+	border-left: 1px solid var(--n21-tbar-border);
+}
+
+.n21-tbar-money-actions button {
+	width: 28px;
+	height: 24px;
+	border: 0;
+	border-radius: 6px;
+	background: var(--n21-tbar-surface);
+	box-shadow: inset 0 0 0 1px var(--n21-tbar-border);
+	color: var(--n21-tbar-text);
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.n21-tbar-money-actions button:hover {
+	background: var(--n21-tbar-active);
+}
+
+.n21-tbar .n21-tbar-tab.is-drop-target {
+	background: var(--n21-tbar-active);
+	color: var(--n21-tbar-text);
+	box-shadow: inset 0 0 0 1px var(--n21-tbar-muted);
+}
+
+/* Options menu (gear). */
+.n21-tbar-menu-wrap {
+	position: relative;
+	display: flex;
+}
+
+.n21-tbar-gear {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border: 0;
+	border-radius: 7px;
+	background: var(--n21-tbar-surface);
+	box-shadow: inset 0 0 0 1px var(--n21-tbar-border);
+	color: var(--n21-tbar-muted);
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.n21-tbar-gear:hover,
+.n21-tbar-gear[aria-expanded="true"] {
+	color: var(--n21-tbar-text);
+}
+
+.n21-tbar-menu {
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 6px);
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	min-width: 220px;
+	padding: 4px;
+	border: 1px solid var(--n21-tbar-border);
+	border-radius: 8px;
+	background: var(--n21-tbar-bg);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.n21-tbar-menu[hidden] {
+	display: none;
+}
+
+.n21-tbar-menu button {
+	padding: 6px 10px;
+	border: 0;
+	border-radius: 6px;
+	background: none;
+	color: var(--n21-tbar-text);
+	font-size: 14px;
+	text-align: left;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.n21-tbar-menu button:hover {
+	background: var(--n21-tbar-surface);
+}
+
+/* Gear on the classic bar: bottom right corner, over Nivel20's bar. */
+.n21-tbar-classic {
+	position: absolute;
+	right: 12px;
+	bottom: 12px;
+	z-index: 2;
+	pointer-events: auto;
+}
+
+.n21-tbar-classic .n21-tbar-gear {
+	background: var(--n21-tbar-bg);
+}
+
+@media (max-width: 719px) {
+	.n21-tbar {
+		--n21-tbar-tile: 46px;
+		padding: 0 4px 4px;
+	}
+
+	/* Mobile: all sections in one row that scrolls sideways. */
+	.n21-tbar-sections {
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.n21-tbar-sections .n21-tbar-section {
+		flex: 0 0 auto !important;
+		overflow-x: visible;
+	}
+
+	.n21-tbar-sections .n21-tbar-section:only-child {
+		flex: 1 1 auto !important;
+		overflow-x: auto;
+	}
+
+	.n21-tbar-divider {
+		flex-basis: 1px;
+		margin: 6px 0;
+		background: var(--n21-tbar-border);
+		cursor: default;
+	}
+
+	.n21-tbar-divider::before,
+	.n21-tbar-divider::after {
+		display: none;
+	}
+
+	.n21-tbar-inner {
+		gap: 4px;
+		width: 100% !important;
+	}
+
+	.n21-tbar-resize {
+		display: none;
+	}
+
 }

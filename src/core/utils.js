@@ -164,7 +164,7 @@
    * @returns {string} The formatted value
    */
   function formatTagValue(value) {
-    const str = String(value || "").trim();
+    const str = String(value ?? "").trim();
     if (!needsQuotes(str)) {
       return str;
     }

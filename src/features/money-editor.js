@@ -133,21 +133,32 @@
       // Seed the inputs from whatever is currently in the field.
       syncInputsFromText($fields, textarea);
 
-      // EasyMDE may still be initializing; re-seed once it's ready so the
-      // inputs reflect the instance value rather than only the seed attribute.
+      // EasyMDE may still be initializing, and it gets the field's text a bit
+      // after it exists: once it's there, follow its text (the seed and any
+      // edit made by hand) except for the changes the coin inputs write.
+      let writing = false;
       let attempts = 0;
       const settle = setInterval(() => {
         attempts += 1;
-        if (getInstance(textarea) || attempts >= 20) {
+        const instance = getInstance(textarea);
+        if (instance || attempts >= 20) {
           clearInterval(settle);
           syncInputsFromText($fields, textarea);
+          MarkdownEditorManager.onChange(instance, textarea, () => {
+            if (!writing) syncInputsFromText($fields, textarea);
+          });
         }
       }, 100);
 
       // On any coin change, rewrite the [money:...] token in the editor text.
       $editor.on("input change", "input[data-currency]", () => {
         const totals = readInputs($fields);
-        writeText(textarea, money.setInText(readText(textarea), totals));
+        writing = true;
+        try {
+          writeText(textarea, money.setInText(readText(textarea), totals));
+        } finally {
+          writing = false;
+        }
       });
     }
 

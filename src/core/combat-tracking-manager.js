@@ -29,6 +29,16 @@
       .trim();
   }
 
+  /**
+   * Conditions in a fixed order (by id). Nivel20 doesn't keep the order they
+   * were added in, so a condition shown right away (before saving) would
+   * otherwise jump to another place once the save comes back.
+   */
+  function sortConditions(conditions) {
+    if (!Array.isArray(conditions)) return [];
+    return [...conditions].sort((a, b) => toInt(a?.id, 0) - toInt(b?.id, 0));
+  }
+
   function toInt(value, fallback = 0) {
     const n = parseInt(value, 10);
     return Number.isFinite(n) ? n : fallback;
@@ -55,6 +65,7 @@
       super.init();
       this._statusData = null; // last payload of Nivel20's campaign status
       this._hookStatusRefresh();
+      if (window._n21_.utils.isTabletopUrl()) this._keepResourcesSaveOnBoard();
     }
 
     /**
@@ -122,7 +133,7 @@
       const status = group?.[id];
       if (!status) return [];
       const instance = status.list ? status.list[index] || status.list[String(index)] : status;
-      return Array.isArray(instance?.conditions) ? instance.conditions : [];
+      return sortConditions(instance?.conditions);
     }
 
     /**
@@ -340,7 +351,7 @@
         ac: this._readAttribute($row, "CA"),
         conModifier: conModifier ? toInt(conModifier[1], 0) : 0,
         resources,
-        conditions: Array.isArray(status.conditions) ? status.conditions : [],
+        conditions: sortConditions(status.conditions),
         notes: status.notes || "",
         _rowIndex: data.rowIndex,
         _usedResources: usedResources,
@@ -387,7 +398,7 @@
       const next = { ...entry };
       if (changes.currentHp !== undefined) next.currentHp = changes.currentHp;
       if (changes.tempHp !== undefined) next.tempHp = changes.tempHp;
-      if (changes.conditions !== undefined) next.conditions = changes.conditions;
+      if (changes.conditions !== undefined) next.conditions = sortConditions(changes.conditions);
       const used = changes.used || {};
       next.resources = entry.resources.map((r) => {
         const value = used[r.category]?.[r.id];
@@ -747,6 +758,41 @@
       if (!link) return false;
       link.click();
       return true;
+    }
+
+    /**
+     * Open Nivel20's "Recursos de <personaje>" modal (the edit button of its
+     * health modal): add, edit or remove the character's resources.
+     * @param {string|number} charId
+     * @returns {boolean} False if it can't be opened here
+     */
+    openResourcesModal(charId) {
+      const baseUrl = this.getBaseUrl();
+      if (!baseUrl || typeof window.loadModal !== "function") return false;
+      window.loadModal(`${baseUrl}/resources/${charId}?modal=true`);
+      return true;
+    }
+
+    /**
+     * Saving that modal is a plain form post that leaves the tabletop for the
+     * campaign's tracking log. On the tabletop, post it in the background and
+     * reload the board instead (the resource definitions only come with the
+     * page). Covers Nivel20's own button too.
+     * @private
+     */
+    _keepResourcesSaveOnBoard() {
+      $(document).on("submit", '#mainModal form[action$="/set_resources"]', function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const $form = $(this);
+        $form.find("[type=submit]").prop("disabled", true);
+        $.ajax({ url: this.action, type: "post", data: $form.serialize() })
+          .done(() => window.location.reload())
+          .fail(() => {
+            $form.find("[type=submit]").prop("disabled", false);
+            console.warn("[CombatTrackingManager] Could not save the resources");
+          });
+      });
     }
 
     /**

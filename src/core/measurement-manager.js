@@ -135,6 +135,40 @@
     }
 
     /**
+     * The scene's measurement units, as Nivel20 shows them in measurements:
+     * `units` per grid square ("pies", "m"…; null without a grid config).
+     * @returns {{units: string|null, unitScale: number|null}}
+     */
+    getSceneUnits() {
+      const config = this._getNative()?.room?.state?.measurementsConfig;
+      const unitScale = Number(config?.unitScale);
+      return {
+        units: config?.units ? String(config.units) : null,
+        unitScale: Number.isFinite(unitScale) && unitScale > 0 ? unitScale : null,
+      };
+    }
+
+    /**
+     * Measurements on the board (board coordinates).
+     * @returns {Array<{networkId, ownerUserId, shape, showShape, color,
+     *   start: {x, z}, end: {x, z}}>}
+     */
+    getMeasurements() {
+      const schemas = this.getEntityManager()?.schema?.();
+      if (!schemas || typeof schemas.values !== "function") return [];
+      const point = (p) => ({ x: Number(p?.x) || 0, z: Number(p?.z) || 0 });
+      return [...schemas.values()].map((s) => ({
+        networkId: s.networkId,
+        ownerUserId: s.ownerUserId != null ? String(s.ownerUserId) : null,
+        shape: s.shape || "none",
+        showShape: !!s.showShape,
+        color: s.color,
+        start: point(s.start),
+        end: point(s.end),
+      }));
+    }
+
+    /**
      * Check if the manager is ready for use
      * @returns {boolean} True if the manager and entityManager are available
      */

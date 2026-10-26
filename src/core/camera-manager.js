@@ -300,6 +300,157 @@
     }
 
     /**
+     * Take over token drags. On every drag step of a token this user may move,
+     * `handler(info)` is called and, when it returns true, Nivel20 doesn't
+     * move the tokens (nothing is sent to the room). `info` is
+     * { networkId, networkIds, screenX, screenY, offset: {x, z} }: the
+     * grabbed token, every token the drag would move (the selection), the
+     * pointer on the canvas and the token center minus the grabbed point.
+     * @param {Function|null} handler
+     */
+    setTokenDragHandler(handler) {
+      this._tokenDragHandler = typeof handler === "function" ? handler : null;
+      this._hookDragMove();
+      if (!this._dragHookListener) {
+        // Nivel20 may rebuild the camera (scene change): hook it again.
+        this._dragHookListener = () => this._hookDragMove();
+        document.addEventListener("mousedown", this._dragHookListener, true);
+        document.addEventListener("touchstart", this._dragHookListener, true);
+      }
+    }
+
+    _hookDragMove() {
+      const dragSelect = this._getDragSelect();
+      if (!dragSelect || dragSelect.n21OriginalDragMove) return;
+      const original = dragSelect.dragMove;
+      if (typeof original !== "function") return;
+      dragSelect.n21OriginalDragMove = original;
+      const manager = this;
+      dragSelect.dragMove = function (screenX, screenY) {
+        const handler = manager._tokenDragHandler;
+        const entity = this.movingEntity;
+        if (handler && entity && this.hasPermissionForEntity?.(entity)) {
+          let take = false;
+          try {
+            take = handler(manager._dragInfo(this, entity, screenX, screenY));
+          } catch (error) {
+            console.warn("[CameraManager] Token drag handler failed:", error);
+          }
+          if (take) return;
+        }
+        return original.call(this, screenX, screenY);
+      };
+    }
+
+    _dragInfo(dragSelect, entity, screenX, screenY) {
+      const idOf = (e) => e?.script?.networkId?.networkId || null;
+      const selected = dragSelect.selectedEntities;
+      const group =
+        selected?.size > 1 && selected.has(entity)
+          ? [...selected].filter((e) => dragSelect.hasPermissionForEntity?.(e))
+          : [entity];
+      return {
+        networkId: idOf(entity),
+        networkIds: group.map(idOf).filter(Boolean),
+        screenX,
+        screenY,
+        offset: { x: dragSelect.offset?.x || 0, z: dragSelect.offset?.z || 0 },
+      };
+    }
+
+    /**
+     * Move a token as if this user dragged it along `path` (world points
+     * {x, z}, from its current center): Nivel20 moves it (and the selected
+     * tokens with it), stops it at walls, syncs it to the room and snaps it to
+     * the grid at the end. Stops if the user grabs a token meanwhile.
+     * @param {string} networkId
+     * @param {Array<{x:number, z:number}>} path
+     * @param {Object} [options]
+     * @param {number} [options.speed=12] - Cells per second
+     * @returns {Promise<boolean>} True if the whole path was walked
+     */
+    moveTokenAlongPath(networkId, path, { speed = 12 } = {}) {
+      const dragSelect = this._getDragSelect();
+      const dragMove = dragSelect?.n21OriginalDragMove || dragSelect?.dragMove;
+      const root = this._appRootManager?.getAppObject()?.root;
+      const found = root?.find?.((e) => e?.script?.networkId?.networkId === networkId);
+      const entity = Array.isArray(found) ? found[0] : found;
+      if (!dragSelect || typeof dragMove !== "function" || !entity || !path?.length) {
+        return Promise.resolve(false);
+      }
+
+      const start = entity.getLocalPosition();
+      const points = [{ x: start.x, z: start.z }, ...path];
+      const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.z - points[i].z));
+      const total = lengths.reduce((sum, length) => sum + length, 0);
+      const pointAt = (distance) => {
+        let left = distance;
+        for (let i = 0; i < lengths.length; i++) {
+          if (left <= lengths[i] || i === lengths.length - 1) {
+            const t = lengths[i] ? Math.min(1, left / lengths[i]) : 1;
+            return {
+              x: points[i].x + (points[i + 1].x - points[i].x) * t,
+              z: points[i].z + (points[i + 1].z - points[i].z) * t,
+            };
+          }
+          left -= lengths[i];
+        }
+        return points[points.length - 1];
+      };
+
+      // dragMove moves `movingEntity` to the board point under the pointer
+      // plus `offset`: with a zero offset, the pointer is the token center.
+      const Vec3 = start.constructor;
+      const savedOffset = dragSelect.offset;
+      dragSelect.movingEntity = entity;
+      dragSelect.lastDragPosition = start.clone();
+      dragSelect.offset = new Vec3(0, 0, 0);
+      const finish = (completed) => {
+        if (completed) dragSelect.snapMovedEntitiesToGrid?.();
+        dragSelect.movingEntity = undefined;
+        dragSelect.lastDragPosition = undefined;
+        dragSelect.offset = savedOffset;
+        return completed;
+      };
+
+      return new Promise((resolve) => {
+        let walked = 0;
+        let last = performance.now();
+        const step = (now) => {
+          // The user grabbed a token: leave the drag to Nivel20.
+          if (dragSelect.isDragging || dragSelect.movingEntity !== entity) {
+            resolve(false);
+            return;
+          }
+          walked = Math.min(total, walked + (speed * Math.max(0, now - last)) / 1000);
+          last = now;
+          const point = pointAt(walked);
+          const screen = this.worldToScreen(point.x, point.z, 0);
+          if (screen) {
+            try {
+              dragMove.call(dragSelect, screen.x, screen.y);
+            } catch (error) {
+              console.warn("[CameraManager] Token path move failed:", error);
+              resolve(finish(false));
+              return;
+            }
+          }
+          if (walked < total) requestAnimationFrame(step);
+          else settle(performance.now());
+        };
+        // Snap once Nivel20's last move tween ends (it'd snap a stale point).
+        const settle = (since) => {
+          if (dragSelect.moveTweens?.has?.(entity) && performance.now() - since < 1000) {
+            requestAnimationFrame(() => settle(since));
+            return;
+          }
+          resolve(finish(true));
+        };
+        requestAnimationFrame(step);
+      });
+    }
+
+    /**
      * Check if the manager is ready for use
      * @returns {boolean} True if the camera is available
      */
