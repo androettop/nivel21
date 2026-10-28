@@ -4,8 +4,9 @@
 	       Feature: Token Drag Measurement
 
 	       While a token is dragged, an arrow goes from its center where the
-	       drag started to its current center, with the distance in feet,
-	       meters and grid units (Nivel20's "dnd-classic": the longest axis).
+	       drag started to its current center, with the distance in the
+	       scene's units and grid units, counted with the campaign's
+	       distance calculation (e.g. the alternate diagonal).
 	       Right click while dragging fixes a waypoint and the arrow turns
 	       there; the distance is the whole way. It looks like
 	       Nivel20's measurement arrow (thinner), but it's our own drawing on
@@ -23,9 +24,6 @@
     const SHOW_DISTANCE_SETTING = "token-drag-measurement.show-distance";
     const PREVIEW_SETTING = "token-drag-measurement.preview-move";
     const LAYER = "token-drag-measurement";
-    // D&D: a square is 5 ft = 1,5 m.
-    const FEET_PER_SQUARE = 5;
-    const METERS_PER_FOOT = 0.3;
     const GHOST_ALPHA = 0.55;
     const MOVE_SPEED = 5; // Cells per second when the token walks the path
 
@@ -113,29 +111,17 @@
       return String(Math.round(value * 10) / 10);
     }
 
-    /** Nivel20's "dnd-classic": the longest axis (diagonals count as one). */
-    function squaresBetween(from, to) {
-      return Math.max(Math.abs(to.x - from.x), Math.abs(to.z - from.z));
-    }
-
     /**
-     * The distance lines, like Nivel20's measurement label: feet, meters and
-     * grid units. The scene says what a square is worth (e.g. 5 "pies");
-     * without it, a square is 5 ft.
+     * The distance lines, like Nivel20's measurement label: the distance in
+     * the scene's units (e.g. 1,5 "m" per square) and the grid units. A
+     * scene without units only shows the grid units.
      */
     function distanceLines(squares) {
       const { units, unitScale } = MeasurementManager.getSceneUnits();
-      let feet = squares * FEET_PER_SQUARE;
-      if (units && unitScale) {
-        const amount = squares * unitScale;
-        if (/^m(etros?)?\.?$/i.test(units.trim())) feet = amount / METERS_PER_FOOT;
-        else if (/^(pies?|ft|feet)\.?$/i.test(units.trim())) feet = amount;
-      }
-      return [
-        `${formatNumber(feet)} PIES`,
-        `${formatNumber(feet * METERS_PER_FOOT)} M`,
-        `${formatNumber(squares)} UD.`,
-      ];
+      const lines = [];
+      if (units) lines.push(`${formatNumber(squares * (unitScale || 1))} ${units.toUpperCase()}`);
+      lines.push(`${formatNumber(squares)} UD.`);
+      return lines;
     }
 
     /* ----------------------- drawing ----------------------- */
@@ -357,8 +343,7 @@
       if (!showDistance) return;
 
       // Only the whole way, under the token.
-      let squares = 0;
-      for (let i = 1; i < points.length; i++) squares += squaresBetween(points[i - 1], points[i]);
+      const squares = MeasurementManager.getPathSquares(points);
       const half = Math.abs(TokenManager.getTokenScale(drag.networkId)?.z || 1) / 2;
       const center = toScreen(target);
       const bottom = toScreen({ x: target.x, z: target.z + half });

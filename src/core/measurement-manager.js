@@ -149,6 +149,47 @@
     }
 
     /**
+     * The campaign's distance calculation ("chebyshev", "dnd-classic" for
+     * the alternate diagonal, "euclidean", "manhattan").
+     * @returns {string}
+     */
+    getDistanceMode() {
+      const native = this._getNative();
+      // The scene's, else the campaign's (the one native measurements use).
+      const mode =
+        native?.room?.state?.measurementsConfig?.distanceMode || native?.shapeConfig?.distanceMode;
+      return mode ? String(mode) : "euclidean";
+    }
+
+    /**
+     * Grid squares along a path of board points {x, z}, like Nivel20's
+     * measurements. With the alternate diagonal the count carries over the
+     * waypoints (the second diagonal costs 2 even after a turn).
+     * @param {Array<{x: number, z: number}>} points
+     * @returns {number}
+     */
+    getPathSquares(points) {
+      const mode = this.getDistanceMode();
+      // Cost of the first n diagonals with the alternate diagonal: 1, 2, 1, 2…
+      const diagonalCost = (n) => Math.floor(n / 2) * 3 + (n % 2);
+      let squares = 0;
+      let diagonals = 0;
+      for (let i = 1; i < points.length; i++) {
+        // Rounded: board positions carry float noise (1.9999 squares).
+        const dx = Math.round(Math.abs(points[i].x - points[i - 1].x) * 1000) / 1000;
+        const dz = Math.round(Math.abs(points[i].z - points[i - 1].z) * 1000) / 1000;
+        if (mode === "euclidean") squares += Math.hypot(dx, dz);
+        else if (mode === "manhattan") squares += dx + dz;
+        else if (mode === "dnd-classic") {
+          const steps = Math.min(dx, dz);
+          squares += Math.abs(dx - dz) + diagonalCost(diagonals + steps) - diagonalCost(diagonals);
+          diagonals += steps;
+        } else squares += Math.max(dx, dz);
+      }
+      return squares;
+    }
+
+    /**
      * Measurements on the board (board coordinates).
      * @returns {Array<{networkId, ownerUserId, shape, showShape, color,
      *   start: {x, z}, end: {x, z}}>}
