@@ -1,18 +1,21 @@
 name: React to store publication
 
-# The stores publish a version only after their review. Poll them and react
-# to the release announcement on Discord once each one is serving it.
+# The stores publish a version only after their review. Poll a store and react
+# to the release announcement on Discord once it's serving the new version.
+# Called by one scheduled workflow per store: release.yml enables them on each
+# release and each one disables itself once its store is published, so they
+# only run while a store is pending.
 on:
-  schedule:
-    - cron: "*/5 * * * *" # Firefox
-    - cron: "*/30 * * * *" # Chrome
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-env:
-  STORES: ${{ github.event.schedule == '*/5 * * * *' && 'firefox' || github.event.schedule == '*/30 * * * *' && 'chrome' || 'firefox chrome' }}
+  workflow_call:
+    inputs:
+      store:
+        description: "Store to check (firefox or chrome)"
+        required: true
+        type: string
+      workflow:
+        description: "Calling workflow file, disabled once the store is published"
+        required: true
+        type: string
 
 jobs:
   react:
@@ -39,8 +42,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: React to published stores
+      - name: React if published
+        id: react
         if: steps.release.outputs.found == 'true'
-        run: node ./scripts/react_store_status.mjs "${{ steps.release.outputs.tag }}" discord-message.json $STORES
+        run: node ./scripts/react_store_status.mjs "${{ steps.release.outputs.tag }}" discord-message.json "${{ inputs.store }}"
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+
+      - name: Stop polling
+        if: steps.release.outputs.found != 'true' || steps.react.outputs.done == 'true'
+        run: gh workflow disable "${{ inputs.workflow }}" --repo "$GITHUB_REPOSITORY"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
