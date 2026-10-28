@@ -1,0 +1,46 @@
+name: React to store publication
+
+# The stores publish a version only after their review. Poll them and react
+# to the release announcement on Discord once each one is serving it.
+on:
+  schedule:
+    - cron: "*/5 * * * *" # Firefox
+    - cron: "*/30 * * * *" # Chrome
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  STORES: ${{ github.event.schedule == '*/5 * * * *' && 'firefox' || github.event.schedule == '*/30 * * * *' && 'chrome' || 'firefox chrome' }}
+
+jobs:
+  react:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Load latest release message
+        id: release
+        run: |
+          tag=$(gh release view --json tagName --jq '.tagName')
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release download "$tag" --pattern discord-message.json; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Discord message saved for $tag"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: React to published stores
+        if: steps.release.outputs.found == 'true'
+        run: node ./scripts/react_store_status.mjs "${{ steps.release.outputs.tag }}" discord-message.json $STORES
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}

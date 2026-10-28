@@ -124,3 +124,11 @@ jobs:
         run: node ./scripts/notify_discord_release.mjs "$RELEASE_TAG" "${RELEASE_DESCRIPTION:-Sin descripción}"
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+
+      # Lets store-status.yml react to this message once each store publishes.
+      - name: Attach Discord message to release
+        if: always() && hashFiles('discord-message.json') != ''
+        run: gh release upload "$RELEASE_TAG" discord-message.json --repo androettop/nivel21 --clobber
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

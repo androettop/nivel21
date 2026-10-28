@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { Buffer } from "node:buffer";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EMOJIS, addReaction } from "./discord_reactions.mjs";
 
 const [, , releaseTagArg, releaseDescriptionArg] = process.argv;
 
@@ -19,6 +20,12 @@ if (!webhookUrl) {
   console.error("DISCORD_WEBHOOK_URL is required");
   process.exit(1);
 }
+
+// wait=true makes Discord return the created message, so it can be reacted to
+// later. Saved where the release workflow attaches it to the release.
+const postUrl = new URL(webhookUrl);
+postUrl.searchParams.set("wait", "true");
+const messageFile = process.env.DISCORD_MESSAGE_FILE || "discord-message.json";
 
 const releaseTag = releaseTagArg;
 const releaseDescription = releaseDescriptionArg;
@@ -109,10 +116,12 @@ async function fetchImage(url, index) {
 }
 
 async function postDiscordMessage() {
-  const payload = JSON.stringify({ content: message });
+  // SUPPRESS_EMBEDS: no link preview card for the release URL. Attached
+  // images are files, not embeds, so they still show.
+  const payload = JSON.stringify({ content: message, flags: 1 << 2 });
 
   if (imageUrls.length === 0) {
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(postUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,7 +133,7 @@ async function postDiscordMessage() {
       throw new Error(`Discord webhook failed with status ${response.status}`);
     }
 
-    return;
+    return response.json();
   }
 
   const images = await Promise.all(
@@ -137,7 +146,7 @@ async function postDiscordMessage() {
     form.set(`files[${index}]`, image.blob, image.filename);
   });
 
-  const response = await fetch(webhookUrl, {
+  const response = await fetch(postUrl, {
     method: "POST",
     body: form,
   });
@@ -147,11 +156,17 @@ async function postDiscordMessage() {
       `Discord webhook with attachments failed with status ${response.status}`,
     );
   }
+
+  return response.json();
 }
 
 postDiscordMessage()
-  .then(() => {
+  .then(async (sent) => {
     console.log("Discord notification sent");
+
+    const message = { channelId: sent.channel_id, messageId: sent.id };
+    writeFileSync(messageFile, JSON.stringify(message));
+    await addReaction(message, EMOJIS.github);
   })
   .catch((error) => {
     console.error(error.message);
