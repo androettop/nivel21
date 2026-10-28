@@ -325,6 +325,14 @@
       });
 
       this.registerSetting({
+        name: "token-drag-measurement.soft-snap",
+        label: "Ajustar a casillas enteras al mover un token (Shift para moverlo libre)",
+        type: "boolean",
+        defaultValue: true,
+        category: "medicion",
+      });
+
+      this.registerSetting({
         name: "feature.token-drag-speed.enabled",
         label: "Velocidad de movimiento de tokens",
         type: "boolean",

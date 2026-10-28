@@ -17,15 +17,23 @@
 	       dragged token stays where it is and a translucent copy follows the
 	       pointer, at the end of the arrow. Releasing moves the real token
 	       through every waypoint; Escape cancels.
+
+	       Soft snap (both modes, its own setting): when the token center gets
+	       to the middle fifth of a whole square away from where the drag
+	       started (moving whole squares, also with a token a bit off the
+	       grid) or of a grid square's center, it sticks to that point (the
+	       closest one). Shift moves it freely.
 	    ======================= */
 
     const { loadManagers } = window._n21_;
 
     const SHOW_DISTANCE_SETTING = "token-drag-measurement.show-distance";
     const PREVIEW_SETTING = "token-drag-measurement.preview-move";
+    const SNAP_SETTING = "token-drag-measurement.soft-snap";
     const LAYER = "token-drag-measurement";
     const GHOST_ALPHA = 0.55;
     const MOVE_SPEED = 5; // Cells per second when the token walks the path
+    const SNAP_RADIUS = 1 / 10; // The middle fifth of a square
 
     const [
       TokenManager,
@@ -387,6 +395,40 @@
       setTimeout(() => CameraManager.moveTokenAlongPath(finished.networkId, path, { speed: MOVE_SPEED }), 0);
     }
 
+    /**
+     * The token center for a drag point: a whole number of squares away from
+     * the drag start, or a grid square's center, when it's in the middle
+     * fifth of that square.
+     */
+    function snapped(start, point, networkId) {
+      if (shiftHeld || SettingsManager.get(SNAP_SETTING) === false) return point;
+      // A grid square's center, or a grid corner for an even sized token
+      // (where Nivel20 snaps it).
+      const scale = TokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
+      const gridShift = (size) => (Math.round(Math.abs(size || 1)) % 2 ? 0.5 : 0);
+      const shiftX = gridShift(scale.x);
+      const shiftZ = gridShift(scale.z);
+      const candidates = [
+        { x: start.x + Math.round(point.x - start.x), z: start.z + Math.round(point.z - start.z) },
+        { x: Math.round(point.x - shiftX) + shiftX, z: Math.round(point.z - shiftZ) + shiftZ },
+      ];
+      let best = point;
+      let bestDistance = Infinity;
+      candidates.forEach((candidate) => {
+        const dx = Math.abs(point.x - candidate.x);
+        const dz = Math.abs(point.z - candidate.z);
+        if (dx > SNAP_RADIUS || dz > SNAP_RADIUS || Math.hypot(dx, dz) >= bestDistance) return;
+        best = candidate;
+        bestDistance = Math.hypot(dx, dz);
+      });
+      return best;
+    }
+
+    let shiftHeld = false;
+    ["mousemove", "keydown", "keyup"].forEach((type) => {
+      window.addEventListener(type, (event) => (shiftHeld = event.shiftKey), true);
+    });
+
     CameraManager.setTokenDragHandler((info) => {
       if (!drag) {
         if (!info.networkId) return false;
@@ -407,12 +449,19 @@
         };
         TokenOverlayManager.addLayer(LAYER, drawDrag, 30);
       }
-      if (!drag.preview) return false;
-      if (!drag.cancelled) {
-        const point = CameraManager.screenToWorld(info.screenX, info.screenY, 0);
-        if (point) drag.target = { x: point.x + drag.offset.x, z: point.z + drag.offset.z };
+      if (drag.cancelled) return true;
+      const point = CameraManager.screenToWorld(info.screenX, info.screenY, 0);
+      const start = drag.starts.get(drag.networkId);
+      const center = point && { x: point.x + drag.offset.x, z: point.z + drag.offset.z };
+      const target = center && snapped(start, center, drag.networkId);
+      if (drag.preview) {
+        if (target) drag.target = target;
+        return true;
       }
-      return true;
+      // Nivel20 moves the tokens: point it to where the snapped center goes.
+      if (!target || target === center) return false;
+      const screen = CameraManager.worldToScreen(target.x - drag.offset.x, target.z - drag.offset.z, 0);
+      return screen ? { screenX: screen.x, screenY: screen.y } : false;
     });
 
     // Right click (waypoint) and Escape (cancel the preview) are ours while

@@ -302,7 +302,9 @@
     /**
      * Take over token drags. On every drag step of a token this user may move,
      * `handler(info)` is called and, when it returns true, Nivel20 doesn't
-     * move the tokens (nothing is sent to the room). `info` is
+     * move the tokens (nothing is sent to the room); when it returns
+     * {screenX, screenY}, Nivel20 moves them as if the pointer were there
+     * (e.g. to snap them). `info` is
      * { networkId, networkIds, screenX, screenY, offset: {x, z} }: the
      * grabbed token, every token the drag would move (the selection), the
      * pointer on the canvas and the token center minus the grabbed point.
@@ -335,6 +337,9 @@
             take = handler(manager._dragInfo(this, entity, screenX, screenY));
           } catch (error) {
             console.warn("[CameraManager] Token drag handler failed:", error);
+          }
+          if (take && typeof take.screenX === "number" && typeof take.screenY === "number") {
+            return original.call(this, take.screenX, take.screenY);
           }
           if (take) return;
         }
