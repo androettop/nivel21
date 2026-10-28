@@ -64,14 +64,14 @@
     /m[aá]s\s+(?:tu|el|su)\s+modificador por aptitud m[aá]gica/i;
   // Strips the "upcasting / cantrip scaling" tail so we don't pick its dice.
   const SCALING_RE =
-    /(?:\*+\s*)?(?:Mejora de truco|Con un espacio de conjuro|Mejora de conjuro)/i;
+    /(?:\*+\s*)?(?:Mejora de truco|Con un espacio de conjuro|Mejora de conjuro|(?:En|A) niveles superiores)/i;
   // Spells castable with a higher slot. There's no structured flag, so we
   // look for the upcast clause the descriptions use: "**Con un espacio de
   // conjuro de nivel superior.**" (sometimes without bold, or "Con un espacio
   // de nivel superior"), or the 2014 "**En niveles superiores.**". Checked
   // against every D&D 2024 spell in Nivel20 (132 matches, no false positives).
   const UPCAST_RE =
-    /(?:Con un espacio de (?:conjuro )?(?:de )?nivel superior|En niveles superiores)\s*\**\s*[.:]/i;
+    /(?:Con un espacio de (?:conjuro )?(?:de )?nivel superior|(?:En|A) niveles superiores)\s*\**\s*[.:]/i;
 
   /**
    * Decompose an attack string "{tipo} {dado} {tipo_daño}" into parts.
@@ -103,9 +103,18 @@
   /** The portion of the description before any scaling/upcasting clause. */
   function baseDescription(description) {
     if (!description) return "";
-    const idx = description.search(SCALING_RE);
-    return idx === -1 ? description : description.slice(0, idx);
+    // Without the HTML some descriptions carry ("Tira <span
+    // data-dice-roll="5d8">5d8</span>").
+    const text = description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ");
+    const idx = text.search(SCALING_RE);
+    return idx === -1 ? text : text.slice(0, idx);
   }
+
+  const DAMAGE_2014_RE =
+    /(\d+d\d+(?:\s*\+\s*\d+)?)\s+puntos\s+(?:(?:adicionales|extra)\s+)?de\s+da[ñn]o\s+(?:(?:extra|adicional(?:es)?)\s+)?(?:(?:por|de)\s+)?(\p{L}+)/iu;
+  // Words after "de daño" that aren't a damage type ("1d6 puntos de daño
+  // adicional en el objetivo").
+  const DAMAGE_TYPE_STOP_RE = /^(?:adicional(?:es)?|extra|menos|en|a|al|cuando|y|si|mientras|que)$/i;
 
   /**
    * Resolve the base damage of a spell: prefer the structured attack string,
@@ -119,6 +128,13 @@
     const text = baseDescription(spell.description || "");
     const m = text.match(/(\d+d\d+)\s+de da[ñn]o\s+(\w+)/i);
     if (m) return { dice: m[1], type: m[2] };
+    // D&D 2014 wording: "1d6 puntos de daño extra por fuego", "2d6 puntos
+    // adicionales de daño radiante", "1d4 + 1 puntos de daño por fuerza".
+    const old = text.match(DAMAGE_2014_RE);
+    if (old) {
+      const type = DAMAGE_TYPE_STOP_RE.test(old[2]) ? null : old[2];
+      return { dice: old[1].replace(/\s+/g, ""), type };
+    }
     return null;
   }
 
@@ -140,7 +156,7 @@
    */
   function getUtilityDie(spell) {
     const text = baseDescription(spell.description || "");
-    const m = text.match(/(?:a[ñn]ade|sumar[aá]|suma|tira)\s+(\d+d\d+)/i);
+    const m = text.match(/(?:a[ñn]ade|sumar[aá]|suma|tirar?)\s+(\d+d\d+)/i);
     return m ? { dice: m[1] } : null;
   }
 
@@ -288,7 +304,62 @@
       setScaling(el, increases);
     });
     if ((spell.level | 0) > baseLevel) elements.forEach((el) => scaleElement(el, spell.level | 0));
+    const tier = getCantripTier(spell, ctx.characterLevel);
+    if (tier) elements.forEach((el) => scaleCantripElement(el, tier));
     return elements;
+  }
+
+  /* ----- Cantrip scaling with the character level ----- */
+
+  // The dice of a cantrip at levels 5, 11 and 17, from its description:
+  //  - 2024: "**Mejora de truco.** El daño aumenta en 1d8 cuando alcanzas los
+  //    niveles 5 (2d8), 11 (3d8) y 17 (4d8)"; Tañido por los muertos lists
+  //    both dice ("5 (2d8 o 2d12)"); Impacto certero adds damage ("5 (1d6)").
+  //  - 2014: "...cuando llegas al nivel 5 (2d8), al nivel 11 (3d8) y al nivel
+  //    17 (4d8)" (also "subes al nivel 5, (2d10)", "alcanzas el nivel 5").
+  // Upgrades without dice in parentheses (Descarga sobrenatural's beams,
+  // Piedad con los moribundos' range) or with a weapon die (Shillelagh's
+  // "(d10)") don't count.
+  // Checked against every D&D 2024 and 2014 cantrip in Nivel20.
+  const CANTRIP_UPGRADE_RE = /Mejora de truco|cuando (?:llegas|subes|alcanzas)\b/i;
+  const CANTRIP_TIER_RE = /\b(\d{1,2}),?\s*\((\d+)d(\d+)(?:\s+o\s+(\d+)d(\d+))?\)/g;
+
+  /** The cantrip's dice for the character's level: {level, dice: [{count, faces}]}. */
+  function getCantripTier(spell, characterLevel) {
+    if ((spell.level | 0) !== 0 || !(characterLevel > 0)) return null;
+    const text = (spell.description || "").replace(/<[^>]*>/g, "");
+    const index = text.search(CANTRIP_UPGRADE_RE);
+    if (index === -1) return null;
+    const upgrade = text.slice(index);
+    // Shillelagh: the weapon's die changes ("5 (d10)"), not a roll of ours.
+    if (/\(\s*d\d+\s*\)/i.test(upgrade)) return null;
+    let tier = null;
+    for (const m of upgrade.matchAll(CANTRIP_TIER_RE)) {
+      const level = Number(m[1]);
+      if (level > characterLevel || level > 20 || (tier && level <= tier.level)) continue;
+      const dice = [{ count: Number(m[2]), faces: Number(m[3]) }];
+      if (m[4]) dice.push({ count: Number(m[4]), faces: Number(m[5]) });
+      tier = { level, dice };
+    }
+    return tier;
+  }
+
+  /** Set a cantrip's damage dice to its tier ones (twice as many on a critical). */
+  function scaleCantripElement(el, tier) {
+    if (el.action_type !== "dice_roll" || el.roll_options?.roll_type !== "damage") return el;
+    const factor = /> Crítico$/.test(el.name || "") ? 2 : 1;
+    let scaled = false;
+    tier.dice.forEach(({ count, faces }) => {
+      const before = el.dice_roll;
+      el.dice_roll = mapDice(el.dice_roll, faces, () => count * factor);
+      if (el.dice_roll_formula) el.dice_roll_formula = mapDice(el.dice_roll_formula, faces, () => count * factor);
+      if (el.dice_roll !== before) scaled = true;
+    });
+    if (scaled) {
+      el.n21_scaled = true;
+      el.description = `${el.description || ""}<p><em>${CANTRIP_SCALED_NOTE}</em></p>\n`;
+    }
+    return el;
   }
 
   /* ----- Upcast dice scaling ----- */
@@ -299,8 +370,13 @@
   //    talks about "cada nivel". Some list several (Mano arcana, Muro de hielo).
   //  - by tiers: "Si usas un espacio de conjuro de niveles 5 o 6, [...] el
   //    daño adicional aumenta a 2d4" (Arma elemental) -> the dice become XdY.
-  // Checked against every D&D 2024 spell in Nivel20.
-  const INCREASE_RE = /aumentan?\s+(?:en\s+)?(\d+)d(\d+)/gi;
+  // D&D 2014 also says "se incrementa en 1d6", "tira 2d8 adicionales", "por
+  // cada espacio de nivel", "por cada espacio por encima", "por cada dos
+  // niveles" (one more die every two levels) and writes "$3d6$" (Desintegrar).
+  // "El daño por fuego o el radiante (según elijas)" grows only one group.
+  // Checked against every D&D 2024 and 2014 spell in Nivel20.
+  const INCREASE_RE =
+    /(?:(?:aumentan?|(?:se\s+)?incrementan?)\s+(?:en\s+)?|tira\s+)\$?(\d+)d(\d+)/gi;
   const TIER_LEVELS_RE = /nivel(?:es)?\s+(\d+)(?:\s*(?:o|a)\s*(\d+))?(\s*o\s+superior)?/i;
   const TIER_DICE_RE = /aumentan?\s+a\s+(\d+)d(\d+)/i;
   const FIRST_DICE_RE = /(\d+)d(\d+)/;
@@ -311,16 +387,18 @@
    */
   function getUpcastIncreases(spell) {
     const result = { perLevel: [], tiers: [] };
-    const description = spell.description || "";
+    const description = (spell.description || "").replace(/<[^>]*>/g, "");
     const index = description.search(UPCAST_RE);
     if (index === -1) return result;
     description
       .slice(index)
       .split(/\.\s/)
       .forEach((sentence) => {
-        if (/cada nivel/i.test(sentence)) {
+        if (/cada (?:dos )?(?:espacio de )?nivel|cada espacio por encima/i.test(sentence)) {
+          const every = /cada dos niveles/i.test(sentence) ? 2 : 1;
+          const oneGroup = /seg[uú]n elijas|a tu elecci[oó]n|a elegir/i.test(sentence);
           for (const m of sentence.matchAll(INCREASE_RE)) {
-            result.perLevel.push({ count: Number(m[1]), faces: Number(m[2]) });
+            result.perLevel.push({ count: Number(m[1]), faces: Number(m[2]), every, oneGroup });
           }
           return;
         }
@@ -345,7 +423,8 @@
    */
   function setScaling(el, increases) {
     const type = el.roll_options?.roll_type;
-    if (el.action_type !== "dice_roll" || (type !== "damage" && type !== "healing")) return;
+    // "default" rolls too: Dormir's pool of hit points grows with the slot.
+    if (el.action_type !== "dice_roll" || !["damage", "healing", "default"].includes(type)) return;
     if (!increases.perLevel.length && !increases.tiers.length) return;
     const dice = String(el.dice_roll || "").match(FIRST_DICE_RE);
     const faces = dice ? Number(dice[2]) : null;
@@ -354,6 +433,8 @@
     const tiers = increases.tiers.filter((tier) => tier.faces === faces);
     if (increase) {
       el.n21_scaling = { count: increase.count * factor, faces };
+      if (increase.every > 1) el.n21_scaling.every = increase.every;
+      if (increase.oneGroup) el.n21_scaling.oneGroup = true;
     } else if (tiers.length) {
       el.n21_scaling = {
         faces,
@@ -364,15 +445,23 @@
     }
   }
 
-  /** Change every dice group with `faces` sides: "2d8 + 3" -> "4d8 + 3". */
-  function mapDice(notation, faces, fn) {
+  /**
+   * Change every dice group with `faces` sides: "2d8 + 3" -> "4d8 + 3" (or
+   * only the first one, with `firstOnly`).
+   */
+  function mapDice(notation, faces, fn, firstOnly = false) {
     if (!notation) return notation;
-    return notation.replace(/(\d+)d(\d+)/g, (match, n, f) =>
-      Number(f) === faces ? `${fn(Number(n))}d${f}` : match,
-    );
+    let done = false;
+    return notation.replace(/(\d+)d(\d+)/g, (match, n, f) => {
+      if (Number(f) !== faces || done) return match;
+      done = firstOnly;
+      return `${fn(Number(n))}d${f}`;
+    });
   }
 
   const SCALED_NOTE = "Dados calculados por Nivel21 a partir de la descripción del conjuro.";
+  const CANTRIP_SCALED_NOTE =
+    "Dados calculados por Nivel21 según el nivel del personaje y la descripción del conjuro.";
   const NOT_SCALED_NOTE = "Nivel21 no pudo calcular los dados de este nivel: se tiran los del nivel base.";
 
   /**
@@ -391,12 +480,15 @@
       const tier = scaling.tiers.find((t) => slotLevel >= t.min && slotLevel <= t.max);
       if (tier) fn = () => tier.count;
     } else if (scaling) {
-      fn = (n) => n + scaling.count * steps;
+      const times = Math.floor(steps / (scaling.every || 1));
+      fn = (n) => n + scaling.count * times;
     }
     let note = null;
     if (fn) {
-      el.dice_roll = mapDice(el.dice_roll, scaling.faces, fn);
-      if (el.dice_roll_formula) el.dice_roll_formula = mapDice(el.dice_roll_formula, scaling.faces, fn);
+      el.dice_roll = mapDice(el.dice_roll, scaling.faces, fn, scaling.oneGroup);
+      if (el.dice_roll_formula) {
+        el.dice_roll_formula = mapDice(el.dice_roll_formula, scaling.faces, fn, scaling.oneGroup);
+      }
       el.n21_scaled = true;
       note = SCALED_NOTE;
     } else if (el.n21_scaling_failed) {
@@ -456,7 +548,10 @@
     const name = spell.name;
     const attackParts = parseAttackString(spell.attack);
     const isAttack = isAttackRollType(attackParts?.atkType);
-    const damage = getDamage(spell, attackParts);
+    // A cantrip that only adds damage from some level (Impacto certero).
+    const extra = getCantripTier(spell, ctx.characterLevel)?.dice[0];
+    const damage =
+      getDamage(spell, attackParts) || (extra ? { dice: `${extra.count}d${extra.faces}`, type: null } : null);
     const healing = damage ? null : getHealing(spell);
     const hasMod = MOD_PHRASE_RE.test(spell.description || "");
 
@@ -662,6 +757,7 @@
   function buildSpellActions(ph, options = {}) {
     const { includedOnly = true } = options;
     const sourceName = ph?.info?.name || "";
+    const characterLevel = Number(ph?.info?.level) || 0;
     const books = Array.isArray(ph?.spell_books) ? ph.spell_books : [];
 
     // Group spells (with their book's casting context) by spell level.
@@ -723,7 +819,7 @@
       const elements = [];
       for (const entry of byLevel.get(level)) {
         elements.push(
-          ...buildSpellElements({ ...entry, sourceName, nextOrder }),
+          ...buildSpellElements({ ...entry, sourceName, nextOrder, characterLevel }),
         );
       }
       actions.push(makeFolder(level, ++folderOrder, elements, sourceName));
