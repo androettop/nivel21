@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 import { EMOJIS, addReaction, getMessage } from "./discord_reactions.mjs";
 
 const [, , releaseTagArg, messageFileArg, ...storesArg] = process.argv;
@@ -68,6 +68,10 @@ async function main() {
       .map((reaction) => `${reaction.emoji.name}:${reaction.emoji.id}`),
   );
 
+  const pending = new Set(
+    storesArg.filter((store) => !reacted.has(EMOJIS[store])),
+  );
+
   for (const store of storesArg) {
     if (!PUBLISHED_VERSION[store]) {
       throw new Error(`Unknown store: ${store}`);
@@ -84,7 +88,13 @@ async function main() {
     }
 
     await addReaction(message, EMOJIS[store]);
+    pending.delete(store);
     console.log(`${store}: ${version} published, reaction added`);
+  }
+
+  // Lets the workflow turn its schedule off once its stores are published.
+  if (process.env.GITHUB_OUTPUT) {
+    appendFileSync(process.env.GITHUB_OUTPUT, `done=${pending.size === 0}\n`);
   }
 }
 

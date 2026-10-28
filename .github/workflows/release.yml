@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
@@ -130,5 +131,14 @@ jobs:
       - name: Attach Discord message to release
         if: always() && hashFiles('discord-message.json') != ''
         run: gh release upload "$RELEASE_TAG" discord-message.json --repo androettop/nivel21 --clobber
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Start polling the stores until both publish this version.
+      - name: Enable store status checks
+        if: always() && hashFiles('discord-message.json') != ''
+        run: |
+          gh workflow enable store-status-firefox.yml --repo androettop/nivel21
+          gh workflow enable store-status-chrome.yml --repo androettop/nivel21
         env:
           GITHUB_TOKEN: ${{ github.token }}
