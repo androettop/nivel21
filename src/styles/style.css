@@ -751,6 +751,39 @@ span[n21-h] {
 	background: rgba(192, 57, 43, 0.15);
 }
 
+/* Combat round counter, between the top bar and the timer. */
+.n21-turn-round {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.n21-turn-round-value {
+	font-size: 16px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.n21-turn-round .n21-turn-round-input {
+	flex: 0 0 56px;
+	width: 56px !important;
+	min-width: 0;
+	height: 28px;
+	box-sizing: border-box;
+	text-align: center;
+	padding: 2px 4px;
+	font-size: 14px;
+	font-weight: 700;
+	color: inherit;
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 4px;
+}
+
 /* Turn timer: countdown + depleting bar under the top bar. */
 .n21-turn-timer {
 	display: flex;

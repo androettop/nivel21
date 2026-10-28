@@ -173,13 +173,19 @@
       return turn;
     }
 
+    function clampRound(round) {
+      return Number.isFinite(round) && round >= 1 ? round : 1;
+    }
+
     /**
      * Parse a "/turno ..." command from raw message text.
      * Returns one of:
-     *   { type: "roster", entries: [{ token, initiative }], timerSeconds }  (token = short id)
-     *   { type: "turn", turn: number }
+     *   { type: "roster", entries: [{ token, initiative }], timerSeconds, round }  (token = short id)
+     *   { type: "turn", turn: number, round }
      *   { type: "end" }
      *   null (not a turno command)
+     * `round` comes from an optional "asalto:N" and is null when absent (older
+     * messages), which keeps the round already known.
      */
     function parseTurnCommand(text) {
       const trimmed = toText(text);
@@ -188,14 +194,20 @@
       const parts = trimmed.split(/\s+/);
       if (parts[0] !== "/turno") return null;
 
-      const args = parts.slice(1).filter(Boolean);
+      let round = null;
+      const args = parts.slice(1).filter((arg) => {
+        const match = /^asalto:(\d+)$/i.exec(arg);
+        if (!match) return !!arg;
+        round = clampRound(parseInt(match[1], 10));
+        return false;
+      });
       if (!args.length) return null;
 
       if (args.length === 1) {
         const single = args[0].toLowerCase();
         if (single === "fin") return { type: "end" };
         if (/^\d+$/.test(single)) {
-          return { type: "turn", turn: parseInt(single, 10) };
+          return { type: "turn", turn: parseInt(single, 10), round };
         }
       }
 
@@ -219,7 +231,7 @@
             initiative: Number.isFinite(initiative) ? initiative : 0,
           };
         });
-        return { type: "roster", entries, timerSeconds };
+        return { type: "roster", entries, timerSeconds, round };
       }
 
       return null;
@@ -366,6 +378,25 @@
         </div>`;
     }
 
+    /* ----------------------- round counter ----------------------- */
+
+    // Combat round ("asalto"). Goes up when the turn wraps from the last token
+    // to the first and down when it wraps back. The DM can also set it by hand;
+    // players only see it.
+    function buildRoundHtml(round, editable) {
+      const value = editable
+        ? `<input type="number" class="n21-turn-round-input" min="1" step="1" value="${escapeHtml(
+            round,
+          )}" title="Asalto actual" />`
+        : `<span class="n21-turn-round-value">${escapeHtml(round)}</span>`;
+      return `
+        <div class="n21-turn-round">
+          <i class="ft-repeat"></i>
+          <span>Asalto</span>
+          ${value}
+        </div>`;
+    }
+
     /* ----------------------- shared rendering ----------------------- */
 
     function getPanel() {
@@ -398,10 +429,11 @@
      * Build the inner HTML of the panel for a given state.
      * @param {Array} rows - [{ name, imageUrl, initiative }]
      * @param {number} currentTurn - 1-based turn index (0 = none)
+     * @param {number} round - current combat round (1-based)
      * @param {boolean} dirty - whether the DM has unsent changes
      * @param {boolean} editable - DM (true) vs player read-only (false)
      */
-    function buildBodyHtml(rows, currentTurn, dirty, editable) {
+    function buildBodyHtml(rows, currentTurn, round, dirty, editable) {
       const topBar = editable
         ? `
           <div class="n21-turn-topbar">
@@ -488,6 +520,7 @@
       return `
         <div class="n21-turn-content">
           ${topBar}
+          ${editable || rows.length ? buildRoundHtml(round, editable) : ""}
           ${buildTimerHtml(editable)}
           <div class="n21-turn-list">${listHtml}</div>
           ${bottomBar}
@@ -672,6 +705,7 @@
       if (parsed.type === "end") {
         state.roster = [];
         state.currentTurn = 0;
+        state.round = 1;
         state.active = false;
         return true;
       }
@@ -687,6 +721,7 @@
           state.roster.length,
         );
         state.active = state.roster.length > 0;
+        if (parsed.round) state.round = parsed.round;
         return true;
       }
 
@@ -694,6 +729,7 @@
         if (!state.roster.length) return false;
         state.currentTurn = clampTurn(parsed.turn, state.roster.length);
         state.active = true;
+        if (parsed.round) state.round = parsed.round;
         return true;
       }
 
@@ -718,6 +754,7 @@
       const state = {
         roster: [],
         currentTurn: 0,
+        round: 1,
         active: false,
         timerSeconds: 0,
       };
@@ -781,6 +818,7 @@
       // name/image are resolved at render time.
       let roster = []; // [{ networkId, initiative }]
       let currentTurn = 0; // 1-based; 0 = not started
+      let round = 1;
       let dirty = false;
       timer.seconds = loadStoredTimerSeconds();
 
@@ -812,6 +850,7 @@
       function buildRosterCommand() {
         const entries = roster.map((e) => `${shortId(e.networkId)}:${e.initiative}`);
         if (timer.seconds > 0) entries.push(`tiempo:${timer.seconds}`);
+        entries.push(`asalto:${round}`);
         return "/turno " + entries.join(" ");
       }
 
@@ -832,7 +871,7 @@
         });
 
         const $block = $panel.find(".floating-block").first();
-        $block.html(buildBodyHtml(rows, currentTurn, dirty, true));
+        $block.html(buildBodyHtml(rows, currentTurn, round, dirty, true));
 
         bindDmEvents($panel);
         updateTimerDom();
@@ -863,6 +902,16 @@
         } else {
           updateTimerDom();
         }
+      }
+
+      function setRound(value) {
+        const next = clampRound(value);
+        if (next === round) return;
+        round = next;
+        // During a combat the roster is re-sent with the new round (a roster
+        // message doesn't restart the players' timer); otherwise it goes out
+        // with the next "Actualizar".
+        if (timer.running && !dirty) queueChat("roster", buildRosterCommand());
       }
 
       function setDirty(value) {
@@ -1024,7 +1073,7 @@
         if (!roster.length) return;
         const next = clampTurn(turn, roster.length);
         currentTurn = next;
-        queueChat("turn", `/turno ${next}`);
+        queueChat("turn", `/turno ${next} asalto:${round}`);
         renderDm();
         startTurnTimer();
       }
@@ -1033,8 +1082,14 @@
         if (!roster.length) return;
         const base = currentTurn >= 1 ? currentTurn : 1;
         let next = base + delta;
-        if (next < 1) next = roster.length; // wrap to last
-        if (next > roster.length) next = 1; // wrap to first
+        if (next < 1) {
+          next = roster.length; // wrap to last: back to the previous round
+          round = clampRound(round - 1);
+        }
+        if (next > roster.length) {
+          next = 1; // wrap to first: a new round
+          round += 1;
+        }
         goToTurn(next);
       }
 
@@ -1045,6 +1100,7 @@
         queueChat("end", "/turno fin");
         roster = [];
         currentTurn = 0;
+        round = 1;
         dirty = false;
         setTimerRunning(false);
         closePanel();
@@ -1091,6 +1147,14 @@
           }
           const applied = await withChatConsent(() => setTimerSeconds(value));
           if (!applied) this.value = timer.seconds;
+        });
+
+        $panel.on("change.n21turn", ".n21-turn-round-input", async function () {
+          const value = parseInt(this.value, 10);
+          // Only a running combat broadcasts the change right away.
+          if (!timer.running || dirty) setRound(value);
+          else await withChatConsent(() => setRound(value));
+          this.value = round;
         });
 
         // Clicking the countdown restarts the current turn's timer for everyone
@@ -1195,6 +1259,7 @@
           state.currentTurn >= 1 ? state.currentTurn : 1,
           roster.length,
         );
+        round = state.round;
         dirty = false;
         if (state.timerSeconds) {
           timer.seconds = state.timerSeconds;
@@ -1227,6 +1292,7 @@
       // Reconstructed state from chat messages. Tokens stored by short id.
       let roster = []; // [{ shortId, initiative }]
       let currentTurn = 0;
+      let round = 1;
       let active = false; // whether a turn order is currently active
       let needsRender = false;
       let retryTimer = null;
@@ -1247,6 +1313,7 @@
         const state = scanHistoryState();
         roster = state.roster;
         currentTurn = state.currentTurn;
+        round = state.round;
         active = state.active;
 
         const nextKey = currentTurn >= 1
@@ -1302,7 +1369,7 @@
         const $panel = ensurePanel();
         if (!$panel || !$panel.length) return;
         const $block = $panel.find(".floating-block").first();
-        $block.html(buildBodyHtml(rows, currentTurn, false, false));
+        $block.html(buildBodyHtml(rows, currentTurn, round, false, false));
         updateTimerDom();
 
         // Some tokens may not be loaded yet when reconstructing from history.
@@ -1347,7 +1414,7 @@
         $panel
           .find(".floating-block")
           .first()
-          .html(buildBodyHtml([], 0, false, false));
+          .html(buildBodyHtml([], 0, 1, false, false));
       }
 
       // Live /turno messages (not the history replayed on load).
