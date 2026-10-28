@@ -4,8 +4,9 @@
 	       Feature: Token Drag Measurement
 
 	       While a token is dragged, an arrow goes from its center where the
-	       drag started to its current center, with the distance in feet,
-	       meters and grid units (Nivel20's "dnd-classic": the longest axis).
+	       drag started to its current center, with the distance in the
+	       scene's units and grid units, counted with the campaign's
+	       distance calculation (e.g. the alternate diagonal).
 	       Right click while dragging fixes a waypoint and the arrow turns
 	       there; the distance is the whole way. It looks like
 	       Nivel20's measurement arrow (thinner), but it's our own drawing on
@@ -16,18 +17,23 @@
 	       dragged token stays where it is and a translucent copy follows the
 	       pointer, at the end of the arrow. Releasing moves the real token
 	       through every waypoint; Escape cancels.
+
+	       Soft snap (both modes, its own setting): when the token center gets
+	       to the middle fifth of a whole square away from where the drag
+	       started (moving whole squares, also with a token a bit off the
+	       grid) or of a grid square's center, it sticks to that point (the
+	       closest one). Shift moves it freely.
 	    ======================= */
 
     const { loadManagers } = window._n21_;
 
     const SHOW_DISTANCE_SETTING = "token-drag-measurement.show-distance";
     const PREVIEW_SETTING = "token-drag-measurement.preview-move";
+    const SNAP_SETTING = "token-drag-measurement.soft-snap";
     const LAYER = "token-drag-measurement";
-    // D&D: a square is 5 ft = 1,5 m.
-    const FEET_PER_SQUARE = 5;
-    const METERS_PER_FOOT = 0.3;
     const GHOST_ALPHA = 0.55;
     const MOVE_SPEED = 5; // Cells per second when the token walks the path
+    const SNAP_RADIUS = 1 / 10; // The middle fifth of a square
 
     const [
       TokenManager,
@@ -113,29 +119,17 @@
       return String(Math.round(value * 10) / 10);
     }
 
-    /** Nivel20's "dnd-classic": the longest axis (diagonals count as one). */
-    function squaresBetween(from, to) {
-      return Math.max(Math.abs(to.x - from.x), Math.abs(to.z - from.z));
-    }
-
     /**
-     * The distance lines, like Nivel20's measurement label: feet, meters and
-     * grid units. The scene says what a square is worth (e.g. 5 "pies");
-     * without it, a square is 5 ft.
+     * The distance lines, like Nivel20's measurement label: the distance in
+     * the scene's units (e.g. 1,5 "m" per square) and the grid units. A
+     * scene without units only shows the grid units.
      */
     function distanceLines(squares) {
       const { units, unitScale } = MeasurementManager.getSceneUnits();
-      let feet = squares * FEET_PER_SQUARE;
-      if (units && unitScale) {
-        const amount = squares * unitScale;
-        if (/^m(etros?)?\.?$/i.test(units.trim())) feet = amount / METERS_PER_FOOT;
-        else if (/^(pies?|ft|feet)\.?$/i.test(units.trim())) feet = amount;
-      }
-      return [
-        `${formatNumber(feet)} PIES`,
-        `${formatNumber(feet * METERS_PER_FOOT)} M`,
-        `${formatNumber(squares)} UD.`,
-      ];
+      const lines = [];
+      if (units) lines.push(`${formatNumber(squares * (unitScale || 1))} ${units.toUpperCase()}`);
+      lines.push(`${formatNumber(squares)} UD.`);
+      return lines;
     }
 
     /* ----------------------- drawing ----------------------- */
@@ -357,8 +351,7 @@
       if (!showDistance) return;
 
       // Only the whole way, under the token.
-      let squares = 0;
-      for (let i = 1; i < points.length; i++) squares += squaresBetween(points[i - 1], points[i]);
+      const squares = MeasurementManager.getPathSquares(points);
       const half = Math.abs(TokenManager.getTokenScale(drag.networkId)?.z || 1) / 2;
       const center = toScreen(target);
       const bottom = toScreen({ x: target.x, z: target.z + half });
@@ -402,6 +395,40 @@
       setTimeout(() => CameraManager.moveTokenAlongPath(finished.networkId, path, { speed: MOVE_SPEED }), 0);
     }
 
+    /**
+     * The token center for a drag point: a whole number of squares away from
+     * the drag start, or a grid square's center, when it's in the middle
+     * fifth of that square.
+     */
+    function snapped(start, point, networkId) {
+      if (shiftHeld || SettingsManager.get(SNAP_SETTING) === false) return point;
+      // A grid square's center, or a grid corner for an even sized token
+      // (where Nivel20 snaps it).
+      const scale = TokenManager.getTokenScale(networkId) || { x: 1, z: 1 };
+      const gridShift = (size) => (Math.round(Math.abs(size || 1)) % 2 ? 0.5 : 0);
+      const shiftX = gridShift(scale.x);
+      const shiftZ = gridShift(scale.z);
+      const candidates = [
+        { x: start.x + Math.round(point.x - start.x), z: start.z + Math.round(point.z - start.z) },
+        { x: Math.round(point.x - shiftX) + shiftX, z: Math.round(point.z - shiftZ) + shiftZ },
+      ];
+      let best = point;
+      let bestDistance = Infinity;
+      candidates.forEach((candidate) => {
+        const dx = Math.abs(point.x - candidate.x);
+        const dz = Math.abs(point.z - candidate.z);
+        if (dx > SNAP_RADIUS || dz > SNAP_RADIUS || Math.hypot(dx, dz) >= bestDistance) return;
+        best = candidate;
+        bestDistance = Math.hypot(dx, dz);
+      });
+      return best;
+    }
+
+    let shiftHeld = false;
+    ["mousemove", "keydown", "keyup"].forEach((type) => {
+      window.addEventListener(type, (event) => (shiftHeld = event.shiftKey), true);
+    });
+
     CameraManager.setTokenDragHandler((info) => {
       if (!drag) {
         if (!info.networkId) return false;
@@ -422,12 +449,19 @@
         };
         TokenOverlayManager.addLayer(LAYER, drawDrag, 30);
       }
-      if (!drag.preview) return false;
-      if (!drag.cancelled) {
-        const point = CameraManager.screenToWorld(info.screenX, info.screenY, 0);
-        if (point) drag.target = { x: point.x + drag.offset.x, z: point.z + drag.offset.z };
+      if (drag.cancelled) return true;
+      const point = CameraManager.screenToWorld(info.screenX, info.screenY, 0);
+      const start = drag.starts.get(drag.networkId);
+      const center = point && { x: point.x + drag.offset.x, z: point.z + drag.offset.z };
+      const target = center && snapped(start, center, drag.networkId);
+      if (drag.preview) {
+        if (target) drag.target = target;
+        return true;
       }
-      return true;
+      // Nivel20 moves the tokens: point it to where the snapped center goes.
+      if (!target || target === center) return false;
+      const screen = CameraManager.worldToScreen(target.x - drag.offset.x, target.z - drag.offset.z, 0);
+      return screen ? { screenX: screen.x, screenY: screen.y } : false;
     });
 
     // Right click (waypoint) and Escape (cancel the preview) are ours while
