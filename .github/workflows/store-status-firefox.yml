@@ -2,7 +2,8 @@ name: React to Firefox publication
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    # Off the round minutes: GitHub delays or drops schedules there.
+    - cron: "4-59/5 * * * *"
   workflow_dispatch:
 
 permissions:
