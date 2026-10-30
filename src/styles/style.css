@@ -1039,10 +1039,45 @@ span[n21-h] {
 
 /* DM Screen Styles */
 .n21-dm-screen {
+	--n21-dm-card-bg: #f6f5f3;
+	--n21-dm-card-border: #dcdad6;
+	--n21-dm-line: rgba(0, 0, 0, 0.08);
+	--n21-dm-line-strong: rgba(0, 0, 0, 0.18);
+	--n21-dm-stripe: rgba(0, 0, 0, 0.03);
+	--n21-dm-accent: #a8302f;
+	--n21-dm-btn-border: rgba(0, 0, 0, 0.16);
+	--n21-dm-btn-bg: rgba(0, 0, 0, 0.03);
+	--n21-dm-btn-hover-border: rgba(0, 0, 0, 0.3);
+	--n21-dm-btn-hover-bg: rgba(0, 0, 0, 0.07);
+	--n21-dm-primary-bg: rgba(130, 32, 32, 0.08);
+	--n21-dm-primary-hover-bg: rgba(130, 32, 32, 0.16);
+	--n21-dm-primary-text: #822020;
+	--n21-dm-input-bg: #fff;
+	--n21-dm-input-border: rgba(0, 0, 0, 0.2);
+	--n21-dm-scroll: rgba(0, 0, 0, 0.2);
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	min-height: 0;
+}
+
+body.darkmode--activated .n21-dm-screen {
+	--n21-dm-card-bg: rgba(20, 22, 30, 0.55);
+	--n21-dm-card-border: rgba(255, 255, 255, 0.08);
+	--n21-dm-line: rgba(255, 255, 255, 0.08);
+	--n21-dm-line-strong: rgba(255, 255, 255, 0.16);
+	--n21-dm-stripe: rgba(255, 255, 255, 0.03);
+	--n21-dm-accent: #d96b6b;
+	--n21-dm-btn-border: rgba(255, 255, 255, 0.12);
+	--n21-dm-btn-bg: rgba(255, 255, 255, 0.04);
+	--n21-dm-btn-hover-border: rgba(255, 255, 255, 0.24);
+	--n21-dm-btn-hover-bg: rgba(255, 255, 255, 0.08);
+	--n21-dm-primary-bg: rgba(130, 32, 32, 0.3);
+	--n21-dm-primary-hover-bg: rgba(130, 32, 32, 0.5);
+	--n21-dm-primary-text: inherit;
+	--n21-dm-input-bg: rgba(0, 0, 0, 0.35);
+	--n21-dm-input-border: rgba(255, 255, 255, 0.2);
+	--n21-dm-scroll: rgba(255, 255, 255, 0.2);
 }
 
 .n21-dm-toolbar {
@@ -1053,8 +1088,8 @@ span[n21-h] {
 }
 
 .n21-dm-btn {
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid var(--n21-dm-btn-border);
+	background: var(--n21-dm-btn-bg);
 	color: inherit;
 	padding: 6px 12px;
 	border-radius: 8px;
@@ -1067,20 +1102,21 @@ span[n21-h] {
 }
 
 .n21-dm-btn:hover {
-	border-color: rgba(255, 255, 255, 0.24);
-	background: rgba(255, 255, 255, 0.08);
+	border-color: var(--n21-dm-btn-hover-border);
+	background: var(--n21-dm-btn-hover-bg);
 }
 
 .n21-dm-add-card,
 .n21-dm-restore {
 	border-color: rgba(130, 32, 32, 0.8);
-	background: rgba(130, 32, 32, 0.3);
+	background: var(--n21-dm-primary-bg);
+	color: var(--n21-dm-primary-text);
 }
 
 .n21-dm-add-card:hover,
 .n21-dm-restore:hover {
 	border-color: rgba(130, 32, 32, 1);
-	background: rgba(130, 32, 32, 0.5);
+	background: var(--n21-dm-primary-hover-bg);
 }
 
 .n21-dm-grid {
@@ -1092,6 +1128,8 @@ span[n21-h] {
 	flex: 1 1 auto;
 	min-height: 0;
 	align-content: start;
+	/* "auto" rows don't grow with the cards inside this scroll box. */
+	grid-auto-rows: max-content;
 }
 
 .n21-dm-grid::-webkit-scrollbar {
@@ -1099,15 +1137,15 @@ span[n21-h] {
 }
 
 .n21-dm-grid::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.2);
+	background: var(--n21-dm-scroll);
 	border-radius: 999px;
 }
 
 .n21-dm-card {
 	position: relative;
 	border-radius: 10px;
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	background: rgba(20, 22, 30, 0.55);
+	border: 1px solid var(--n21-dm-card-border);
+	background: var(--n21-dm-card-bg);
 	padding: 16px 16px 14px;
 	display: flex;
 	flex-direction: column;
@@ -1136,7 +1174,7 @@ span[n21-h] {
 	text-align: center;
 	font-weight: 700;
 	font-size: 16px;
-	color: #d96b6b;
+	color: var(--n21-dm-accent);
 	line-height: 1.2;
 }
 
@@ -1162,18 +1200,18 @@ span[n21-h] {
 .n21-dm-card-body td {
 	text-align: left;
 	padding: 6px 8px;
-	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+	border-bottom: 1px solid var(--n21-dm-line);
 	vertical-align: top;
 }
 
 .n21-dm-card-body thead th {
 	font-weight: 600;
 	opacity: 0.75;
-	border-bottom-color: rgba(255, 255, 255, 0.16);
+	border-bottom-color: var(--n21-dm-line-strong);
 }
 
 .n21-dm-card-body tbody tr:nth-child(odd) {
-	background: rgba(255, 255, 255, 0.03);
+	background: var(--n21-dm-stripe);
 }
 
 .n21-dm-card-body ul,
@@ -1183,7 +1221,7 @@ span[n21-h] {
 }
 
 .n21-dm-card-body a {
-	color: #d96b6b;
+	color: var(--n21-dm-accent);
 }
 
 /* Edit/delete controls (shown on card hover) */
@@ -1228,8 +1266,8 @@ span[n21-h] {
 
 .n21-dm-title-input {
 	width: 100%;
-	background: rgba(0, 0, 0, 0.35);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: var(--n21-dm-input-bg);
+	border: 1px solid var(--n21-dm-input-border);
 	color: inherit;
 	border-radius: 6px;
 	padding: 8px 10px;
@@ -1245,8 +1283,8 @@ span[n21-h] {
 .n21-dm-content-input {
 	width: 100%;
 	min-height: 120px;
-	background: rgba(0, 0, 0, 0.35);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: var(--n21-dm-input-bg);
+	border: 1px solid var(--n21-dm-input-border);
 	color: inherit;
 	border-radius: 6px;
 	padding: 8px 10px;
