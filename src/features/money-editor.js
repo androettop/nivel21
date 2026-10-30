@@ -208,6 +208,7 @@
       let match;
       let last = 0;
       const frag = document.createDocumentFragment();
+      let renderedAny = false;
       while ((match = re.exec(text)) !== null) {
         if (match.index > last) {
           frag.appendChild(
@@ -217,8 +218,12 @@
         const rendered = buildInlineMoney(money.parse(match[0]));
         // Keep the raw text when the token has no positive amounts.
         frag.appendChild(rendered || document.createTextNode(match[0]));
+        if (rendered) renderedAny = true;
         last = match.index + match[0].length;
       }
+      // Nothing to render: leave the node alone. Replacing it with the same
+      // text would be seen by the observer as new text, forever.
+      if (!renderedAny) return;
       if (last < text.length) {
         frag.appendChild(document.createTextNode(text.slice(last)));
       }
