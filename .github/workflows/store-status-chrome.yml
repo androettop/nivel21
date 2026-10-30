@@ -2,7 +2,8 @@ name: React to Chrome publication
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    # Off the round minutes: GitHub delays or drops schedules there.
+    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 permissions:
