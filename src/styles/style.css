@@ -4205,3 +4205,620 @@ a.n21-tbar-gear:hover {
 	}
 
 }
+
+/* =======================================================================
+   Settings: "Mi estilo" questions (shared by the setup dialog and the
+   settings panel) and the "Funciones" list.
+   ======================================================================= */
+
+.n21-settings-view {
+	display: none;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.n21-settings-view.is-active {
+	display: flex;
+}
+
+.n21-settings-panel .n21-settings-tabs {
+	padding: 12px 18px 0;
+}
+
+.n21-settings-tab i {
+	margin-right: 4px;
+}
+
+.n21-settings-intro {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.n21-settings-intro p {
+	flex: 1 1 220px;
+	margin: 0;
+	font-size: 13px;
+	opacity: 0.8;
+}
+
+.n21-style-steps {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.n21-style-step {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.n21-style-step--compact {
+	padding: 12px;
+	border-radius: 8px;
+	border: 1px solid rgba(127, 127, 127, 0.25);
+	background: rgba(127, 127, 127, 0.05);
+}
+
+.n21-style-step-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	font-size: 17px;
+	font-weight: 700;
+	color: inherit;
+}
+
+.n21-style-step--compact .n21-style-step-title {
+	font-size: 15px;
+}
+
+.n21-style-step-description {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	opacity: 0.8;
+}
+
+.n21-style-choices {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 10px;
+}
+
+.n21-style-choice {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 8px;
+	text-align: left;
+	color: inherit;
+	border: 2px solid rgba(127, 127, 127, 0.3);
+	border-radius: 10px;
+	background: rgba(127, 127, 127, 0.06);
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+	outline: none !important;
+}
+
+.n21-style-choice:hover:not(:disabled) {
+	border-color: rgba(127, 127, 127, 0.6);
+}
+
+.n21-style-choice.is-active {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.18);
+}
+
+.n21-style-choice:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.n21-style-choice-label {
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.n21-style-choice.is-active .n21-style-choice-label::after {
+	content: " ✓";
+	color: #c0392b;
+}
+
+.n21-style-choice-description {
+	font-size: 12px;
+	line-height: 1.35;
+	opacity: 0.8;
+}
+
+.n21-style-media {
+	display: block;
+	width: 100%;
+	aspect-ratio: 16 / 10;
+	object-fit: cover;
+	border-radius: 6px;
+	background: rgba(0, 0, 0, 0.25);
+}
+
+.n21-style-step .n21-style-media.n21-style-media--single {
+	aspect-ratio: auto;
+	background: none;
+	max-height: 160px;
+	object-fit: contain;
+}
+
+.n21-style-step--compact .n21-style-media {
+	aspect-ratio: 16 / 7;
+}
+
+.n21-style-choice-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 56px;
+	font-size: 28px;
+	border-radius: 6px;
+	background: rgba(127, 127, 127, 0.1);
+}
+
+.n21-style-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.n21-style-control {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.n21-style-control > span {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.n21-style-control--select {
+	justify-content: space-between;
+	cursor: default;
+}
+
+.n21-style-control select {
+	min-width: 110px;
+	height: 30px;
+	padding: 2px 6px;
+	color: inherit;
+	background: rgba(127, 127, 127, 0.12);
+	border: 1px solid rgba(127, 127, 127, 0.45);
+	border-radius: 6px;
+}
+
+.n21-style-hint {
+	font-size: 12px;
+	opacity: 0.7;
+	margin: 0;
+}
+
+.n21-style-hint--off {
+	color: #d68a00;
+	opacity: 1;
+}
+
+/* Toggle switch (checkbox). The size wins over the generic panel checkbox. */
+.n21-switch {
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	flex: 0 0 auto;
+	width: 34px !important;
+	height: 20px !important;
+	margin: 0;
+	border-radius: 999px;
+	background: rgba(127, 127, 127, 0.45);
+	cursor: pointer;
+	transition: background-color 150ms ease;
+	outline: none !important;
+}
+
+.n21-switch::after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+	transition: transform 150ms ease;
+}
+
+.n21-switch:checked {
+	background: #822020;
+}
+
+.n21-switch:checked::after {
+	transform: translateX(14px);
+}
+
+.n21-switch:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* "Funciones" tab. */
+.n21-feature-search {
+	position: sticky;
+	top: -16px;
+	z-index: 2;
+}
+
+/* Nivel20 paints placeholders white; follow the field's text color. */
+.card.floating-panel.n21-panel .n21-feature-search::placeholder {
+	color: inherit;
+	opacity: 0.55;
+}
+
+.n21-feature-groups {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.n21-feature-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.n21-feature-group-title {
+	margin: 0 0 2px;
+	font-size: 13px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	opacity: 0.7;
+	color: inherit;
+}
+
+.n21-feature-item {
+	padding: 8px 10px;
+	gap: 6px;
+}
+
+.n21-feature-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.n21-feature-main {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	flex: 1 1 auto;
+	margin: 0;
+	cursor: pointer;
+}
+
+.n21-feature-main .n21-switch {
+	margin-top: 1px;
+}
+
+.n21-feature-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.n21-feature-name {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.n21-feature-description {
+	font-size: 12px;
+	line-height: 1.35;
+	opacity: 0.75;
+}
+
+.n21-feature-badge {
+	display: inline-block;
+	margin-left: 4px;
+	padding: 0 5px;
+	border-radius: 4px;
+	font-size: 10px;
+	font-weight: 700;
+	vertical-align: middle;
+	color: #fff;
+	background: #822020;
+}
+
+.n21-feature-thumb {
+	flex: 0 0 auto;
+	width: 64px;
+	height: 44px;
+	object-fit: cover;
+	border-radius: 4px;
+	cursor: zoom-in;
+	transition: width 150ms ease, height 150ms ease;
+}
+
+.n21-feature-thumb.is-expanded {
+	width: 240px;
+	height: auto;
+	cursor: zoom-out;
+}
+
+.n21-feature-empty {
+	margin: 0;
+	font-size: 13px;
+	opacity: 0.7;
+}
+
+/* =======================================================================
+   First-run setup dialog
+   ======================================================================= */
+
+.n21-onboarding {
+	position: fixed;
+	inset: 0;
+	z-index: 12000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.n21-onboarding-box {
+	--n21-ob-bg: #fbfbfa;
+	--n21-ob-border: #d4d3d0;
+	--n21-ob-text: #1f2023;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: min(640px, 100%);
+	max-height: min(720px, calc(100vh - 32px));
+	border: 1px solid var(--n21-ob-border);
+	border-radius: 12px;
+	background: var(--n21-ob-bg);
+	color: var(--n21-ob-text);
+	box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+body.darkmode--activated .n21-onboarding-box {
+	--n21-ob-bg: #1d1e21;
+	--n21-ob-border: #3a3d42;
+	--n21-ob-text: #ecebe8;
+}
+
+.n21-onboarding-close {
+	position: absolute;
+	top: 8px;
+	right: 10px;
+	z-index: 1;
+	border: 0;
+	background: none;
+	color: inherit;
+	font-size: 24px;
+	line-height: 1;
+	opacity: 0.6;
+	cursor: pointer;
+}
+
+.n21-onboarding-close:hover {
+	opacity: 1;
+}
+
+.n21-onboarding-page {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 24px 24px 16px;
+}
+
+.n21-onboarding-hero {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 16px 8px;
+	text-align: center;
+}
+
+.n21-onboarding-hero img {
+	width: 72px;
+	height: 72px;
+}
+
+.n21-onboarding-hero h3 {
+	margin: 4px 0;
+	font-size: 22px;
+	font-weight: 700;
+	color: inherit;
+}
+
+.n21-onboarding-hero p {
+	max-width: 460px;
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.5;
+	opacity: 0.85;
+}
+
+.n21-onboarding-done-icon {
+	font-size: 56px;
+	color: #4caf50;
+}
+
+.n21-onboarding-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 10px;
+	margin-top: 4px;
+}
+
+.n21-onboarding-card {
+	display: flex;
+	gap: 10px;
+	padding: 8px;
+	border: 1px solid rgba(127, 127, 127, 0.3);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.06);
+	font-size: 13px;
+}
+
+.n21-onboarding-card img {
+	flex: 0 0 auto;
+	width: 72px;
+	height: 56px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+
+.n21-onboarding-card p {
+	margin: 2px 0 0;
+	font-size: 12px;
+	line-height: 1.35;
+	opacity: 0.8;
+}
+
+.n21-onboarding-footer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 24px 16px;
+	border-top: 1px solid var(--n21-ob-border);
+}
+
+.n21-onboarding-dots {
+	display: flex;
+	flex: 1 1 auto;
+	justify-content: center;
+	gap: 6px;
+}
+
+.n21-onboarding-dots span {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: rgba(127, 127, 127, 0.4);
+}
+
+.n21-onboarding-dots span.is-active {
+	background: #822020;
+}
+
+.n21-onboarding-btn {
+	min-width: 96px;
+	padding: 8px 16px;
+	border: 1px solid rgba(127, 127, 127, 0.4);
+	border-radius: 8px;
+	background: rgba(127, 127, 127, 0.08);
+	color: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	outline: none !important;
+}
+
+.n21-onboarding-btn--primary {
+	border-color: #822020;
+	background: #822020;
+	color: #fff;
+}
+
+.n21-onboarding-btn--primary:hover {
+	background: #9a2a2a;
+}
+
+/* Highlight cards open a short tutorial. */
+button.n21-onboarding-card {
+	width: 100%;
+	text-align: left;
+	color: inherit;
+	cursor: pointer;
+	transition: border-color 150ms ease, background-color 150ms ease;
+	outline: none !important;
+}
+
+button.n21-onboarding-card:hover:not(:disabled) {
+	border-color: #822020;
+	background: rgba(130, 32, 32, 0.1);
+}
+
+button.n21-onboarding-card:disabled {
+	cursor: default;
+}
+
+.n21-onboarding-card > span {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.n21-onboarding-card-text {
+	font-size: 12px;
+	line-height: 1.35;
+	opacity: 0.8;
+}
+
+.n21-onboarding-card-more {
+	margin-top: 2px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #c0392b;
+}
+
+.n21-onboarding-link {
+	align-self: flex-start;
+	margin: 0 0 10px;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #c0392b;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.n21-onboarding-page .n21-onboarding-tutorial-media {
+	aspect-ratio: auto;
+	max-height: 280px;
+	margin: 10px 0;
+	object-fit: contain;
+	background: rgba(0, 0, 0, 0.2);
+}
+
+.n21-onboarding-tutorial-steps {
+	margin: 0;
+	padding-left: 20px;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.n21-onboarding-tutorial-steps li + li {
+	margin-top: 6px;
+}
+
+.n21-onboarding-dismiss {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0 0;
+	font-size: 13px;
+	opacity: 0.8;
+	cursor: pointer;
+}
+
+.n21-onboarding-dismiss input {
+	accent-color: #822020;
+}

@@ -13,6 +13,17 @@
         "SettingsManager"
       );
 
+    // Not awaited: the panel must open even if the room never connects.
+    function isGameMaster() {
+      try {
+        return !!window._n21_.managers.PlayerManager?.isGameMaster?.();
+      } catch (error) {
+        return false;
+      }
+    }
+
+    const guide = window._n21_.settingsGuide;
+
     if (!MainMenuUIManager || !FloatingPanelManager || !SettingsManager) {
       console.warn("[Settings Panel] Managers not available");
       return;
@@ -24,7 +35,7 @@
     const PANEL_COLOR = "#822020";
     const PANEL_CLASS = "n21-settings-panel";
     const PANEL_STYLE =
-      "min-height: 620px; width: 540px; height: 620px;";
+      "min-height: 480px; width: 600px; height: 680px;";
     const RELOAD_NOTICE_TEXT =
       "Uno o más cambios requieren <a href='#' onclick='location.reload()'>recargar la página</a> para aplicarse.";
 
@@ -357,6 +368,105 @@
       `;
     }
 
+    /* ---------- "Mi estilo": the same questions as the first-run setup ---------- */
+
+    function buildStyleViewHtml() {
+      const steps = guide
+        .stepsFor(isGameMaster())
+        .map((step) => guide.buildStepHtml(step, { compact: true }))
+        .join("");
+      return `
+        <div class="n21-settings-intro">
+          <p>Ajusta cómo se comporta Nivel21 para ti. Los cambios se aplican al momento.</p>
+          <button type="button" class="n21-settings-onboarding btn n21-btn-neutral">
+            <i class="ft-play-circle"></i> Repetir configuración inicial
+          </button>
+        </div>
+        <div class="n21-style-steps">${steps}</div>`;
+    }
+
+    function refreshStyleView($panel) {
+      const $view = $panel.find('.n21-settings-view[data-view="style"]');
+      $view.find(".n21-style-steps").replaceWith(
+        $(buildStyleViewHtml()).filter(".n21-style-steps")
+      );
+    }
+
+    /* ---------- "Funciones": every feature, with its description ---------- */
+
+    function normalizeSearch(text) {
+      return String(text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    function buildFeatureItemHtml(name, setting) {
+      const id = name.replace(/^feature\./, "").replace(/\.enabled$/, "");
+      const info = guide.features[id] || {};
+      const value = SettingsManager.getRaw(name);
+      const escapedName = escapeHtml(name);
+      const image = info.image
+        ? `<img class="n21-feature-thumb" src="${escapeHtml(
+            guide.assetUrl(info.image)
+          )}" alt="" loading="lazy" title="Ver imagen" />`
+        : "";
+      const gmBadge = info.gmOnly ? '<span class="n21-feature-badge">DM</span>' : "";
+
+      return `
+        <div class="n21-setting-item n21-feature-item" data-setting="${escapedName}"
+             data-search="${escapeHtml(normalizeSearch(`${setting.label} ${info.description || ""}`))}">
+          <div class="n21-feature-row">
+            <label class="n21-feature-main">
+              <input type="checkbox" class="n21-setting-input n21-switch" data-setting="${escapedName}" data-type="boolean"${
+                value ? " checked" : ""
+              } />
+              <span class="n21-feature-text">
+                <span class="n21-feature-name">${escapeHtml(setting.label)} ${gmBadge}</span>
+                ${
+                  info.description
+                    ? `<span class="n21-feature-description">${escapeHtml(info.description)}</span>`
+                    : ""
+                }
+              </span>
+            </label>
+            ${image}
+          </div>
+          ${buildDependencyNoteHtml(name, setting)}
+        </div>
+      `;
+    }
+
+    function buildFeaturesViewHtml(featureSettings) {
+      const byGroup = new Map(guide.groups.map((group) => [group.id, []]));
+      const others = [];
+      Object.entries(featureSettings).forEach(([name, setting]) => {
+        const id = name.replace(/^feature\./, "").replace(/\.enabled$/, "");
+        const group = guide.features[id]?.group;
+        (byGroup.get(group) || others).push(buildFeatureItemHtml(name, setting));
+      });
+
+      const sections = guide.groups
+        .map((group) => [group.label, byGroup.get(group.id)])
+        .concat([["Otras", others]])
+        .filter(([, items]) => items.length)
+        .map(
+          ([label, items]) => `
+            <div class="n21-feature-group">
+              <h4 class="n21-feature-group-title">${escapeHtml(label)}</h4>
+              ${items.join("")}
+            </div>`
+        )
+        .join("");
+
+      return `
+        <input type="search" class="form-control n21-feature-search" placeholder="Buscar funciones…" />
+        <div class="n21-feature-groups">${sections}</div>
+        <p class="n21-feature-empty" hidden>Ninguna función coincide con la búsqueda.</p>`;
+    }
+
+    /* ---------- panel ---------- */
+
     function buildPanelHtml() {
       const allSettings = SettingsManager.getAllSettings();
       const allCategories = SettingsManager.getAllCategories
@@ -372,72 +482,68 @@
         groupedSettings[categoryName][name] = setting;
       }
 
-      const orderedCategories = Object.entries(groupedSettings)
-        .map(([categoryName, settings]) => {
-          const categoryMeta = allCategories[categoryName] || {
+      // "Avanzado": every other category, one under the other.
+      const advancedHtml = Object.entries(groupedSettings)
+        .filter(([categoryName]) => categoryName !== "features")
+        .map(([categoryName, settings]) => ({
+          key: categoryName,
+          settings,
+          meta: allCategories[categoryName] || {
             name: categoryName,
             label: categoryName,
             description: "",
             order: 999,
-          };
-
-          return {
-            key: categoryName,
-            settings,
-            meta: categoryMeta,
-          };
-        })
+          },
+        }))
         .sort((a, b) => {
           if (a.meta.order !== b.meta.order) {
             return a.meta.order - b.meta.order;
           }
           return String(a.meta.label).localeCompare(String(b.meta.label));
-        });
+        })
+        .map((category) =>
+          buildCategoryHtml(category.key, category.meta, category.settings).replace(
+            'class="n21-settings-category"',
+            'class="n21-settings-category is-active"'
+          )
+        )
+        .join("");
 
-      let html = '<div class="n21-settings-panel-body">';
+      const views = [
+        { id: "style", label: "Mi estilo", icon: "ft-sliders", html: buildStyleViewHtml() },
+        {
+          id: "features",
+          label: "Funciones",
+          icon: "ft-toggle-right",
+          html: buildFeaturesViewHtml(groupedSettings.features || {}),
+        },
+        { id: "advanced", label: "Avanzado", icon: "ft-settings", html: advancedHtml },
+      ];
 
-      if (orderedCategories.length) {
-        html += '<div class="n21-settings-tabs" role="tablist">';
-        html += orderedCategories
-          .map((category, index) => {
-            const escapedCategory = escapeHtml(category.key);
-            const escapedLabel = escapeHtml(category.meta.label || category.key);
-            const activeClass = index === 0 ? " is-active" : "";
+      let html = '<div class="n21-settings-tabs" role="tablist">';
+      html += views
+        .map(
+          (view, index) => `
+            <button type="button"
+                    class="n21-settings-tab${index === 0 ? " is-active" : ""}"
+                    role="tab"
+                    data-view-tab="${view.id}"
+                    aria-selected="${index === 0 ? "true" : "false"}">
+              <i class="${view.icon}"></i> ${view.label}
+            </button>`
+        )
+        .join("");
+      html += "</div>";
 
-            return `
-              <button type="button"
-                      class="n21-settings-tab${activeClass}"
-                      role="tab"
-                      data-category-tab="${escapedCategory}"
-                      aria-selected="${index === 0 ? "true" : "false"}">
-                ${escapedLabel}
-              </button>
-            `;
-          })
-          .join("");
-        html += "</div>";
-
-        html += '<div class="n21-settings-tab-panels">';
-        html += orderedCategories
-          .map((category, index) => {
-            const categoryHtml = buildCategoryHtml(
-              category.key,
-              category.meta,
-              category.settings
-            );
-
-            if (!categoryHtml) return "";
-
-            const activeClass = index === 0 ? " is-active" : "";
-            return categoryHtml.replace(
-              'class="n21-settings-category"',
-              `class="n21-settings-category${activeClass}"`
-            );
-          })
-          .join("");
-        html += "</div>";
-      }
-
+      html += '<div class="n21-settings-panel-body">';
+      html += views
+        .map(
+          (view, index) => `
+            <div class="n21-settings-view${index === 0 ? " is-active" : ""}" data-view="${view.id}" role="tabpanel">
+              ${view.html}
+            </div>`
+        )
+        .join("");
       html += "</div>";
 
       if (featureChangePending) {
@@ -456,23 +562,59 @@
       $tabs.off("click.n21SettingsTab");
       $tabs.on("click.n21SettingsTab", function () {
         const $tab = $(this);
-        const category = $tab.data("categoryTab");
-        if (!category) return;
+        const view = $tab.data("viewTab");
+        if (!view) return;
 
         $tabs.removeClass("is-active").attr("aria-selected", "false");
         $tab.addClass("is-active").attr("aria-selected", "true");
 
-        $panel.find(".n21-settings-category").removeClass("is-active");
-        $panel
-          .find(`.n21-settings-category[data-category="${category}"]`)
-          .addClass("is-active");
+        $panel.find(".n21-settings-view").removeClass("is-active");
+        $panel.find(`.n21-settings-view[data-view="${view}"]`).addClass("is-active");
+        $panel.find(".n21-settings-panel-body").scrollTop(0);
       });
+    }
+
+    function attachFeatureListeners($panel) {
+      $panel.off("input.n21SettingsSearch");
+      $panel.on("input.n21SettingsSearch", ".n21-feature-search", function () {
+        const query = normalizeSearch(this.value).trim();
+        let visible = 0;
+        $panel.find(".n21-feature-group").each(function () {
+          const $group = $(this);
+          let groupVisible = 0;
+          $group.find(".n21-feature-item").each(function () {
+            const match = !query || this.dataset.search.includes(query);
+            this.hidden = !match;
+            if (match) groupVisible += 1;
+          });
+          $group.prop("hidden", !groupVisible);
+          visible += groupVisible;
+        });
+        $panel.find(".n21-feature-empty").prop("hidden", visible > 0);
+      });
+
+      // Click a thumbnail to see it bigger.
+      $panel.off("click.n21SettingsThumb");
+      $panel.on("click.n21SettingsThumb", ".n21-feature-thumb", function () {
+        $(this).toggleClass("is-expanded");
+      });
+
+      $panel.off("click.n21SettingsOnboarding");
+      $panel.on("click.n21SettingsOnboarding", ".n21-settings-onboarding", () => {
+        window._n21_.onboarding?.open();
+      });
+
+      guide.bindStepEvents(
+        $panel.find('.n21-settings-view[data-view="style"]'),
+        () => refreshStyleView($panel)
+      );
     }
 
     function attachEventListeners($panel) {
       if (!$panel || !$panel.length) return;
 
       attachTabListeners($panel);
+      attachFeatureListeners($panel);
 
       $panel.find('input[type="checkbox"][data-type="boolean"]').each(function () {
         const $input = $(this);
@@ -627,11 +769,14 @@
         $message = $(
           `<div class="n21-settings-reload-message">${RELOAD_NOTICE_TEXT}</div>`
         );
-        $panel.find(".n21-settings-panel-body").before($message);
+        $panel.find(".n21-settings-tabs").before($message);
       }
     }
 
     function openSettingsPanel() {
+      // Already open: binding it again would stack listeners.
+      if (currentPanel && document.body.contains(currentPanel[0])) return;
+
       const html = buildPanelHtml();
 
       const $panel = FloatingPanelManager.openStaticPanelWithHtml(
@@ -653,6 +798,10 @@
           unsubscribe();
           return;
         }
+
+        // A feature or setting changed elsewhere (e.g. the setup dialog):
+        // the style questions show the current values.
+        refreshStyleView(currentPanel);
 
         const $input = currentPanel.find(
           `.n21-setting-input[data-setting="${name}"]`
