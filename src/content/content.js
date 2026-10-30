@@ -59,6 +59,7 @@
     await injectScript("src/core/effects-renderer.js");
     await injectScript("src/core/action-bar-layout.js");
     await injectScript("src/core/chat-consent.js");
+    await injectScript("src/core/settings-guide.js");
 
     // 3. Load managers and features in parallel
     await Promise.all([
@@ -113,6 +114,7 @@
       injectScript("src/features/turn-order.js"),
       injectScript("src/features/dice-visibility.js"),
       injectScript("src/features/settings-panel.js"),
+      injectScript("src/features/onboarding.js"),
       injectScript("src/features/token-notes.js"),
       injectScript("src/features/center-camera-here.js"),
       injectScript("src/features/ping-map.js"),

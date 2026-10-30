@@ -414,11 +414,28 @@ Abre una ventana flotante con tarjetas de referencia rápida para el DM, sin sal
 
 ---
 
+### Configuración inicial
+
+La primera vez que entras a una mesa, Nivel21 te hace unas preguntas rápidas para dejarlo a tu gusto: cómo mover los tokens, qué barra de acciones usar, si confirmar los mensajes al chat, la cámara y el clima, y las teclas de ventaja y desventaja. Al final te muestra las funciones principales con un video corto de cómo se usan.
+
+- **Una sola vez** - Al terminarlo no vuelve a aparecer. Si lo cierras antes, aparece de nuevo la próxima vez, salvo que marques «No volver a mostrar»
+- **Repetirlo** - Desde **Nivel 21 › Configuración › Mi estilo › Repetir configuración inicial**
+
+<a id="onboarding">
+ <img src="popup/img/onboarding.png" alt="Configuración inicial" />
+</a>
+
+---
+
 ### Panel de Configuración
 
-Centraliza todas las configuraciones de Nivel21 en un panel de ajustes.
+Todas las opciones de Nivel21 en un panel, desde **Nivel 21 › Configuración** en el menú de la izquierda.
 
-**Mensajes al chat:** la primera vez que una acción va a enviar algo al chat (anunciar un conjuro, efectos ambientales, orden de turnos, ping, compartir contenido o notas de tokens) la extensión pregunta si enviarlo, con la opción «No volver a preguntar». En el clima, los turnos y el ping el mensaje es lo que sincroniza con los jugadores: si no se envía, el cambio no se aplica. La elección se puede cambiar en la pestaña **Chat** de la configuración.
+- **Mi estilo** - Las mismas preguntas de la configuración inicial, para cambiarlas cuando quieras
+- **Funciones** - Activa o desactiva cada función, con su descripción y un buscador
+- **Avanzado** - El resto de los ajustes, como los atajos de teclado
+
+**Mensajes al chat:** la primera vez que una acción va a enviar algo al chat (anunciar un conjuro, efectos ambientales, orden de turnos, ping, compartir contenido o notas de tokens) la extensión pregunta si enviarlo, con la opción «No volver a preguntar». En el clima, los turnos y el ping el mensaje es lo que sincroniza con los jugadores: si no se envía, el cambio no se aplica. La elección se puede cambiar en **Mi estilo** o en **Avanzado**.
 
 <a id="settings-panel">
  <img src="popup/img/settings-panel.png" alt="Panel de Configuración" />
